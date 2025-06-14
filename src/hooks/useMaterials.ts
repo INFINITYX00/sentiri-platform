@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -9,6 +10,7 @@ export function useMaterials() {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
   const channelRef = useRef<any>(null)
+  const subscriptionSetupRef = useRef(false)
 
   const fetchMaterials = async () => {
     setLoading(true)
@@ -295,10 +297,14 @@ export function useMaterials() {
     // Initial fetch
     fetchMaterials()
 
-    // Only set up subscription if we don't already have one
-    if (!channelRef.current) {
+    // Only set up subscription if we haven't already done so
+    if (!subscriptionSetupRef.current) {
+      subscriptionSetupRef.current = true
+      
       // Set up real-time subscription with a unique channel name
-      const channelName = `materials-changes-${Date.now()}`
+      const channelName = `materials-changes-${Date.now()}-${Math.random()}`
+      console.log('Creating channel:', channelName)
+      
       const channel = supabase
         .channel(channelName)
         .on(
@@ -344,8 +350,9 @@ export function useMaterials() {
         supabase.removeChannel(channelRef.current)
         channelRef.current = null
       }
+      subscriptionSetupRef.current = false
     }
-  }, [])
+  }, []) // Empty dependency array to run only once
 
   return {
     materials,
