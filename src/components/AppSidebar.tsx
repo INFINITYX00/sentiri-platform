@@ -98,35 +98,35 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar className="border-r border-border/50">
-      <SidebarHeader className="p-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">S</span>
+    <Sidebar className="border-r border-slate-200/60 sidebar-gradient">
+      <SidebarHeader className="p-8 border-b border-slate-200/60">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+            <span className="text-white font-bold text-xl">S</span>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-primary">Sentiri</h1>
-            <p className="text-xs text-muted-foreground">Sustainable Manufacturing</p>
+            <h1 className="text-xl font-bold text-gradient">Sentiri</h1>
+            <p className="text-xs text-slate-500 font-medium">Sustainable Manufacturing</p>
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="p-6">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
+          <SidebarGroupLabel className="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-4">
             Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-2">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     onClick={() => setActiveView(item.url)}
                     isActive={activeView === item.url}
-                    className="hover:bg-accent/10 data-[active=true]:bg-accent/20 data-[active=true]:text-accent"
+                    className="hover:bg-emerald-50 data-[active=true]:bg-emerald-50 data-[active=true]:text-emerald-700 data-[active=true]:font-semibold rounded-xl px-4 py-3 transition-all duration-200"
                   >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                    <item.icon className="h-5 w-5" />
+                    <span className="font-medium">{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -134,37 +134,37 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
+        <SidebarGroup className="mt-8">
+          <SidebarGroupLabel className="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-4">
             Quick Actions
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start border-border/50 hover:bg-accent/10 hover:border-accent/30"
+                className="w-full justify-start border-slate-200/60 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 rounded-xl px-4 py-3 font-medium transition-all duration-200"
                 onClick={() => handleQuickAction("Add Stock")}
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-3" />
                 Add Stock
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start border-border/50 hover:bg-accent/10 hover:border-accent/30"
+                className="w-full justify-start border-slate-200/60 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 rounded-xl px-4 py-3 font-medium transition-all duration-200"
                 onClick={() => handleQuickAction("Upload BOM")}
               >
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 mr-3" />
                 Upload BOM
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start border-border/50 hover:bg-accent/10 hover:border-accent/30"
+                className="w-full justify-start border-slate-200/60 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 rounded-xl px-4 py-3 font-medium transition-all duration-200"
                 onClick={() => handleQuickAction("Generate Passport")}
               >
-                <QrCode className="h-4 w-4 mr-2" />
+                <QrCode className="h-4 w-4 mr-3" />
                 Generate Passport
               </Button>
             </div>
@@ -172,10 +172,10 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
-        <div className="text-xs text-muted-foreground text-center">
-          <p>Reduce • Reuse • Recycle</p>
-          <p className="mt-1 text-accent">Carbon Neutral by 2030</p>
+      <SidebarFooter className="p-6 border-t border-slate-200/60">
+        <div className="text-center space-y-2">
+          <p className="text-xs text-slate-500 font-medium">Reduce • Reuse • Recycle</p>
+          <p className="text-xs text-emerald-600 font-semibold">Carbon Neutral by 2030</p>
         </div>
       </SidebarFooter>
     </Sidebar>
