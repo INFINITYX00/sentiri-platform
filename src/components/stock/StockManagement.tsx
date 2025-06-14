@@ -71,7 +71,7 @@ export function StockManagement() {
 
       <AddMaterialDialog 
         open={showAddDialog} 
-        onOpenChange={setShowAddDialog}
+        onClose={() => setShowAddDialog(false)}
       />
     </div>
   );
