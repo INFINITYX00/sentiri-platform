@@ -2,30 +2,72 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, TrendingDown, Zap, Leaf } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardOverview() {
-  const metrics = [
+  const { metrics, loading } = useDashboardMetrics();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 ml-6">
+        <div className="px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold text-black">Overview</h1>
+            </div>
+            <div className="flex items-center space-x-3">
+              <select className="text-sm border border-emerald-200 rounded-lg px-3 py-2 bg-white/90 text-emerald-700 focus:ring-2 focus:ring-emerald-200">
+                <option>Today</option>
+                <option>Week</option>
+                <option>Month</option>
+                <option>Year</option>
+              </select>
+              <Badge variant="outline" className="border-emerald-300 text-emerald-700 bg-emerald-50/80 px-4 py-2 text-sm font-medium">
+                18 Jun, 2024 — 18 July, 2024
+              </Badge>
+            </div>
+          </div>
+        </div>
+        <div className="px-8 py-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i} className="bg-white/90 backdrop-blur-sm border border-emerald-100">
+                  <CardContent className="p-6">
+                    <Skeleton className="h-20 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const metricsData = [
     {
       title: "Active Stock Items",
-      value: "147",
-      change: "+12%",
+      value: metrics.totalStockItems.toString(),
+      change: metrics.stockItemsChange,
       icon: Package,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
-      changeColor: "text-red-500"
+      changeColor: metrics.stockItemsChange.startsWith('+') ? "text-red-500" : "text-emerald-600"
     },
     {
       title: "Carbon Footprint",
-      value: "2.3t CO₂",
-      change: "-8%",
+      value: `${metrics.totalCarbonFootprint}t CO₂`,
+      change: metrics.carbonFootprintChange,
       icon: Leaf,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
-      changeColor: "text-emerald-600"
+      changeColor: metrics.carbonFootprintChange.startsWith('-') ? "text-emerald-600" : "text-red-500"
     },
     {
       title: "Energy Usage",
-      value: "1,240 kWh",
+      value: `${metrics.energyUsage.toLocaleString()} kWh`,
       change: "-5%",
       icon: Zap,
       color: "text-emerald-600",
@@ -34,7 +76,7 @@ export function DashboardOverview() {
     },
     {
       title: "Waste Reduced",
-      value: "34%",
+      value: `${metrics.wasteReduced}%`,
       change: "+15%",
       icon: TrendingDown,
       color: "text-emerald-600",
@@ -43,16 +85,10 @@ export function DashboardOverview() {
     }
   ];
 
-  const recentProjects = [
+  const mockProjects = [
     { name: "Eco-Chair Series", status: "In Progress", completion: 75, materials: 8 },
     { name: "Sustainable Desk", status: "Needs Materials", completion: 45, materials: 12 },
     { name: "Bamboo Shelving", status: "Assembly", completion: 90, materials: 6 },
-  ];
-
-  const lowStockItems = [
-    { name: "Reclaimed Oak", quantity: 3, unit: "boards", threshold: 10 },
-    { name: "Hemp Fiber", quantity: 1.2, unit: "kg", threshold: 5 },
-    { name: "Bio-based Resin", quantity: 0.5, unit: "L", threshold: 2 },
   ];
 
   return (
@@ -82,7 +118,7 @@ export function DashboardOverview() {
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {metrics.map((metric) => (
+            {metricsData.map((metric) => (
               <Card key={metric.title} className="bg-white/90 backdrop-blur-sm border border-emerald-100">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -117,7 +153,7 @@ export function DashboardOverview() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {recentProjects.map((project, index) => (
+                {mockProjects.map((project, index) => (
                   <div key={index} className="space-y-3 p-4 bg-emerald-50/70 rounded-lg border border-emerald-100">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium text-emerald-900">{project.name}</h4>
@@ -145,7 +181,14 @@ export function DashboardOverview() {
             <Card className="bg-white/90 backdrop-blur-sm border border-emerald-100">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold text-emerald-900">Low Stock Alerts</CardTitle>
+                  <CardTitle className="text-lg font-semibold text-emerald-900">
+                    Low Stock Alerts
+                    {metrics.lowStockCount > 0 && (
+                      <Badge variant="outline" className="ml-2 border-orange-300 text-orange-700 bg-orange-50">
+                        {metrics.lowStockCount}
+                      </Badge>
+                    )}
+                  </CardTitle>
                   <button className="text-emerald-500 hover:text-emerald-700 transition-colors">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -154,19 +197,26 @@ export function DashboardOverview() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {lowStockItems.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-orange-50/80 rounded-lg border border-orange-200">
-                    <div className="space-y-1">
-                      <h4 className="font-medium text-emerald-900">{item.name}</h4>
-                      <p className="text-sm text-emerald-600">
-                        {item.quantity} {item.unit} remaining
-                      </p>
-                    </div>
-                    <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-50">
-                      Reorder Soon
-                    </Badge>
+                {metrics.lowStockItems.length === 0 ? (
+                  <div className="p-4 bg-emerald-50/80 rounded-lg border border-emerald-200 text-center">
+                    <p className="text-emerald-700 font-medium">All stock levels are healthy! 🎉</p>
+                    <p className="text-sm text-emerald-600">No materials need immediate restocking.</p>
                   </div>
-                ))}
+                ) : (
+                  metrics.lowStockItems.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 bg-orange-50/80 rounded-lg border border-orange-200">
+                      <div className="space-y-1">
+                        <h4 className="font-medium text-emerald-900">{item.name}</h4>
+                        <p className="text-sm text-emerald-600">
+                          {item.quantity.toFixed(1)} {item.unit} remaining
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-50">
+                        Reorder Soon
+                      </Badge>
+                    </div>
+                  ))
+                )}
               </CardContent>
             </Card>
           </div>
