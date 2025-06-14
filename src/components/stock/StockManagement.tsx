@@ -7,21 +7,29 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Plus, Package } from "lucide-react";
 import { StockGrid } from "./StockGrid";
 import { AddMaterialDialog } from "./AddMaterialDialog";
+import { useMaterials } from '@/hooks/useMaterials';
 
 export function StockManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  
+  const { materials, loading } = useMaterials();
 
   const materialTypes = ['all', 'wood', 'metal', 'composite', 'textile', 'bio-material'];
   
-  const stockSummary = [
-    { type: 'Wood', count: 45, totalValue: '$12,340' },
-    { type: 'Metal', count: 28, totalValue: '$8,750' },
-    { type: 'Composite', count: 22, totalValue: '$15,600' },
-    { type: 'Textile', count: 18, totalValue: '$3,200' },
-    { type: 'Bio-material', count: 12, totalValue: '$5,400' },
-  ];
+  // Calculate stock summary from real data
+  const stockSummary = materialTypes.slice(1).map(type => {
+    const typeMaterials = materials.filter(m => m.type === type);
+    const count = typeMaterials.length;
+    const totalValue = typeMaterials.reduce((sum, m) => sum + (m.quantity * 10), 0); // Simplified pricing
+    
+    return {
+      type: type.charAt(0).toUpperCase() + type.slice(1).replace('-', '-'),
+      count,
+      totalValue: `$${totalValue.toLocaleString()}`
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -91,7 +99,7 @@ export function StockManagement() {
                 }`}
                 onClick={() => setSelectedType(type)}
               >
-                {type === 'all' ? 'All Materials' : type}
+                {type === 'all' ? 'All Materials' : type.replace('-', '-')}
               </Badge>
             ))}
           </div>
@@ -99,7 +107,20 @@ export function StockManagement() {
       </Card>
 
       {/* Stock Grid */}
-      <StockGrid searchQuery={searchQuery} selectedType={selectedType} />
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+            <p className="text-muted-foreground">Loading materials...</p>
+          </div>
+        </div>
+      ) : (
+        <StockGrid 
+          materials={materials}
+          searchQuery={searchQuery} 
+          selectedType={selectedType} 
+        />
+      )}
 
       {/* Add Material Dialog */}
       <AddMaterialDialog 

@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, Camera } from "lucide-react";
+import { useMaterials } from '@/hooks/useMaterials';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 interface AddMaterialDialogProps {
   open: boolean;
@@ -23,31 +26,98 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
     description: '',
     image: null as File | null
   });
+  const [uploading, setUploading] = useState(false);
+  
+  const { addMaterial } = useMaterials();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const calculateCarbonFootprint = (type: string, quantity: number): number => {
+    const carbonFactors: Record<string, number> = {
+      wood: 0.5,
+      metal: 8.2,
+      composite: 3.1,
+      textile: 2.3,
+      'bio-material': 0.1
+    };
+    return (carbonFactors[type] || 2.0) * quantity;
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `materials/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from('material-images')
+      .upload(filePath, file);
+
+    if (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+
+    const { data } = supabase.storage
+      .from('material-images')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Adding material:', formData);
-    // Simulate AI dimension detection
-    const mockDimensions = [
-      "2000x200x25mm",
-      "1200x800x3mm", 
-      "1000x500x10mm",
-      "1220x610x18mm"
-    ];
-    const randomDimension = mockDimensions[Math.floor(Math.random() * mockDimensions.length)];
-    console.log('AI detected dimensions:', randomDimension);
-    
-    onOpenChange(false);
-    // Reset form
-    setFormData({
-      name: '',
-      type: '',
-      quantity: '',
-      unit: '',
-      origin: '',
-      description: '',
-      image: null
-    });
+    setUploading(true);
+
+    try {
+      let imageUrl = null;
+      
+      if (formData.image) {
+        imageUrl = await uploadImage(formData.image);
+        if (!imageUrl) {
+          toast({
+            title: "Warning",
+            description: "Image upload failed, but material will be added without image",
+            variant: "destructive"
+          });
+        }
+      }
+
+      const quantity = parseFloat(formData.quantity);
+      const carbonFootprint = calculateCarbonFootprint(formData.type, quantity);
+
+      const result = await addMaterial({
+        name: formData.name,
+        type: formData.type,
+        quantity,
+        unit: formData.unit,
+        origin: formData.origin,
+        description: formData.description,
+        image_url: imageUrl,
+        carbon_footprint: carbonFootprint
+      });
+
+      if (result) {
+        onOpenChange(false);
+        // Reset form
+        setFormData({
+          name: '',
+          type: '',
+          quantity: '',
+          unit: '',
+          origin: '',
+          description: '',
+          image: null
+        });
+      }
+    } catch (error) {
+      console.error('Error adding material:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add material. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,7 +152,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
               <label htmlFor="image" className="cursor-pointer">
                 <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
-                  Click to upload or drag and drop
+                  {formData.image ? formData.image.name : "Click to upload or drag and drop"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   AI will auto-detect dimensions from your photo
@@ -181,8 +251,12 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-primary hover:bg-primary/90">
-              Add Material & Generate QR
+            <Button 
+              type="submit" 
+              className="bg-primary hover:bg-primary/90"
+              disabled={uploading}
+            >
+              {uploading ? "Adding Material..." : "Add Material & Generate QR"}
             </Button>
           </div>
         </form>
