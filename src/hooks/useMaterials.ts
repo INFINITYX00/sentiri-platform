@@ -34,6 +34,8 @@ export function useMaterials() {
   const addMaterial = async (materialData: Omit<Material, 'id' | 'created_at' | 'updated_at' | 'qr_code' | 'qr_image_url'>) => {
     setLoading(true)
     try {
+      console.log('Starting material creation with data:', materialData);
+      
       // First insert the material to get the ID
       const { data: newMaterial, error: insertError } = await supabase
         .from('materials')
@@ -49,9 +51,14 @@ export function useMaterials() {
 
       if (insertError) throw insertError
 
+      console.log('Material inserted:', newMaterial);
+
       // Generate web-linkable QR code data and simple identifier
       const qrData = createMaterialQRData(newMaterial.id);
       const simpleQRCode = generateSimpleQRCode(newMaterial.id);
+      
+      console.log('Generated QR data:', qrData);
+      console.log('Simple QR code:', simpleQRCode);
       
       // Generate QR code image
       const qrCodeDataURL = await generateQRCode(qrData)
@@ -61,19 +68,27 @@ export function useMaterials() {
       const blob = await response.blob()
       const qrFile = new File([blob], `qr-${newMaterial.id}.png`, { type: 'image/png' })
       
+      console.log('Generated QR code file:', qrFile.name, qrFile.size);
+      
       // Upload QR code image to storage
       const uploadResult = await uploadFile(qrFile, 'material-images', 'qr-codes')
+      
+      console.log('QR code upload result:', uploadResult);
       
       if (uploadResult.error) {
         console.warn('QR code image upload failed:', uploadResult.error)
         // Update material with just the QR data, no QR image, but keep original material image
+        const updateData = { 
+          qr_code: qrData, // Store the web-linkable URL
+          qr_image_url: null
+          // Keep the original image_url from materialData
+        };
+        
+        console.log('Updating material with QR data only:', updateData);
+        
         await supabase
           .from('materials')
-          .update({ 
-            qr_code: qrData, // Store the web-linkable URL
-            qr_image_url: null
-            // Keep the original image_url from materialData
-          })
+          .update(updateData)
           .eq('id', newMaterial.id)
           
         toast({
@@ -82,13 +97,17 @@ export function useMaterials() {
         })
       } else {
         // Update material with QR data and QR image URL, but keep original material image
+        const updateData = { 
+          qr_code: qrData, // Store the web-linkable URL
+          qr_image_url: uploadResult.url
+          // Keep the original image_url from materialData
+        };
+        
+        console.log('Updating material with QR data and image:', updateData);
+        
         await supabase
           .from('materials')
-          .update({ 
-            qr_code: qrData, // Store the web-linkable URL
-            qr_image_url: uploadResult.url
-            // Keep the original image_url from materialData - don't overwrite it
-          })
+          .update(updateData)
           .eq('id', newMaterial.id)
       }
 
@@ -98,7 +117,10 @@ export function useMaterials() {
         description: `Material "${materialData.name}" added with QR code ${simpleQRCode}`,
       })
 
-      return { ...newMaterial, qr_code: qrData, qr_image_url: uploadResult.url }
+      const finalResult = { ...newMaterial, qr_code: qrData, qr_image_url: uploadResult.url };
+      console.log('Final material result:', finalResult);
+      
+      return finalResult;
     } catch (error) {
       console.error('Error adding material:', error)
       toast({

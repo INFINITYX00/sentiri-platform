@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -50,6 +49,8 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
       let imageUrl = null;
       
       if (formData.image) {
+        console.log('Uploading material image:', formData.image.name, formData.image.size);
+        
         toast({
           title: "Uploading",
           description: "Uploading material image...",
@@ -57,7 +58,10 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
 
         const uploadResult = await uploadFile(formData.image, 'material-images', 'materials');
         
+        console.log('Material image upload result:', uploadResult);
+        
         if (uploadResult.error) {
+          console.error('Material image upload failed:', uploadResult.error);
           toast({
             title: "Warning",
             description: `Image upload failed: ${uploadResult.error}. Material will be added without image.`,
@@ -65,11 +69,23 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
           });
         } else {
           imageUrl = uploadResult.url;
+          console.log('Material image uploaded successfully:', imageUrl);
         }
       }
 
       const quantity = parseFloat(formData.quantity);
       const carbonFootprint = calculateCarbonFootprint(formData.type, quantity);
+
+      console.log('Adding material with data:', {
+        name: formData.name,
+        type: formData.type,
+        quantity,
+        unit: formData.unit,
+        origin: formData.origin,
+        description: formData.description,
+        image_url: imageUrl,
+        carbon_footprint: carbonFootprint
+      });
 
       const result = await addMaterial({
         name: formData.name,
@@ -81,6 +97,8 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
         image_url: imageUrl,
         carbon_footprint: carbonFootprint
       });
+
+      console.log('Add material result:', result);
 
       if (result) {
         onOpenChange(false);
@@ -115,6 +133,8 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log('Selected file:', file.name, file.size, file.type);
+      
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         toast({
@@ -174,6 +194,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
             </div>
           </div>
 
+          {/* ... keep existing code (form fields) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Material Name */}
             <div className="space-y-2">
