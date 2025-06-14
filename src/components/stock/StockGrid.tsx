@@ -2,7 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QrCode, Eye, Package, Download, ExternalLink } from "lucide-react";
+import { QrCode, Eye, Package, ExternalLink } from "lucide-react";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useState } from "react";
@@ -16,7 +16,7 @@ interface StockGridProps {
 }
 
 export function StockGrid({ materials, searchQuery, selectedType }: StockGridProps) {
-  const { generateQRCodeForMaterial, regenerateQRCode } = useMaterials();
+  const { regenerateQRCode } = useMaterials();
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [qrViewerOpen, setQrViewerOpen] = useState(false);
 
@@ -35,10 +35,6 @@ export function StockGrid({ materials, searchQuery, selectedType }: StockGridPro
       </div>
     );
   }
-
-  const handleQRCodeDownload = (materialId: string) => {
-    generateQRCodeForMaterial(materialId);
-  };
 
   const handleViewQR = (material: Material) => {
     setSelectedMaterial(material);
@@ -143,9 +139,9 @@ export function StockGrid({ materials, searchQuery, selectedType }: StockGridPro
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    onClick={() => handleQRCodeDownload(item.id)}
+                    onClick={() => handleViewQR(item)}
                   >
-                    <Download className="h-4 w-4" />
+                    <QrCode className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
