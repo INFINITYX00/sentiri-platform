@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -30,8 +31,6 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
     quantity: 0,
     unit: '',
     carbon_footprint: 0,
-    unit_count: 1,
-    display_unit: 'units',
     cost_per_unit: 0,
     description: '',
     dimensions: '',
@@ -86,8 +85,6 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
       quantity: 0,
       unit: '',
       carbon_footprint: 0,
-      unit_count: 1,
-      display_unit: 'units',
       cost_per_unit: 0,
       description: '',
       dimensions: '',
@@ -127,8 +124,6 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
         quantity: formData.quantity,
         unit: formData.unit,
         carbon_footprint: formData.carbon_footprint,
-        unit_count: formData.unit_count,
-        display_unit: formData.display_unit,
         cost_per_unit: formData.cost_per_unit,
         description: formData.description || undefined,
         dimensions: dimensionsString || undefined,
@@ -238,9 +233,9 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
             </div>
           </div>
 
-          {/* Quantity & Units */}
+          {/* Simplified Quantity & Cost */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">Quantity & Units</h3>
+            <h3 className="text-sm font-medium text-muted-foreground">Quantity & Cost</h3>
             
             <div className="grid grid-cols-3 gap-4">
               <div>
@@ -248,6 +243,7 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
                 <Input
                   id="quantity"
                   type="number"
+                  step="0.01"
                   value={formData.quantity}
                   onChange={(e) => setFormData(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 0 }))}
                   placeholder="100"
@@ -265,39 +261,6 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
                     {units.map(unit => (
                       <SelectItem key={unit} value={unit}>{unit}</SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="unit_count">Items per Unit</Label>
-                <Input
-                  id="unit_count"
-                  type="number"
-                  min="1"
-                  value={formData.unit_count}
-                  onChange={(e) => setFormData(prev => ({ ...prev, unit_count: parseInt(e.target.value) || 1 }))}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="display_unit">Display Unit</Label>
-                <Select 
-                  value={formData.display_unit} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, display_unit: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pieces">Pieces</SelectItem>
-                    <SelectItem value="boards">Boards</SelectItem>
-                    <SelectItem value="sheets">Sheets</SelectItem>
-                    <SelectItem value="rolls">Rolls</SelectItem>
-                    <SelectItem value="kg">Kilograms</SelectItem>
-                    <SelectItem value="units">Units</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

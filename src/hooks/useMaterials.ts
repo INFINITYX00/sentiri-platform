@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -37,14 +36,7 @@ export function useMaterials() {
   const addMaterial = async (materialData: Omit<Material, 'id' | 'created_at' | 'updated_at' | 'qr_code' | 'qr_image_url'>) => {
     setLoading(true)
     try {
-      console.log('Starting optimized material creation with data:', materialData);
-      
-      // Set default cost if not provided
-      const materialWithDefaults = {
-        ...materialData,
-        cost_per_unit: materialData.cost_per_unit || 10, // Default cost
-        display_unit: materialData.display_unit || (materialData.unit_count && materialData.unit_count > 1 ? 'pieces' : 'units')
-      };
+      console.log('Starting material creation with simplified data:', materialData);
       
       // Step 1: Generate QR package first
       const tempId = crypto.randomUUID();
@@ -79,9 +71,9 @@ export function useMaterials() {
         simpleQRCode = `QR${tempId.slice(-6).toUpperCase()}`;
       }
 
-      // Step 2: Insert complete material with QR data in single operation
+      // Step 2: Insert complete material with simplified data structure
       const completeData = {
-        ...materialWithDefaults,
+        ...materialData,
         id: tempId,
         qr_code: qrData,
         qr_image_url: qrImageUrl,
@@ -101,13 +93,11 @@ export function useMaterials() {
       console.log('Material creation completed successfully with ID:', newMaterial.id);
       
       // Show success message
-      const unitText = materialData.unit_count && materialData.unit_count > 1 ? ` (${materialData.unit_count} units)` : '';
-      const aiText = materialData.ai_carbon_confidence ? ` with AI carbon data` : '';
-      const costText = materialWithDefaults.cost_per_unit ? ` at $${materialWithDefaults.cost_per_unit}/${materialWithDefaults.display_unit}` : '';
+      const costText = materialData.cost_per_unit ? ` at $${materialData.cost_per_unit}/${materialData.unit}` : '';
       
       toast({
         title: "Success",
-        description: `Material "${materialData.name}"${unitText} added with QR code ${simpleQRCode}${aiText}${costText}`,
+        description: `Material "${materialData.name}" (${materialData.quantity} ${materialData.unit}) added with QR code ${simpleQRCode}${costText}`,
       });
 
       // Real-time subscription will handle UI update automatically
