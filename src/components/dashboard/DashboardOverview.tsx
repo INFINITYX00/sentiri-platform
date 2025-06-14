@@ -57,120 +57,143 @@ export function DashboardOverview() {
   ];
 
   return (
-    <div className="min-h-screen app-background">
+    <div className="min-h-screen bg-gray-50">
       {/* Header Section */}
-      <div className="page-header">
+      <div className="bg-white border-b border-gray-200 px-8 py-6">
         <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-            <p className="text-slate-600">Welcome back to your sustainable manufacturing hub</p>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold text-gray-900">Overview</h1>
+            <p className="text-sm text-gray-500">Welcome back to your sustainable manufacturing hub</p>
           </div>
-          <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50/80 px-6 py-3 text-sm font-medium">
-            Carbon Neutral Goals: 67% Complete
-          </Badge>
+          <div className="flex items-center space-x-3">
+            <select className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white">
+              <option>Today</option>
+              <option>Week</option>
+              <option>Month</option>
+              <option>Year</option>
+            </select>
+            <Badge variant="outline" className="border-lime-200 text-lime-700 bg-lime-50 px-4 py-2 text-sm font-medium">
+              18 Jun, 2024 — 18 July, 2024
+            </Badge>
+          </div>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid-section">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Main Content */}
+      <div className="p-8 space-y-8">
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {metrics.map((metric) => (
-            <div key={metric.title} className="metric-card group">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 space-y-2">
-                  <p className="text-sm font-medium text-slate-600">{metric.title}</p>
-                  <p className="text-3xl font-bold text-slate-900">{metric.value}</p>
-                  <p className={`text-sm font-medium ${metric.changeColor}`}>
-                    {metric.change} from last month
-                  </p>
+            <Card key={metric.title} className="bg-white border border-gray-200 hover:shadow-sm transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-gray-600">{metric.title}</p>
+                    <p className="text-3xl font-bold text-gray-900">{metric.value}</p>
+                    <p className={`text-sm font-medium ${metric.changeColor}`}>
+                      {metric.change} from last month
+                    </p>
+                  </div>
+                  <div className={`p-3 rounded-lg ${metric.bgColor}`}>
+                    <metric.icon className={`h-6 w-6 ${metric.color}`} />
+                  </div>
                 </div>
-                <div className={`p-4 rounded-2xl ${metric.bgColor} group-hover:scale-110 transition-transform duration-200`}>
-                  <metric.icon className={`h-6 w-6 ${metric.color}`} />
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Projects */}
-          <div className="chart-container">
-            <div className="flex items-center space-x-3 mb-8">
-              <div className="p-2 bg-emerald-50 rounded-lg">
-                <Leaf className="h-5 w-5 text-emerald-600" />
+          <Card className="bg-white border border-gray-200">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold text-gray-900">Active Projects</CardTitle>
+                <button className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </button>
               </div>
-              <h3 className="text-xl font-semibold text-slate-900">Active Projects</h3>
-            </div>
-            <div className="space-y-6">
+            </CardHeader>
+            <CardContent className="space-y-4">
               {recentProjects.map((project, index) => (
-                <div key={index} className="space-y-4 p-4 bg-slate-50/50 rounded-xl hover:bg-slate-50 transition-colors">
+                <div key={index} className="space-y-3 p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-slate-900">{project.name}</h4>
+                    <h4 className="font-medium text-gray-900">{project.name}</h4>
                     <Badge 
                       variant={project.status === 'In Progress' ? 'default' : 'secondary'}
                       className={project.status === 'In Progress' 
-                        ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200' 
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-100 border-slate-200'
+                        ? 'bg-lime-100 text-lime-800 hover:bg-lime-100 border-lime-200' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-100 border-gray-200'
                       }
                     >
                       {project.status}
                     </Badge>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <Progress value={project.completion} className="flex-1 h-3" />
-                    <span className="text-sm font-semibold text-slate-700 min-w-[3rem]">{project.completion}%</span>
+                  <div className="flex items-center space-x-3">
+                    <Progress value={project.completion} className="flex-1 h-2" />
+                    <span className="text-sm font-medium text-gray-700 min-w-[3rem]">{project.completion}%</span>
                   </div>
-                  <p className="text-xs text-slate-500 font-medium">{project.materials} materials allocated</p>
+                  <p className="text-xs text-gray-500">{project.materials} materials allocated</p>
                 </div>
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Low Stock Alert */}
-          <div className="chart-container border-amber-200/60">
-            <div className="flex items-center space-x-3 mb-8">
-              <div className="p-2 bg-amber-50 rounded-lg">
-                <Package className="h-5 w-5 text-amber-600" />
+          <Card className="bg-white border border-gray-200">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold text-gray-900">Low Stock Alerts</CardTitle>
+                <button className="text-gray-400 hover:text-gray-600">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </button>
               </div>
-              <h3 className="text-xl font-semibold text-slate-900">Low Stock Alerts</h3>
-            </div>
-            <div className="space-y-4">
+            </CardHeader>
+            <CardContent className="space-y-4">
               {lowStockItems.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-6 bg-amber-50/60 rounded-xl border border-amber-200/60 hover:bg-amber-50 transition-colors">
+                <div key={index} className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-100">
                   <div className="space-y-1">
-                    <h4 className="font-semibold text-slate-900">{item.name}</h4>
-                    <p className="text-sm text-slate-600 font-medium">
+                    <h4 className="font-medium text-gray-900">{item.name}</h4>
+                    <p className="text-sm text-gray-600">
                       {item.quantity} {item.unit} remaining
                     </p>
                   </div>
-                  <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50 font-medium">
+                  <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-50">
                     Reorder Soon
                   </Badge>
                 </div>
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Quick Actions */}
-        <div className="chart-container">
-          <h3 className="text-xl font-semibold text-slate-900 mb-8">Quick Actions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-8 bg-emerald-50/60 rounded-xl border border-emerald-200/60 hover:bg-emerald-50 hover:shadow-md transition-all duration-300 cursor-pointer group">
-              <h4 className="font-semibold text-emerald-700 mb-3 group-hover:text-emerald-800">Add New Material</h4>
-              <p className="text-sm text-emerald-600 font-medium">Upload photos and create material passport</p>
+        <Card className="bg-white border border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-gray-900">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-6 bg-lime-50 rounded-lg border border-lime-100 hover:bg-lime-100 hover:shadow-sm transition-all cursor-pointer group">
+                <h4 className="font-medium text-lime-800 mb-2 group-hover:text-lime-900">Add New Material</h4>
+                <p className="text-sm text-lime-600">Upload photos and create material passport</p>
+              </div>
+              <div className="p-6 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 hover:shadow-sm transition-all cursor-pointer group">
+                <h4 className="font-medium text-blue-800 mb-2 group-hover:text-blue-900">Upload BOM</h4>
+                <p className="text-sm text-blue-600">Calculate carbon footprint for new project</p>
+              </div>
+              <div className="p-6 bg-purple-50 rounded-lg border border-purple-100 hover:bg-purple-100 hover:shadow-sm transition-all cursor-pointer group">
+                <h4 className="font-medium text-purple-800 mb-2 group-hover:text-purple-900">Generate Report</h4>
+                <p className="text-sm text-purple-600">Export sustainability metrics and insights</p>
+              </div>
             </div>
-            <div className="p-8 bg-blue-50/60 rounded-xl border border-blue-200/60 hover:bg-blue-50 hover:shadow-md transition-all duration-300 cursor-pointer group">
-              <h4 className="font-semibold text-blue-700 mb-3 group-hover:text-blue-800">Upload BOM</h4>
-              <p className="text-sm text-blue-600 font-medium">Calculate carbon footprint for new project</p>
-            </div>
-            <div className="p-8 bg-purple-50/60 rounded-xl border border-purple-200/60 hover:bg-purple-50 hover:shadow-md transition-all duration-300 cursor-pointer group">
-              <h4 className="font-semibold text-purple-700 mb-3 group-hover:text-purple-800">Generate Report</h4>
-              <p className="text-sm text-purple-600 font-medium">Export sustainability metrics and insights</p>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
