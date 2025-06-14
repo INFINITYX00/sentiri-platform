@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -121,20 +120,13 @@ export function StockGrid({ materials, searchQuery, selectedType }: StockGridPro
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-3 gap-2 pt-2">
+                <div className="grid grid-cols-2 gap-2 pt-2">
                   <Button 
                     size="sm" 
                     variant="outline" 
                     onClick={() => handleViewMaterial(item.id)}
                   >
                     <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => handleViewQR(item)}
-                  >
-                    <QrCode className="h-4 w-4" />
                   </Button>
                   <Button 
                     size="sm" 
