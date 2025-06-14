@@ -108,92 +108,98 @@ export function MaterialPassport() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Material Passports</h1>
-          <p className="text-muted-foreground mt-1">Digital certificates for sustainable materials</p>
-        </div>
-        <div className="flex gap-3">
-          <Button 
-            variant="outline"
-            onClick={() => setShowScanner(true)}
-          >
-            <QrCode className="h-4 w-4 mr-2" />
-            Scan QR Code
-          </Button>
-          <Button className="bg-primary hover:bg-primary/90">
-            <FileText className="h-4 w-4 mr-2" />
-            Generate New
-          </Button>
-        </div>
-      </div>
-
-      {/* Search */}
-      <Card className="sentiri-card">
-        <CardContent className="p-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by material name or QR code..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-background/50"
-            />
+    <div className="min-h-screen app-background">
+      {/* Header Section */}
+      <div className="page-header">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Material Passports</h1>
+            <p className="text-muted-foreground mt-1">Digital certificates for sustainable materials</p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Passport Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="sentiri-card">
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-primary">{mockPassports.length}</p>
-              <p className="text-sm text-muted-foreground">Total Passports</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="sentiri-card">
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-400">85%</p>
-              <p className="text-sm text-muted-foreground">Renewable Materials</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="sentiri-card">
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-400">92%</p>
-              <p className="text-sm text-muted-foreground">Recyclable</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="sentiri-card">
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-orange-400">-12%</p>
-              <p className="text-sm text-muted-foreground">Avg Carbon Impact</p>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline"
+              onClick={() => setShowScanner(true)}
+            >
+              <QrCode className="h-4 w-4 mr-2" />
+              Scan QR Code
+            </Button>
+            <Button className="bg-primary hover:bg-primary/90">
+              <FileText className="h-4 w-4 mr-2" />
+              Generate New
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Passport Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredPassports.map((passport) => (
-          <PassportCard key={passport.id} passport={passport} />
-        ))}
-      </div>
+      {/* Main Content */}
+      <div className="grid-section space-y-6">
+        {/* Search */}
+        <Card className="sentiri-card">
+          <CardContent className="p-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by material name or QR code..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-background/50"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* QR Scanner Modal */}
-      {showScanner && (
-        <QRScanner 
-          isOpen={showScanner} 
-          onClose={() => setShowScanner(false)} 
-        />
-      )}
+        {/* Passport Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="sentiri-card">
+            <CardContent className="p-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{mockPassports.length}</p>
+                <p className="text-sm text-muted-foreground">Total Passports</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="sentiri-card">
+            <CardContent className="p-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-400">85%</p>
+                <p className="text-sm text-muted-foreground">Renewable Materials</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="sentiri-card">
+            <CardContent className="p-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-400">92%</p>
+                <p className="text-sm text-muted-foreground">Recyclable</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="sentiri-card">
+            <CardContent className="p-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-orange-400">-12%</p>
+                <p className="text-sm text-muted-foreground">Avg Carbon Impact</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Passport Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredPassports.map((passport) => (
+            <PassportCard key={passport.id} passport={passport} />
+          ))}
+        </div>
+
+        {/* QR Scanner Modal */}
+        {showScanner && (
+          <QRScanner 
+            isOpen={showScanner} 
+            onClose={() => setShowScanner(false)} 
+          />
+        )}
+      </div>
     </div>
   );
 }
