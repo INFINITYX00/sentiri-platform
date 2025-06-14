@@ -56,7 +56,7 @@ export function DashboardOverview() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 ml-6">
+    <div className="min-h-screen bg-gray-50 ml-6">
       {/* Header Section */}
       <div className="px-8 py-6">
         <div className="flex items-center justify-between">
@@ -83,7 +83,7 @@ export function DashboardOverview() {
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {metrics.map((metric) => (
-              <Card key={metric.title} className="bg-white/90 backdrop-blur-sm border border-emerald-100 hover:shadow-lg hover:shadow-emerald-100/50 transition-all duration-300">
+              <Card key={metric.title} className="bg-white/90 backdrop-blur-sm border border-emerald-100">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-3">
@@ -105,7 +105,7 @@ export function DashboardOverview() {
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Recent Projects */}
-            <Card className="bg-white/90 backdrop-blur-sm border border-emerald-100 shadow-lg">
+            <Card className="bg-white/90 backdrop-blur-sm border border-emerald-100">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold text-emerald-900">Active Projects</CardTitle>
@@ -142,7 +142,7 @@ export function DashboardOverview() {
             </Card>
 
             {/* Low Stock Alert */}
-            <Card className="bg-white/90 backdrop-blur-sm border border-emerald-100 shadow-lg">
+            <Card className="bg-white/90 backdrop-blur-sm border border-emerald-100">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold text-emerald-900">Low Stock Alerts</CardTitle>
@@ -172,7 +172,7 @@ export function DashboardOverview() {
           </div>
 
           {/* Quick Actions */}
-          <Card className="bg-white/90 backdrop-blur-sm border border-emerald-100 shadow-lg">
+          <Card className="bg-white/90 backdrop-blur-sm border border-emerald-100">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-emerald-900">Quick Actions</CardTitle>
             </CardHeader>
