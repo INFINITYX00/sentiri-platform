@@ -113,7 +113,7 @@ const Index = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full app-background">
         <AppSidebar activeView={activeView} setActiveView={setActiveView} />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto ml-72">
           <div className="min-h-full">
             {renderActiveView()}
           </div>
