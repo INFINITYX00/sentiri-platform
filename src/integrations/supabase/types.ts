@@ -225,54 +225,105 @@ export type Database = {
           },
         ]
       }
+      material_types: {
+        Row: {
+          carbon_factor: number | null
+          category: string
+          created_at: string | null
+          density: number | null
+          id: string
+          specific_type: string
+        }
+        Insert: {
+          carbon_factor?: number | null
+          category: string
+          created_at?: string | null
+          density?: number | null
+          id?: string
+          specific_type: string
+        }
+        Update: {
+          carbon_factor?: number | null
+          category?: string
+          created_at?: string | null
+          density?: number | null
+          id?: string
+          specific_type?: string
+        }
+        Relationships: []
+      }
       materials: {
         Row: {
           carbon_footprint: number
           created_at: string | null
+          density: number | null
           description: string | null
+          dimension_unit: string | null
           dimensions: string | null
           id: string
           image_url: string | null
+          length: number | null
           name: string
           origin: string | null
           qr_code: string
           qr_image_url: string | null
           quantity: number
+          specific_material: string | null
+          thickness: number | null
           type: string
           unit: string
           updated_at: string | null
+          volume: number | null
+          weight: number | null
+          width: number | null
         }
         Insert: {
           carbon_footprint?: number
           created_at?: string | null
+          density?: number | null
           description?: string | null
+          dimension_unit?: string | null
           dimensions?: string | null
           id?: string
           image_url?: string | null
+          length?: number | null
           name: string
           origin?: string | null
           qr_code: string
           qr_image_url?: string | null
           quantity?: number
+          specific_material?: string | null
+          thickness?: number | null
           type: string
-          unit: string
+          unit?: string
           updated_at?: string | null
+          volume?: number | null
+          weight?: number | null
+          width?: number | null
         }
         Update: {
           carbon_footprint?: number
           created_at?: string | null
+          density?: number | null
           description?: string | null
+          dimension_unit?: string | null
           dimensions?: string | null
           id?: string
           image_url?: string | null
+          length?: number | null
           name?: string
           origin?: string | null
           qr_code?: string
           qr_image_url?: string | null
           quantity?: number
+          specific_material?: string | null
+          thickness?: number | null
           type?: string
           unit?: string
           updated_at?: string | null
+          volume?: number | null
+          weight?: number | null
+          width?: number | null
         }
         Relationships: []
       }

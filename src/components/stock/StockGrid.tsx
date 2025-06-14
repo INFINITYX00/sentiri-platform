@@ -2,7 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QrCode, Eye, Package, ExternalLink, Trash2, Loader2 } from "lucide-react";
+import { QrCode, Eye, Package, ExternalLink, Trash2, Loader2, Ruler, Weight } from "lucide-react";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useState } from "react";
@@ -33,7 +33,8 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
 
   const filteredItems = materials.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (item.origin || '').toLowerCase().includes(searchQuery.toLowerCase());
+                         (item.origin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (item.specific_material || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = selectedType === 'all' || item.type === selectedType;
     return matchesSearch && matchesType;
   });
@@ -79,6 +80,16 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
     }
   };
 
+  const formatVolume = (quantity: number) => {
+    if (quantity >= 1000000) {
+      return `${(quantity / 1000000).toFixed(2)} L`;
+    } else if (quantity >= 1000) {
+      return `${(quantity / 1000).toFixed(2)} cm³`;
+    } else {
+      return `${quantity.toFixed(0)} mm³`;
+    }
+  };
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" key={materials.length}>
@@ -98,10 +109,10 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
               )}
               <div className="absolute top-3 right-3">
                 <Badge 
-                  variant={item.quantity < 5 ? 'destructive' : 'default'}
-                  className={item.quantity < 5 ? '' : 'bg-primary'}
+                  variant={item.volume && item.volume < 0.001 ? 'destructive' : 'default'}
+                  className={item.volume && item.volume < 0.001 ? '' : 'bg-primary'}
                 >
-                  {item.quantity < 5 ? 'Low Stock' : 'In Stock'}
+                  {item.volume && item.volume < 0.001 ? 'Low Volume' : 'In Stock'}
                 </Badge>
               </div>
               <div className="absolute top-3 left-3">
@@ -128,26 +139,44 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
               <div className="space-y-3">
                 <div>
                   <h3 className="font-semibold text-lg">{item.name}</h3>
-                  <p className="text-sm text-muted-foreground capitalize">{item.type}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.specific_material || item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                  </p>
                 </div>
                 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Quantity:</span>
-                    <span className="font-medium">{item.quantity} {item.unit}</span>
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Ruler className="h-3 w-3" />
+                      Volume:
+                    </span>
+                    <span className="font-medium">{formatVolume(item.quantity)}</span>
                   </div>
+                  
+                  {item.weight && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Weight className="h-3 w-3" />
+                        Weight:
+                      </span>
+                      <span className="font-medium">{item.weight.toFixed(2)} kg</span>
+                    </div>
+                  )}
+                  
                   {item.dimensions && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Dimensions:</span>
                       <span className="font-medium text-xs">{item.dimensions}</span>
                     </div>
                   )}
+                  
                   {item.origin && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Origin:</span>
                       <span className="font-medium text-xs">{item.origin}</span>
                     </div>
                   )}
+                  
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Carbon:</span>
                     <span className="font-medium text-primary text-xs">{item.carbon_footprint.toFixed(1)} kg CO₂</span>
@@ -215,7 +244,7 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogContent>
+        </AlertDialogFooter>
       </AlertDialog>
     </>
   );

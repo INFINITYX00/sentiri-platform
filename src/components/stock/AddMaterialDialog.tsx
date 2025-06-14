@@ -1,13 +1,14 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Camera, Plus, Minus } from "lucide-react";
+import { Upload, Camera, Calculator, Plus } from "lucide-react";
 import { useMaterials } from '@/hooks/useMaterials';
+import { useMaterialTypes } from '@/hooks/useMaterialTypes';
 import { uploadFile } from '@/utils/fileUpload';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,89 +21,82 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   const [formData, setFormData] = useState({
     name: '',
     type: '',
-    quantity: '',
-    unit: '',
-    dimensions: '',
+    specific_material: '',
+    length: '',
+    width: '',
+    thickness: '',
+    dimension_unit: 'mm',
     origin: '',
     description: '',
-    image: null as File | null
+    image: null as File | null,
+    density: '',
+    custom_density: false
   });
+  
   const [uploading, setUploading] = useState(false);
-  const [customType, setCustomType] = useState('');
-  const [customUnit, setCustomUnit] = useState('');
-  const [showCustomType, setShowCustomType] = useState(false);
-  const [showCustomUnit, setShowCustomUnit] = useState(false);
-  
-  // Default options that can be extended
-  const [materialTypes, setMaterialTypes] = useState([
-    'wood', 'metal', 'composite', 'textile', 'bio-material', 'plastic', 'glass', 'ceramic', 'fabric'
-  ]);
-  
-  const [unitTypes, setUnitTypes] = useState([
-    'boards', 'sheets', 'rolls', 'tubes', 'kg', 'm', 'm²', 'm³', 'pieces', 'liters'
-  ]);
+  const [calculatedMetrics, setCalculatedMetrics] = useState({
+    volume: 0,
+    quantity: 0,
+    weight: 0,
+    carbonFootprint: 0
+  });
   
   const { addMaterial } = useMaterials();
+  const { materialTypes, getCategories, getTypesByCategory, getMaterialTypeBySpecific, addMaterialType } = useMaterialTypes();
   const { toast } = useToast();
 
-  const calculateCarbonFootprint = (type: string, quantity: number): number => {
-    const carbonFactors: Record<string, number> = {
-      wood: 0.5,
-      metal: 8.2,
-      composite: 3.1,
-      textile: 2.3,
-      'bio-material': 0.1,
-      plastic: 2.8,
-      glass: 1.2,
-      ceramic: 1.8,
-      fabric: 2.1
-    };
-    return (carbonFactors[type.toLowerCase()] || 2.0) * quantity;
-  };
-
-  const handleAddCustomType = () => {
-    if (customType.trim() && !materialTypes.includes(customType.trim().toLowerCase())) {
-      const newType = customType.trim().toLowerCase();
-      setMaterialTypes(prev => [...prev, newType]);
-      setFormData(prev => ({ ...prev, type: newType }));
-      setCustomType('');
-      setShowCustomType(false);
+  // Calculate metrics when dimensions or material type changes
+  useEffect(() => {
+    const length = parseFloat(formData.length) || 0;
+    const width = parseFloat(formData.width) || 0;
+    const thickness = parseFloat(formData.thickness) || 0;
+    
+    if (length > 0 && width > 0 && thickness > 0) {
+      let volumeInM3 = 0;
       
-      toast({
-        title: "Success",
-        description: `Added new material type: ${newType}`,
-      });
-    }
-  };
-
-  const handleAddCustomUnit = () => {
-    if (customUnit.trim() && !unitTypes.includes(customUnit.trim())) {
-      const newUnit = customUnit.trim();
-      setUnitTypes(prev => [...prev, newUnit]);
-      setFormData(prev => ({ ...prev, unit: newUnit }));
-      setCustomUnit('');
-      setShowCustomUnit(false);
+      // Convert to m³ based on unit
+      switch (formData.dimension_unit) {
+        case 'mm':
+          volumeInM3 = (length * width * thickness) / 1000000000;
+          break;
+        case 'cm':
+          volumeInM3 = (length * width * thickness) / 1000000;
+          break;
+        case 'm':
+          volumeInM3 = length * width * thickness;
+          break;
+        default:
+          volumeInM3 = (length * width * thickness) / 1000000000;
+      }
       
-      toast({
-        title: "Success",
-        description: `Added new unit: ${newUnit}`,
+      const quantityInMm3 = volumeInM3 * 1000000000; // Convert back to mm³ for display
+      
+      // Get density from material type or custom input
+      let density = 0;
+      if (formData.custom_density) {
+        density = parseFloat(formData.density) || 0;
+      } else {
+        const materialType = getMaterialTypeBySpecific(formData.specific_material);
+        density = materialType?.density || 0;
+      }
+      
+      const weight = volumeInM3 * density; // kg
+      
+      // Calculate carbon footprint
+      const materialType = getMaterialTypeBySpecific(formData.specific_material);
+      const carbonFactor = materialType?.carbon_factor || 2.0;
+      const carbonFootprint = weight * carbonFactor;
+      
+      setCalculatedMetrics({
+        volume: volumeInM3,
+        quantity: quantityInMm3,
+        weight,
+        carbonFootprint
       });
+    } else {
+      setCalculatedMetrics({ volume: 0, quantity: 0, weight: 0, carbonFootprint: 0 });
     }
-  };
-
-  const handleRemoveType = (typeToRemove: string) => {
-    setMaterialTypes(prev => prev.filter(type => type !== typeToRemove));
-    if (formData.type === typeToRemove) {
-      setFormData(prev => ({ ...prev, type: '' }));
-    }
-  };
-
-  const handleRemoveUnit = (unitToRemove: string) => {
-    setUnitTypes(prev => prev.filter(unit => unit !== unitToRemove));
-    if (formData.unit === unitToRemove) {
-      setFormData(prev => ({ ...prev, unit: '' }));
-    }
-  };
+  }, [formData.length, formData.width, formData.thickness, formData.dimension_unit, formData.specific_material, formData.density, formData.custom_density, getMaterialTypeBySpecific]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,19 +106,8 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
       let imageUrl = null;
       
       if (formData.image) {
-        console.log('Uploading material image:', formData.image.name, formData.image.size);
-        
-        toast({
-          title: "Uploading",
-          description: "Uploading material image...",
-        });
-
         const uploadResult = await uploadFile(formData.image, 'material-images', 'materials');
-        
-        console.log('Material image upload result:', uploadResult);
-        
         if (uploadResult.error) {
-          console.error('Material image upload failed:', uploadResult.error);
           toast({
             title: "Warning",
             description: `Image upload failed: ${uploadResult.error}. Material will be added without image.`,
@@ -132,38 +115,29 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
           });
         } else {
           imageUrl = uploadResult.url;
-          console.log('Material image uploaded successfully:', imageUrl);
         }
       }
 
-      const quantity = parseFloat(formData.quantity);
-      const carbonFootprint = calculateCarbonFootprint(formData.type, quantity);
-
-      console.log('Adding material with data:', {
-        name: formData.name,
-        type: formData.type,
-        quantity,
-        unit: formData.unit,
-        dimensions: formData.dimensions,
-        origin: formData.origin,
-        description: formData.description,
-        image_url: imageUrl,
-        carbon_footprint: carbonFootprint
-      });
+      // Get material type data
+      const materialType = getMaterialTypeBySpecific(formData.specific_material);
+      const density = formData.custom_density ? parseFloat(formData.density) : materialType?.density;
 
       const result = await addMaterial({
         name: formData.name,
         type: formData.type,
-        quantity,
-        unit: formData.unit,
-        dimensions: formData.dimensions,
+        specific_material: formData.specific_material,
+        length: parseFloat(formData.length) || undefined,
+        width: parseFloat(formData.width) || undefined,
+        thickness: parseFloat(formData.thickness) || undefined,
+        dimension_unit: formData.dimension_unit,
+        density: density || undefined,
         origin: formData.origin,
         description: formData.description,
         image_url: imageUrl,
-        carbon_footprint: carbonFootprint
+        quantity: calculatedMetrics.quantity,
+        unit: 'mm³',
+        carbon_footprint: calculatedMetrics.carbonFootprint
       });
-
-      console.log('Add material result:', result);
 
       if (result) {
         onOpenChange(false);
@@ -171,17 +145,21 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
         setFormData({
           name: '',
           type: '',
-          quantity: '',
-          unit: '',
-          dimensions: '',
+          specific_material: '',
+          length: '',
+          width: '',
+          thickness: '',
+          dimension_unit: 'mm',
           origin: '',
           description: '',
-          image: null
+          image: null,
+          density: '',
+          custom_density: false
         });
         
         toast({
           title: "Success",
-          description: "Material added successfully with QR code generated!",
+          description: "Material added successfully with automatic calculations!",
         });
       }
     } catch (error) {
@@ -199,9 +177,6 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      console.log('Selected file:', file.name, file.size, file.type);
-      
-      // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         toast({
           title: "Error",
@@ -211,7 +186,6 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
         return;
       }
       
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         toast({
           title: "Error",
@@ -225,9 +199,21 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
     }
   };
 
+  const handleAddCustomMaterialType = async () => {
+    if (formData.type && formData.specific_material) {
+      const density = formData.custom_density ? parseFloat(formData.density) : undefined;
+      await addMaterialType({
+        category: formData.type,
+        specific_type: formData.specific_material,
+        density: density,
+        carbon_factor: 2.0 // Default carbon factor
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] sentiri-card border max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[900px] sentiri-card border max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Camera className="h-5 w-5 text-primary" />
@@ -260,204 +246,212 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Material Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">Material Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Reclaimed Oak Boards"
-                required
-                disabled={uploading}
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Column - Basic Info */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Material Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Pine Slats"
+                  required
+                  disabled={uploading}
+                />
+              </div>
 
-            {/* Material Type */}
-            <div className="space-y-2">
-              <Label htmlFor="type">Material Type</Label>
-              <div className="flex gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="type">Category</Label>
                 <Select 
                   value={formData.type} 
-                  onValueChange={(value) => {
-                    if (value === 'custom') {
-                      setShowCustomType(true);
-                    } else {
-                      setFormData(prev => ({ ...prev, type: value }));
-                    }
-                  }}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, type: value, specific_material: '' }))}
                   disabled={uploading}
                 >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select or add type" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {materialTypes.map((type) => (
-                      <SelectItem key={type} value={type} className="flex items-center justify-between">
-                        <span className="flex-1">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0 ml-2 hover:bg-destructive/10"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleRemoveType(type);
-                          }}
-                        >
-                          <Minus className="h-3 w-3 text-destructive" />
-                        </Button>
+                    {getCategories().map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category.replace('_', ' ')}
                       </SelectItem>
                     ))}
-                    <SelectItem value="custom">+ Add Custom Type</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              
-              {showCustomType && (
-                <div className="flex gap-2 mt-2">
-                  <Input
-                    placeholder="Enter custom type"
-                    value={customType}
-                    onChange={(e) => setCustomType(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button type="button" size="sm" onClick={handleAddCustomType}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
+
+              <div className="space-y-2">
+                <Label htmlFor="specific_material">Specific Material</Label>
+                <div className="flex gap-2">
+                  <Select 
+                    value={formData.specific_material} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, specific_material: value }))}
+                    disabled={uploading || !formData.type}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select specific material" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getTypesByCategory(formData.type).map((materialType) => (
+                        <SelectItem key={materialType.id} value={materialType.specific_type}>
+                          {materialType.specific_type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button 
                     type="button" 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => setShowCustomType(false)}
+                    onClick={handleAddCustomMaterialType}
+                    disabled={!formData.type || !formData.specific_material}
                   >
-                    Cancel
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* Quantity */}
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity</Label>
-              <Input
-                id="quantity"
-                type="number"
-                step="0.01"
-                value={formData.quantity}
-                onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
-                placeholder="0"
-                required
-                disabled={uploading}
-              />
-            </div>
-
-            {/* Unit */}
-            <div className="space-y-2">
-              <Label htmlFor="unit">Unit</Label>
-              <div className="flex gap-2">
-                <Select 
-                  value={formData.unit} 
-                  onValueChange={(value) => {
-                    if (value === 'custom') {
-                      setShowCustomUnit(true);
-                    } else {
-                      setFormData(prev => ({ ...prev, unit: value }));
-                    }
-                  }}
-                  disabled={uploading}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select or add unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {unitTypes.map((unit) => (
-                      <SelectItem key={unit} value={unit} className="flex items-center justify-between">
-                        <span className="flex-1">{unit}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0 ml-2 hover:bg-destructive/10"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleRemoveUnit(unit);
-                          }}
-                        >
-                          <Minus className="h-3 w-3 text-destructive" />
-                        </Button>
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="custom">+ Add Custom Unit</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {showCustomUnit && (
-                <div className="flex gap-2 mt-2">
-                  <Input
-                    placeholder="Enter custom unit"
-                    value={customUnit}
-                    onChange={(e) => setCustomUnit(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button type="button" size="sm" onClick={handleAddCustomUnit}>
                     <Plus className="h-4 w-4" />
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setShowCustomUnit(false)}
-                  >
-                    Cancel
-                  </Button>
                 </div>
-              )}
+                <Input
+                  placeholder="Or enter custom material type"
+                  value={formData.specific_material}
+                  onChange={(e) => setFormData(prev => ({ ...prev, specific_material: e.target.value }))}
+                  disabled={uploading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="origin">Origin/Source</Label>
+                <Input
+                  id="origin"
+                  value={formData.origin}
+                  onChange={(e) => setFormData(prev => ({ ...prev, origin: e.target.value }))}
+                  placeholder="e.g., Local Demolition, Certified Forest"
+                  disabled={uploading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Additional notes about the material..."
+                  rows={3}
+                  disabled={uploading}
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Custom Dimensions */}
-          <div className="space-y-2">
-            <Label htmlFor="dimensions">Dimensions</Label>
-            <Input
-              id="dimensions"
-              value={formData.dimensions}
-              onChange={(e) => setFormData(prev => ({ ...prev, dimensions: e.target.value }))}
-              placeholder="e.g., 2000x200x25mm or 1.2m x 0.8m x 3mm"
-              disabled={uploading}
-            />
-            <p className="text-xs text-muted-foreground">
-              Enter custom dimensions (length x width x thickness with units)
-            </p>
-          </div>
+            {/* Right Column - Dimensions & Calculations */}
+            <div className="space-y-4">
+              <div className="space-y-4 p-4 border rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calculator className="h-4 w-4" />
+                  <Label className="text-sm font-medium">Dimensions</Label>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Length</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.length}
+                      onChange={(e) => setFormData(prev => ({ ...prev, length: e.target.value }))}
+                      placeholder="0"
+                      disabled={uploading}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Width</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.width}
+                      onChange={(e) => setFormData(prev => ({ ...prev, width: e.target.value }))}
+                      placeholder="0"
+                      disabled={uploading}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Thickness</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.thickness}
+                      onChange={(e) => setFormData(prev => ({ ...prev, thickness: e.target.value }))}
+                      placeholder="0"
+                      disabled={uploading}
+                    />
+                  </div>
+                </div>
 
-          {/* Origin */}
-          <div className="space-y-2">
-            <Label htmlFor="origin">Origin/Source</Label>
-            <Input
-              id="origin"
-              value={formData.origin}
-              onChange={(e) => setFormData(prev => ({ ...prev, origin: e.target.value }))}
-              placeholder="e.g., Local Demolition, Certified Forest"
-              disabled={uploading}
-            />
-          </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Unit</Label>
+                  <Select 
+                    value={formData.dimension_unit} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, dimension_unit: value }))}
+                    disabled={uploading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mm">Millimeters (mm)</SelectItem>
+                      <SelectItem value="cm">Centimeters (cm)</SelectItem>
+                      <SelectItem value="m">Meters (m)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Additional notes about the material..."
-              rows={3}
-              disabled={uploading}
-            />
+              {/* Density Override */}
+              <div className="space-y-2 p-4 border rounded-lg">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="custom_density"
+                    checked={formData.custom_density}
+                    onChange={(e) => setFormData(prev => ({ ...prev, custom_density: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <Label htmlFor="custom_density" className="text-sm">Custom Density (kg/m³)</Label>
+                </div>
+                {formData.custom_density && (
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={formData.density}
+                    onChange={(e) => setFormData(prev => ({ ...prev, density: e.target.value }))}
+                    placeholder="e.g., 500"
+                    disabled={uploading}
+                  />
+                )}
+              </div>
+
+              {/* Calculated Results */}
+              <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
+                <Label className="text-sm font-medium">Calculated Metrics</Label>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Volume:</span>
+                    <span>{calculatedMetrics.volume.toFixed(6)} m³</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Quantity:</span>
+                    <span>{calculatedMetrics.quantity.toFixed(0)} mm³</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Weight:</span>
+                    <span>{calculatedMetrics.weight.toFixed(2)} kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Carbon Footprint:</span>
+                    <span>{calculatedMetrics.carbonFootprint.toFixed(2)} kg CO₂</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end space-x-3">
@@ -472,7 +466,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
             <Button 
               type="submit" 
               className="bg-primary hover:bg-primary/90"
-              disabled={uploading}
+              disabled={uploading || calculatedMetrics.quantity === 0}
             >
               {uploading ? "Adding Material..." : "Add Material & Generate QR"}
             </Button>

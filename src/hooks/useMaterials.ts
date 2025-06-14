@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -49,8 +48,6 @@ export function useMaterials() {
         .insert([{
           ...materialData,
           qr_code: `TEMP_${Date.now()}`,
-          // Use custom dimensions if provided, otherwise generate simulated ones
-          dimensions: materialData.dimensions || simulateAIDimensions(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }])
@@ -364,16 +361,4 @@ export function useMaterials() {
     generateQRCodeForMaterial,
     regenerateQRCode
   }
-}
-
-function simulateAIDimensions(): string {
-  const dimensions = [
-    "2000x200x25mm",
-    "1200x800x3mm", 
-    "1000x500x10mm",
-    "1220x610x18mm",
-    "2400x150x50mm",
-    "800x600x12mm"
-  ]
-  return dimensions[Math.floor(Math.random() * dimensions.length)]
 }

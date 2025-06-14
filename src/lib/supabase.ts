@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/integrations/supabase/types'
 
@@ -15,6 +14,14 @@ export interface Material {
   quantity: number
   unit: string
   dimensions?: string
+  length?: number
+  width?: number
+  thickness?: number
+  dimension_unit?: string
+  volume?: number
+  weight?: number
+  density?: number
+  specific_material?: string
   origin?: string
   description?: string
   image_url?: string
@@ -23,6 +30,15 @@ export interface Material {
   carbon_footprint: number
   created_at: string
   updated_at: string
+}
+
+export interface MaterialType {
+  id: string
+  category: string
+  specific_type: string
+  density?: number
+  carbon_factor?: number
+  created_at: string
 }
 
 export interface MaterialPassport {
