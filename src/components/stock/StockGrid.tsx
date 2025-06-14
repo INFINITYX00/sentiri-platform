@@ -244,7 +244,7 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogFooter>
+        </AlertDialogContent>
       </AlertDialog>
     </>
   );
