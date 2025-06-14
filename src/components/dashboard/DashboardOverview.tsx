@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, TrendingDown, Zap, Leaf } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -57,7 +56,7 @@ export function DashboardOverview() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 ml-6">
       {/* Header Section */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-emerald-100 px-8 py-6">
         <div className="flex items-center justify-between">
