@@ -12,7 +12,8 @@ import {
   Database,
   Sparkles,
   Boxes,
-  Users
+  Users,
+  Brain
 } from "lucide-react"
 import { Material } from "@/lib/supabase"
 import { MaterialAllocation } from "@/hooks/useStockAllocations"
@@ -68,9 +69,9 @@ export function MaterialStockCard({
           </Badge>
         </div>
         
-        {/* AI Data Indicator */}
-        {material.ai_carbon_confidence && (
-          <div className="absolute bottom-3 left-3">
+        {/* AI Data Indicators */}
+        <div className="absolute bottom-3 left-3 flex flex-col gap-1">
+          {material.ai_carbon_confidence && (
             <Badge 
               variant="secondary" 
               className="h-6 px-2 bg-purple-100 text-purple-700 border-purple-200"
@@ -78,8 +79,18 @@ export function MaterialStockCard({
               <Sparkles className="h-3 w-3 mr-1" />
               AI {Math.round(material.ai_carbon_confidence * 100)}%
             </Badge>
-          </div>
-        )}
+          )}
+          
+          {material.ai_carbon_source && (
+            <Badge 
+              variant="outline" 
+              className="h-6 px-2 bg-blue-50 text-blue-700 border-blue-200"
+            >
+              <Brain className="h-3 w-3 mr-1" />
+              {material.ai_carbon_source}
+            </Badge>
+          )}
+        </div>
         
         {/* QR Code Button */}
         {material.qr_image_url && (
@@ -172,7 +183,7 @@ export function MaterialStockCard({
             </div>
           )}
           
-          {/* Additional Info */}
+          {/* Additional Info with AI Sources */}
           <div className="space-y-2 pt-2 border-t">
             {material.origin && (
               <div className="flex justify-between text-sm">
@@ -183,9 +194,17 @@ export function MaterialStockCard({
             
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Carbon:</span>
-              <span className="font-medium text-primary text-xs">
-                {material.carbon_footprint.toFixed(1)} kg CO₂
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-primary text-xs">
+                  {material.carbon_footprint.toFixed(1)} kg CO₂
+                </span>
+                {material.ai_carbon_confidence && (
+                  <Badge variant="outline" className="h-4 px-1 text-xs bg-purple-50 text-purple-600">
+                    <Sparkles className="h-2 w-2 mr-1" />
+                    AI
+                  </Badge>
+                )}
+              </div>
             </div>
 
             {material.carbon_source && (
@@ -196,6 +215,18 @@ export function MaterialStockCard({
                 </span>
                 <span className="font-medium text-xs text-green-600">
                   {material.carbon_source}
+                </span>
+              </div>
+            )}
+
+            {material.ai_carbon_source && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground flex items-center gap-1">
+                  <Brain className="h-3 w-3" />
+                  AI Source:
+                </span>
+                <span className="font-medium text-xs text-blue-600">
+                  {material.ai_carbon_source}
                 </span>
               </div>
             )}

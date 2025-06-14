@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { useMaterials } from '@/hooks/useMaterials'
 import { useAICarbonLookup } from '@/hooks/useAICarbonLookup'
 import { Material } from '@/lib/supabase'
 import { MaterialImageUpload } from './MaterialImageUpload'
 import { MaterialTypeManager } from './MaterialTypeManager'
-import { Sparkles, QrCode, Loader2, Edit } from 'lucide-react'
+import { Sparkles, QrCode, Loader2, Edit, Brain, Database } from 'lucide-react'
 
 interface AddMaterialDialogProps {
   open: boolean
@@ -24,6 +25,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
   const { lookupCarbonData, loading: aiLoading } = useAICarbonLookup()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [aiCarbonData, setAiCarbonData] = useState<any>(null)
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -143,16 +145,17 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
       })
 
       if (carbonData) {
+        setAiCarbonData(carbonData)
         setFormData(prev => ({
           ...prev,
-          carbon_footprint: carbonData.totalCarbonFootprint, // Use total carbon footprint
+          carbon_footprint: carbonData.totalCarbonFootprint,
           carbon_source: 'AI Estimation',
           density: carbonData.density
         }))
         
         toast({
           title: "AI Carbon Data Applied",
-          description: `Total carbon footprint: ${carbonData.totalCarbonFootprint.toFixed(2)}kg CO₂e`,
+          description: `Total carbon footprint: ${carbonData.totalCarbonFootprint.toFixed(2)}kg CO₂e from ${carbonData.source}`,
         })
       }
     } catch (error) {
@@ -181,6 +184,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
       density: 500,
       image_url: ''
     })
+    setAiCarbonData(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -221,7 +225,11 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
         thickness: formData.thickness || undefined,
         dimension_unit: formData.dimension_unit || undefined,
         density: formData.density,
-        image_url: formData.image_url || undefined
+        image_url: formData.image_url || undefined,
+        // Add AI carbon data if available
+        ai_carbon_confidence: aiCarbonData?.confidence || undefined,
+        ai_carbon_source: aiCarbonData?.source || undefined,
+        ai_carbon_updated_at: aiCarbonData ? new Date().toISOString() : undefined
       }
 
       if (isEditing && materialToEdit) {
@@ -504,6 +512,40 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
                 AI Lookup Total
               </Button>
             </div>
+
+            {/* AI Carbon Data Display */}
+            {aiCarbonData && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-4 w-4 text-purple-600" />
+                  <span className="text-sm font-medium text-purple-800">AI Carbon Analysis</span>
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                    {Math.round(aiCarbonData.confidence * 100)}% Confidence
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-purple-600">Total Carbon:</span>
+                    <div className="font-semibold text-purple-800">
+                      {aiCarbonData.totalCarbonFootprint?.toFixed(2)} kg CO₂e
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-purple-600">Source:</span>
+                    <div className="font-medium text-purple-800 text-xs">
+                      {aiCarbonData.source}
+                    </div>
+                  </div>
+                </div>
+                
+                {aiCarbonData.reasoning && (
+                  <div className="text-xs text-purple-700 bg-purple-100 rounded p-2">
+                    <strong>AI Reasoning:</strong> {aiCarbonData.reasoning}
+                  </div>
+                )}
+              </div>
+            )}
             
             <div className="grid grid-cols-2 gap-4">
               <div>

@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { useMaterialTypes } from '@/hooks/useMaterialTypes'
-import { useAICarbonLookup } from '@/hooks/useAICarbonLookup'
-import { Plus, Trash2, Loader2, Sparkles, PlusCircle, FolderPlus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { Plus, Trash2, Database, Sparkles, Loader2 } from 'lucide-react'
 
 interface MaterialTypeManagerProps {
   selectedCategory: string
@@ -18,309 +19,349 @@ interface MaterialTypeManagerProps {
   onTypeSelected: (carbonFactor: number, density: number) => void
 }
 
-export function MaterialTypeManager({ 
-  selectedCategory, 
-  selectedSpecificType, 
-  onCategoryChange, 
+export function MaterialTypeManager({
+  selectedCategory,
+  selectedSpecificType,
+  onCategoryChange,
   onSpecificTypeChange,
-  onTypeSelected 
+  onTypeSelected
 }: MaterialTypeManagerProps) {
-  const { materialTypes, loading, addMaterialType, deleteMaterialType, deleteCategory } = useMaterialTypes()
-  const { lookupCarbonData, loading: aiLoading } = useAICarbonLookup()
+  const { materialTypes, loading, addMaterialType, deleteMaterialType } = useMaterialTypes()
   const { toast } = useToast()
-  
-  const [showAddDialog, setShowAddDialog] = useState(false)
-  const [addMode, setAddMode] = useState<'category' | 'specific'>('category')
+  const [dialogOpen, setDialogOpen] = useState(false)
   const [newCategory, setNewCategory] = useState('')
   const [newSpecificType, setNewSpecificType] = useState('')
-  const [newDensity, setNewDensity] = useState(500)
-  const [newCarbonFactor, setNewCarbonFactor] = useState(2.0)
+  const [newCarbonFactor, setNewCarbonFactor] = useState<number>(2.0)
+  const [newDensity, setNewDensity] = useState<number>(500)
+  const [isAddingToExisting, setIsAddingToExisting] = useState(false)
+  const [targetCategory, setTargetCategory] = useState('')
 
-  console.log('MaterialTypeManager props:', { selectedCategory, selectedSpecificType })
-  console.log('Available material types:', materialTypes)
+  // Get unique categories
+  const categories = Array.from(new Set(materialTypes.map(type => type.category)))
+  
+  // Get specific types for selected category
+  const specificTypes = materialTypes
+    .filter(type => type.category === selectedCategory)
+    .sort((a, b) => a.specific_type.localeCompare(b.specific_type))
 
-  const categories = [...new Set(materialTypes.map(mt => mt.category))].sort()
-  const specificTypes = materialTypes.filter(mt => mt.category === selectedCategory)
+  // Get selected material type data
+  const selectedMaterialType = materialTypes.find(
+    type => type.category === selectedCategory && type.specific_type === selectedSpecificType
+  )
 
-  console.log('Categories:', categories)
-  console.log('Specific types for category:', selectedCategory, specificTypes)
-
-  const handleCategoryChange = (category: string) => {
-    console.log('Category changed to:', category)
-    onCategoryChange(category)
-    // Auto-select first specific type if available
-    const typesInCategory = materialTypes.filter(mt => mt.category === category)
-    if (typesInCategory.length > 0) {
-      const firstType = typesInCategory[0]
-      console.log('Auto-selecting first type:', firstType.specific_type)
-      onSpecificTypeChange(firstType.specific_type)
-      onTypeSelected(firstType.carbon_factor || 2.0, firstType.density || 500)
-    } else {
-      // Clear specific type if no types available for this category
-      onSpecificTypeChange('')
+  useEffect(() => {
+    if (selectedMaterialType) {
+      onTypeSelected(selectedMaterialType.carbon_factor || 2.0, selectedMaterialType.density || 500)
     }
-  }
-
-  const handleSpecificTypeChange = (specificType: string) => {
-    console.log('Specific type changed to:', specificType)
-    onSpecificTypeChange(specificType)
-    const type = materialTypes.find(mt => mt.specific_type === specificType)
-    if (type) {
-      console.log('Found type data:', type)
-      onTypeSelected(type.carbon_factor || 2.0, type.density || 500)
-    }
-  }
-
-  const handleAILookup = async () => {
-    if (!newCategory || !newSpecificType) return
-
-    try {
-      const aiData = await lookupCarbonData({
-        materialType: newCategory,
-        specificMaterial: newSpecificType,
-        quantity: 1,
-        unit: 'kg',
-        unitCount: 1,
-        weight: 1
-      })
-      
-      if (aiData) {
-        setNewCarbonFactor(aiData.carbonFactor)
-        setNewDensity(aiData.density)
-      }
-    } catch (error) {
-      console.error('AI lookup failed:', error)
-    }
-  }
+  }, [selectedMaterialType, onTypeSelected])
 
   const handleAddMaterialType = async () => {
-    if (addMode === 'category' && !newCategory) {
-      toast({
-        title: "Error",
-        description: "Please enter a category name",
-        variant: "destructive"
+    try {
+      const category = isAddingToExisting ? targetCategory : newCategory
+      const specificType = newSpecificType
+
+      if (!category || !specificType) {
+        toast({
+          title: "Missing Information",
+          description: "Please fill in all required fields",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Check for duplicates
+      const exists = materialTypes.some(
+        type => type.category === category && type.specific_type === specificType
+      )
+
+      if (exists) {
+        toast({
+          title: "Already Exists",
+          description: "This material type already exists",
+          variant: "destructive"
+        })
+        return
+      }
+
+      await addMaterialType({
+        category,
+        specific_type: specificType,
+        carbon_factor: newCarbonFactor,
+        density: newDensity,
+        data_source: 'Manual Entry'
       })
-      return
-    }
-    
-    if (addMode === 'specific' && (!selectedCategory || !newSpecificType)) {
-      toast({
-        title: "Error", 
-        description: "Please select a category and enter a specific material name",
-        variant: "destructive"
-      })
-      return
-    }
 
-    const categoryToUse = addMode === 'category' ? newCategory : selectedCategory
-    const specificTypeToUse = addMode === 'category' ? `Default ${newCategory}` : newSpecificType
-
-    const result = await addMaterialType({
-      category: categoryToUse,
-      specific_type: specificTypeToUse,
-      density: newDensity,
-      carbon_factor: newCarbonFactor,
-      ai_sourced: false,
-      confidence_score: null,
-      data_source: 'Manual entry'
-    })
-
-    if (result) {
-      setShowAddDialog(false)
+      // Reset form
       setNewCategory('')
       setNewSpecificType('')
-      setNewDensity(500)
       setNewCarbonFactor(2.0)
-      setAddMode('category')
-      
-      // Auto-select the new category/type
-      if (addMode === 'category') {
-        onCategoryChange(categoryToUse)
-        onSpecificTypeChange(specificTypeToUse)
-        onTypeSelected(newCarbonFactor, newDensity)
-      } else {
-        onSpecificTypeChange(specificTypeToUse)
-        onTypeSelected(newCarbonFactor, newDensity)
-      }
+      setNewDensity(500)
+      setIsAddingToExisting(false)
+      setTargetCategory('')
+      setDialogOpen(false)
+
+      toast({
+        title: "Success",
+        description: `Material type "${specificType}" added to "${category}"`,
+      })
+    } catch (error) {
+      console.error('Error adding material type:', error)
+      toast({
+        title: "Error",
+        description: "Failed to add material type",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleDeleteMaterialType = async (id: string, category: string, specificType: string) => {
+    try {
+      await deleteMaterialType(id)
+      toast({
+        title: "Success",
+        description: `"${specificType}" removed from "${category}"`,
+      })
+    } catch (error) {
+      console.error('Error deleting material type:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete material type",
+        variant: "destructive"
+      })
     }
   }
 
   const handleDeleteCategory = async (category: string) => {
-    const typesInCategory = materialTypes.filter(mt => mt.category === category)
-    if (typesInCategory.length > 1) {
-      toast({
-        title: "Cannot Delete Category",
-        description: `Category "${category}" contains ${typesInCategory.length} material types. Delete the individual types first.`,
-        variant: "destructive"
-      })
-      return
-    }
-    
-    const confirmed = window.confirm(`Are you sure you want to delete the category "${category}" and all its material types?`)
-    if (confirmed) {
-      const success = await deleteCategory(category)
-      if (success && selectedCategory === category) {
+    try {
+      const typesToDelete = materialTypes.filter(type => type.category === category)
+      
+      if (typesToDelete.length === 0) {
+        toast({
+          title: "Nothing to Delete",
+          description: "This category has no materials to remove",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Delete all types in this category
+      await Promise.all(
+        typesToDelete.map(type => deleteMaterialType(type.id))
+      )
+
+      // Clear selection if it was in the deleted category
+      if (selectedCategory === category) {
         onCategoryChange('')
         onSpecificTypeChange('')
       }
+
+      toast({
+        title: "Success",
+        description: `Category "${category}" and all its materials deleted`,
+      })
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete category",
+        variant: "destructive"
+      })
     }
   }
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Label htmlFor="category">Material Category *</Label>
-            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+      {/* Category Selection with Actions */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="category">Material Category *</Label>
+          <div className="flex gap-2">
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button type="button" variant="outline" size="sm" className="h-6 w-6 p-0">
-                  <Plus className="h-3 w-3" />
+                <Button 
+                  type="button" 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-8 w-8 p-0 bg-green-50 hover:bg-green-100 border-green-200"
+                >
+                  <Plus className="h-4 w-4 text-green-600" />
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                  <DialogTitle>Add Material</DialogTitle>
+                  <DialogTitle>Add Material Type</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant={addMode === 'category' ? 'default' : 'outline'}
-                      onClick={() => setAddMode('category')}
-                      className="flex items-center gap-2"
-                    >
-                      <FolderPlus className="h-4 w-4" />
-                      New Category
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={addMode === 'specific' ? 'default' : 'outline'}
-                      onClick={() => setAddMode('specific')}
-                      className="flex items-center gap-2"
-                      disabled={!selectedCategory}
-                    >
-                      <PlusCircle className="h-4 w-4" />
-                      Add to {selectedCategory || 'Category'}
-                    </Button>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="new-category"
+                      name="add-type"
+                      checked={!isAddingToExisting}
+                      onChange={() => setIsAddingToExisting(false)}
+                    />
+                    <Label htmlFor="new-category">Create New Category</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="existing-category"
+                      name="add-type"
+                      checked={isAddingToExisting}
+                      onChange={() => setIsAddingToExisting(true)}
+                    />
+                    <Label htmlFor="existing-category">Add to Existing Category</Label>
                   </div>
 
-                  {addMode === 'category' ? (
+                  {!isAddingToExisting ? (
                     <div>
-                      <Label>New Category Name</Label>
+                      <Label htmlFor="new-category-name">New Category Name</Label>
                       <Input
+                        id="new-category-name"
                         value={newCategory}
                         onChange={(e) => setNewCategory(e.target.value)}
-                        placeholder="e.g., wood, metal, plastic"
+                        placeholder="e.g., Wood, Metal, Plastic"
                       />
                     </div>
                   ) : (
                     <div>
-                      <Label>Specific Material (in {selectedCategory})</Label>
-                      <Input
-                        value={newSpecificType}
-                        onChange={(e) => setNewSpecificType(e.target.value)}
-                        placeholder="e.g., Oak, Steel Grade 304"
-                      />
+                      <Label htmlFor="target-category">Select Category</Label>
+                      <Select value={targetCategory} onValueChange={setTargetCategory}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose existing category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map(category => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      type="button"
-                      variant="outline" 
-                      onClick={handleAILookup}
-                      disabled={aiLoading || (addMode === 'category' ? !newCategory : !newSpecificType)}
-                    >
-                      {aiLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Sparkles className="h-4 w-4 mr-2" />
-                      )}
-                      AI Lookup
-                    </Button>
+                  <div>
+                    <Label htmlFor="new-specific-type">Specific Material</Label>
+                    <Input
+                      id="new-specific-type"
+                      value={newSpecificType}
+                      onChange={(e) => setNewSpecificType(e.target.value)}
+                      placeholder="e.g., Oak, Pine, Aluminum"
+                    />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Density (kg/m³)</Label>
+                      <Label htmlFor="new-carbon-factor">Carbon Factor (kg CO₂/kg)</Label>
                       <Input
+                        id="new-carbon-factor"
+                        type="number"
+                        step="0.01"
+                        value={newCarbonFactor}
+                        onChange={(e) => setNewCarbonFactor(parseFloat(e.target.value) || 2.0)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="new-density">Density (kg/m³)</Label>
+                      <Input
+                        id="new-density"
                         type="number"
                         value={newDensity}
                         onChange={(e) => setNewDensity(parseFloat(e.target.value) || 500)}
                       />
                     </div>
-                    <div>
-                      <Label>Carbon Factor (kg CO₂e/kg)</Label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={newCarbonFactor}
-                        onChange={(e) => setNewCarbonFactor(parseFloat(e.target.value) || 2.0)}
-                      />
-                    </div>
                   </div>
-                  <Button onClick={handleAddMaterialType} disabled={loading}>
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Add {addMode === 'category' ? 'Category' : 'Material Type'}
-                  </Button>
+
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setDialogOpen(false)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={handleAddMaterialType}
+                      disabled={loading}
+                      className="flex-1"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Adding...
+                        </>
+                      ) : (
+                        'Add Material Type'
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
-          <Select value={selectedCategory || ""} onValueChange={handleCategoryChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>
-                  <div className="flex items-center justify-between w-full">
-                    <span>{category.charAt(0).toUpperCase() + category.slice(1)}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteCategory(category)
-                      }}
-                      className="ml-2 h-6 w-6 p-0 opacity-50 hover:opacity-100"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
-        <div>
-          <Label htmlFor="specific_type" className="mb-2 block">Specific Material</Label>
-          <Select value={selectedSpecificType || ""} onValueChange={handleSpecificTypeChange}>
+        <Select value={selectedCategory} onValueChange={onCategoryChange}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select material category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map(category => (
+              <SelectItem key={category} value={category}>
+                <div className="flex items-center justify-between w-full">
+                  <span>{category}</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 ml-2 hover:bg-destructive hover:text-destructive-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteCategory(category)
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Specific Material Selection */}
+      {selectedCategory && (
+        <div className="space-y-2">
+          <Label htmlFor="specific-material">Specific Material</Label>
+          <Select value={selectedSpecificType} onValueChange={onSpecificTypeChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Select specific type" />
+              <SelectValue placeholder="Select specific material" />
             </SelectTrigger>
             <SelectContent>
               {specificTypes.map(type => (
                 <SelectItem key={type.id} value={type.specific_type}>
                   <div className="flex items-center justify-between w-full">
-                    <span className="flex items-center gap-2">
-                      {type.specific_type}
+                    <div className="flex items-center gap-2">
+                      <span>{type.specific_type}</span>
                       {type.ai_sourced && (
-                        <Sparkles className="h-3 w-3 text-purple-500" />
+                        <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">
+                          <Sparkles className="h-2 w-2 mr-1" />
+                          AI
+                        </Badge>
                       )}
-                    </span>
+                    </div>
                     <Button
                       type="button"
-                      variant="ghost"
                       size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 ml-2 hover:bg-destructive hover:text-destructive-foreground"
                       onClick={(e) => {
                         e.stopPropagation()
-                        deleteMaterialType(type.id)
+                        handleDeleteMaterialType(type.id, type.category, type.specific_type)
                       }}
-                      className="ml-2 h-6 w-6 p-0 opacity-50 hover:opacity-100"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -330,7 +371,54 @@ export function MaterialTypeManager({
             </SelectContent>
           </Select>
         </div>
-      </div>
+      )}
+
+      {/* Material Type Details */}
+      {selectedMaterialType && (
+        <Card className="bg-muted/30">
+          <CardContent className="p-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Material Information</span>
+                <div className="flex items-center gap-2">
+                  {selectedMaterialType.ai_sourced && (
+                    <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      AI Generated
+                    </Badge>
+                  )}
+                  {selectedMaterialType.data_source && (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                      <Database className="h-3 w-3 mr-1" />
+                      {selectedMaterialType.data_source}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Carbon Factor:</span>
+                  <div className="font-semibold">{selectedMaterialType.carbon_factor?.toFixed(2)} kg CO₂/kg</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Density:</span>
+                  <div className="font-semibold">{selectedMaterialType.density} kg/m³</div>
+                </div>
+              </div>
+
+              {selectedMaterialType.confidence_score && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Confidence: </span>
+                  <span className="font-semibold">{Math.round(selectedMaterialType.confidence_score * 100)}%</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="mb-4" /> {/* Extra spacing below */}
     </div>
   )
 }
