@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,7 +46,6 @@ export function StockManagement() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Stock Overview</h1>
-            <p className="text-muted-foreground mt-1">Manage your sustainable material inventory</p>
           </div>
           <Button 
             onClick={() => setIsAddDialogOpen(true)}
