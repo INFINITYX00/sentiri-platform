@@ -14,9 +14,9 @@ serve(async (req) => {
   try {
     const { materialType, specificMaterial, origin, dimensions } = await req.json()
 
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured')
+    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
+    if (!anthropicApiKey) {
+      throw new Error('Anthropic API key not configured')
     }
 
     const prompt = `You are an environmental data specialist. Provide realistic carbon footprint data for this material:
@@ -53,40 +53,39 @@ Consider factors like:
 - Recycled vs virgin materials
 - Regional variations
 
-For reclaimed/recycled materials, use significantly lower carbon factors than virgin materials.`
+For reclaimed/recycled materials, use significantly lower carbon factors than virgin materials.
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+Respond with only valid JSON, no additional text.`
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 1000,
         messages: [
-          {
-            role: 'system',
-            content: 'You are an expert in environmental impact assessment and material carbon footprints. Always respond with valid JSON.'
-          },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.3,
-        max_tokens: 1000
+        temperature: 0.3
       }),
     })
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`)
+      throw new Error(`Anthropic API error: ${response.statusText}`)
     }
 
     const data = await response.json()
-    const content = data.choices[0]?.message?.content
+    const content = data.content[0]?.text
 
     if (!content) {
-      throw new Error('No response from OpenAI')
+      throw new Error('No response from Claude')
     }
 
     // Parse the JSON response

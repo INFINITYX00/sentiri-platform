@@ -43,15 +43,15 @@ export function useAICarbonLookup() {
       }
 
       if (data.error) {
-        console.warn('AI lookup returned fallback data:', data.error)
+        console.warn('Claude lookup returned fallback data:', data.error)
         toast({
           title: "Using Fallback Data",
-          description: "AI lookup unavailable, using default estimates",
+          description: "Claude lookup unavailable, using default estimates",
           variant: "default"
         })
       } else {
         toast({
-          title: "AI Carbon Data Retrieved",
+          title: "Claude AI Data Retrieved",
           description: `Confidence: ${Math.round(data.confidence * 100)}% • Source: ${data.source}`,
         })
       }
@@ -69,7 +69,7 @@ export function useAICarbonLookup() {
         density: 500,
         confidence: 0.1,
         source: 'Default estimate',
-        reasoning: 'AI lookup failed, using system default'
+        reasoning: 'Claude lookup failed, using system default'
       }
     } finally {
       setLoading(false)
