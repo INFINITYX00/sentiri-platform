@@ -2,17 +2,17 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Upload, FileText, TrendingUp, Leaf } from "lucide-react";
+import { Upload, FileText, TrendingUp, Leaf, FolderOpen } from "lucide-react";
 import { CarbonCalculator } from "./CarbonCalculator";
-import { BOMUploader } from "./BOMUploader";
 import { CarbonJourney } from "./CarbonJourney";
+import { EnhancedBOMUploader } from "./EnhancedBOMUploader";
+import { ProjectsManager } from "../projects/ProjectsManager";
 
 export function BOMManager() {
-  const [activeTab, setActiveTab] = useState<'upload' | 'calculate' | 'journey'>('upload');
+  const [activeTab, setActiveTab] = useState<'projects' | 'upload' | 'calculate' | 'journey'>('projects');
 
   const bomStats = [
-    { label: "Active BOMs", value: "8", icon: FileText, color: "text-blue-400" },
+    { label: "Active Projects", value: "8", icon: FolderOpen, color: "text-blue-400" },
     { label: "Avg Carbon Impact", value: "12.3 kg CO₂", icon: Leaf, color: "text-primary" },
     { label: "Cost Savings", value: "$2,340", icon: TrendingUp, color: "text-green-400" },
     { label: "Materials Tracked", value: "156", icon: Upload, color: "text-purple-400" }
@@ -23,12 +23,8 @@ export function BOMManager() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">BOM & Carbon Journey</h1>
-          <p className="text-muted-foreground mt-1">Track materials and calculate carbon footprint</p>
+          <p className="text-muted-foreground mt-1">Manage projects, track materials and calculate carbon footprint</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90">
-          <Upload className="h-4 w-4 mr-2" />
-          Upload New BOM
-        </Button>
       </div>
 
       {/* Stats Overview */}
@@ -53,12 +49,20 @@ export function BOMManager() {
         <CardContent className="p-6">
           <div className="flex gap-2 mb-6">
             <Button
+              variant={activeTab === 'projects' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('projects')}
+              className="flex-1"
+            >
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Projects
+            </Button>
+            <Button
               variant={activeTab === 'upload' ? 'default' : 'outline'}
               onClick={() => setActiveTab('upload')}
               className="flex-1"
             >
               <Upload className="h-4 w-4 mr-2" />
-              Upload BOM
+              Create BOM
             </Button>
             <Button
               variant={activeTab === 'calculate' ? 'default' : 'outline'}
@@ -79,7 +83,8 @@ export function BOMManager() {
           </div>
 
           {/* Tab Content */}
-          {activeTab === 'upload' && <BOMUploader />}
+          {activeTab === 'projects' && <ProjectsManager />}
+          {activeTab === 'upload' && <EnhancedBOMUploader />}
           {activeTab === 'calculate' && <CarbonCalculator />}
           {activeTab === 'journey' && <CarbonJourney />}
         </CardContent>

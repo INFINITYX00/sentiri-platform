@@ -74,8 +74,41 @@ export interface BOM {
 export interface Project {
   id: string
   name: string
+  description?: string
   status: string
   progress: number
+  total_cost: number
+  total_carbon_footprint: number
+  start_date?: string
+  completion_date?: string
   allocated_materials: string[]
   created_at: string
+}
+
+export interface ProjectMaterial {
+  id: string
+  project_id: string
+  material_id: string
+  quantity_required: number
+  quantity_consumed: number
+  cost_per_unit: number
+  total_cost: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ProductPassport {
+  id: string
+  project_id: string
+  product_name: string
+  product_type: string
+  quantity_produced: number
+  total_carbon_footprint: number
+  qr_code: string
+  qr_image_url?: string
+  image_url?: string
+  specifications: Record<string, any>
+  production_date: string
+  created_at: string
+  updated_at: string
 }

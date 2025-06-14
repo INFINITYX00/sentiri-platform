@@ -351,32 +351,154 @@ export type Database = {
         }
         Relationships: []
       }
+      product_passports: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          product_name: string
+          product_type: string
+          production_date: string
+          project_id: string
+          qr_code: string
+          qr_image_url: string | null
+          quantity_produced: number
+          specifications: Json | null
+          total_carbon_footprint: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          product_name: string
+          product_type?: string
+          production_date?: string
+          project_id: string
+          qr_code: string
+          qr_image_url?: string | null
+          quantity_produced?: number
+          specifications?: Json | null
+          total_carbon_footprint?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          product_name?: string
+          product_type?: string
+          production_date?: string
+          project_id?: string
+          qr_code?: string
+          qr_image_url?: string | null
+          quantity_produced?: number
+          specifications?: Json | null
+          total_carbon_footprint?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_passports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           allocated_materials: string[] | null
+          completion_date: string | null
           created_at: string | null
+          description: string | null
           id: string
           name: string
           progress: number | null
+          start_date: string | null
           status: string | null
+          total_carbon_footprint: number | null
+          total_cost: number | null
         }
         Insert: {
           allocated_materials?: string[] | null
+          completion_date?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
           name: string
           progress?: number | null
+          start_date?: string | null
           status?: string | null
+          total_carbon_footprint?: number | null
+          total_cost?: number | null
         }
         Update: {
           allocated_materials?: string[] | null
+          completion_date?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
           name?: string
           progress?: number | null
+          start_date?: string | null
           status?: string | null
+          total_carbon_footprint?: number | null
+          total_cost?: number | null
         }
         Relationships: []
+      }
+      projects_materials: {
+        Row: {
+          cost_per_unit: number
+          created_at: string
+          id: string
+          material_id: string
+          project_id: string
+          quantity_consumed: number
+          quantity_required: number
+          total_cost: number
+          updated_at: string
+        }
+        Insert: {
+          cost_per_unit?: number
+          created_at?: string
+          id?: string
+          material_id: string
+          project_id: string
+          quantity_consumed?: number
+          quantity_required?: number
+          total_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          cost_per_unit?: number
+          created_at?: string
+          id?: string
+          material_id?: string
+          project_id?: string
+          quantity_consumed?: number
+          quantity_required?: number
+          total_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_materials_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_materials_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shipments: {
         Row: {
