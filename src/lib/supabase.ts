@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/integrations/supabase/types'
 
@@ -13,6 +14,9 @@ export interface Material {
   type: string
   quantity: number
   unit: string
+  display_unit?: string // User-friendly unit display
+  pieces_per_unit?: number // How many pieces in one unit
+  cost_per_unit?: number // Cost per display unit
   dimensions?: string
   length?: number
   width?: number

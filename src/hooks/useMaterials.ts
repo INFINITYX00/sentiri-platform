@@ -39,6 +39,13 @@ export function useMaterials() {
     try {
       console.log('Starting optimized material creation with data:', materialData);
       
+      // Set default cost if not provided
+      const materialWithDefaults = {
+        ...materialData,
+        cost_per_unit: materialData.cost_per_unit || 10, // Default cost
+        display_unit: materialData.display_unit || (materialData.unit_count && materialData.unit_count > 1 ? 'pieces' : 'units')
+      };
+      
       // Step 1: Generate QR package first
       const tempId = crypto.randomUUID();
       let qrData: string;
@@ -74,7 +81,7 @@ export function useMaterials() {
 
       // Step 2: Insert complete material with QR data in single operation
       const completeData = {
-        ...materialData,
+        ...materialWithDefaults,
         id: tempId,
         qr_code: qrData,
         qr_image_url: qrImageUrl,
@@ -96,10 +103,11 @@ export function useMaterials() {
       // Show success message
       const unitText = materialData.unit_count && materialData.unit_count > 1 ? ` (${materialData.unit_count} units)` : '';
       const aiText = materialData.ai_carbon_confidence ? ` with AI carbon data` : '';
+      const costText = materialWithDefaults.cost_per_unit ? ` at $${materialWithDefaults.cost_per_unit}/${materialWithDefaults.display_unit}` : '';
       
       toast({
         title: "Success",
-        description: `Material "${materialData.name}"${unitText} added with QR code ${simpleQRCode}${aiText}`,
+        description: `Material "${materialData.name}"${unitText} added with QR code ${simpleQRCode}${aiText}${costText}`,
       });
 
       // Real-time subscription will handle UI update automatically

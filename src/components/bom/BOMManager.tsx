@@ -2,14 +2,15 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, TrendingUp, Leaf, FolderOpen } from "lucide-react";
+import { Upload, FileText, TrendingUp, Leaf, FolderOpen, Workflow } from "lucide-react";
 import { CarbonCalculator } from "./CarbonCalculator";
 import { CarbonJourney } from "./CarbonJourney";
 import { EnhancedBOMUploader } from "./EnhancedBOMUploader";
+import { StepByStepBOM } from "./StepByStepBOM";
 import { ProjectsManager } from "../projects/ProjectsManager";
 
 export function BOMManager() {
-  const [activeTab, setActiveTab] = useState<'projects' | 'upload' | 'calculate' | 'journey'>('projects');
+  const [activeTab, setActiveTab] = useState<'projects' | 'guided' | 'upload' | 'calculate' | 'journey'>('guided');
 
   const bomStats = [
     { label: "Active Projects", value: "8", icon: FolderOpen, color: "text-blue-400" },
@@ -23,7 +24,7 @@ export function BOMManager() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">BOM & Carbon Journey</h1>
-          <p className="text-muted-foreground mt-1">Manage projects, track materials and calculate carbon footprint</p>
+          <p className="text-muted-foreground mt-1">Create projects, track materials and calculate carbon footprint</p>
         </div>
       </div>
 
@@ -47,11 +48,19 @@ export function BOMManager() {
       {/* Navigation Tabs */}
       <Card className="sentiri-card">
         <CardContent className="p-6">
-          <div className="flex gap-2 mb-6">
+          <div className="flex gap-2 mb-6 flex-wrap">
+            <Button
+              variant={activeTab === 'guided' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('guided')}
+              className="flex-1 min-w-[120px]"
+            >
+              <Workflow className="h-4 w-4 mr-2" />
+              Guided Setup
+            </Button>
             <Button
               variant={activeTab === 'projects' ? 'default' : 'outline'}
               onClick={() => setActiveTab('projects')}
-              className="flex-1"
+              className="flex-1 min-w-[120px]"
             >
               <FolderOpen className="h-4 w-4 mr-2" />
               Projects
@@ -59,30 +68,31 @@ export function BOMManager() {
             <Button
               variant={activeTab === 'upload' ? 'default' : 'outline'}
               onClick={() => setActiveTab('upload')}
-              className="flex-1"
+              className="flex-1 min-w-[120px]"
             >
               <Upload className="h-4 w-4 mr-2" />
-              Create BOM
+              Advanced BOM
             </Button>
             <Button
               variant={activeTab === 'calculate' ? 'default' : 'outline'}
               onClick={() => setActiveTab('calculate')}
-              className="flex-1"
+              className="flex-1 min-w-[120px]"
             >
               <Leaf className="h-4 w-4 mr-2" />
-              Carbon Calculator
+              Calculator
             </Button>
             <Button
               variant={activeTab === 'journey' ? 'default' : 'outline'}
               onClick={() => setActiveTab('journey')}
-              className="flex-1"
+              className="flex-1 min-w-[120px]"
             >
               <TrendingUp className="h-4 w-4 mr-2" />
-              Carbon Journey
+              Journey
             </Button>
           </div>
 
           {/* Tab Content */}
+          {activeTab === 'guided' && <StepByStepBOM />}
           {activeTab === 'projects' && <ProjectsManager />}
           {activeTab === 'upload' && <EnhancedBOMUploader />}
           {activeTab === 'calculate' && <CarbonCalculator />}
