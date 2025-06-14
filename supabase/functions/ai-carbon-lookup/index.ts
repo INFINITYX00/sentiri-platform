@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { materialType, specificMaterial, origin, dimensions } = await req.json()
+    const { materialType, specificMaterial, origin, dimensions, quantity, unit, unitCount, weight } = await req.json()
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
     if (!anthropicApiKey) {
@@ -22,19 +22,34 @@ serve(async (req) => {
 
     console.log('Using API key:', anthropicApiKey.substring(0, 10) + '...')
 
-    const prompt = `You are an environmental data specialist. Provide realistic carbon footprint data for this material:
+    // Calculate total quantity details for context
+    const totalQuantity = quantity || 1
+    const totalUnits = unitCount || 1
+    const totalWeight = weight || 'unknown'
+    
+    const quantityContext = `
+Total Quantity: ${totalQuantity} ${unit || 'units'}
+Unit Count: ${totalUnits}
+Estimated Weight: ${totalWeight}kg
+    `.trim()
+
+    const prompt = `You are an environmental data specialist. Calculate the TOTAL carbon footprint for this specific quantity of material:
 
 Material: ${materialType} - ${specificMaterial}
 Origin: ${origin || 'Unknown'}
 Dimensions: ${dimensions || 'Not specified'}
 
+QUANTITY DETAILS:
+${quantityContext}
+
 Please provide a JSON response with:
 {
-  "carbonFactor": number (kg CO2 per kg of material),
+  "carbonFactor": number (kg CO2 per kg of material - per unit carbon factor),
+  "totalCarbonFootprint": number (TOTAL kg CO2 for the entire quantity specified above),
   "density": number (kg/m³),
   "confidence": number (0-1, where 1 is most confident),
   "source": string (brief source description),
-  "reasoning": string (brief explanation of the carbon factor),
+  "reasoning": string (brief explanation including how you calculated the total),
   "alternatives": [
     {
       "material": string,
@@ -44,19 +59,13 @@ Please provide a JSON response with:
   ]
 }
 
-Base your estimates on established environmental databases like:
-- ICE Database (University of Bath)
-- EPD (Environmental Product Declarations)
-- IDEMAT database
-- Life Cycle Assessment studies
-
-Consider factors like:
-- Manufacturing processes
-- Transportation (if origin specified)
-- Recycled vs virgin materials
-- Regional variations
-
-For reclaimed/recycled materials, use significantly lower carbon factors than virgin materials.
+IMPORTANT: 
+- carbonFactor should be per kg of material
+- totalCarbonFootprint should be the TOTAL carbon impact for the entire quantity (${totalQuantity} ${unit}, ${totalUnits} units, weight: ${totalWeight}kg)
+- Base calculations on established environmental databases (ICE Database, EPD, IDEMAT, LCA studies)
+- Consider manufacturing, transportation, and end-of-life impacts
+- For reclaimed/recycled materials, use significantly lower factors than virgin materials
+- If weight is unknown, estimate based on material type and dimensions
 
 Respond with only valid JSON, no additional text.`
 
@@ -83,7 +92,6 @@ Respond with only valid JSON, no additional text.`
     })
 
     console.log('Response status:', response.status)
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()))
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -112,19 +120,24 @@ Respond with only valid JSON, no additional text.`
 
   } catch (error) {
     console.error('Error in ai-carbon-lookup:', error)
-    console.error('Error stack:', error.stack)
+    
+    // Calculate fallback total carbon
+    const fallbackCarbonFactor = 2.0
+    const estimatedWeight = weight || 1
+    const fallbackTotal = fallbackCarbonFactor * estimatedWeight
     
     return new Response(
       JSON.stringify({ 
         error: error.message || 'Failed to get carbon data',
-        carbonFactor: 2.0, // Fallback value
-        density: 500, // Default density
+        carbonFactor: fallbackCarbonFactor,
+        totalCarbonFootprint: fallbackTotal,
+        density: 500,
         confidence: 0.1,
         source: 'Fallback estimate',
-        reasoning: 'Claude lookup failed, using default estimate'
+        reasoning: `Claude lookup failed, using default estimate: ${fallbackCarbonFactor}kg CO₂/kg × ${estimatedWeight}kg = ${fallbackTotal}kg CO₂e total`
       }),
       {
-        status: 200, // Return 200 with fallback data instead of error
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )

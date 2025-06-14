@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast'
 
 interface CarbonLookupData {
   carbonFactor: number
+  totalCarbonFootprint: number
   density: number
   confidence: number
   source: string
@@ -16,27 +17,28 @@ interface CarbonLookupData {
   }>
 }
 
+interface CarbonLookupParams {
+  materialType: string
+  specificMaterial: string
+  origin?: string
+  dimensions?: string
+  quantity?: number
+  unit?: string
+  unitCount?: number
+  weight?: number
+}
+
 export function useAICarbonLookup() {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
-  const lookupCarbonData = async (
-    materialType: string,
-    specificMaterial: string,
-    origin?: string,
-    dimensions?: string
-  ): Promise<CarbonLookupData | null> => {
+  const lookupCarbonData = async (params: CarbonLookupParams): Promise<CarbonLookupData | null> => {
     setLoading(true)
     try {
-      console.log('Starting AI carbon lookup for:', { materialType, specificMaterial, origin, dimensions })
+      console.log('Starting AI carbon lookup with params:', params)
       
       const { data, error } = await supabase.functions.invoke('ai-carbon-lookup', {
-        body: {
-          materialType,
-          specificMaterial,
-          origin,
-          dimensions
-        }
+        body: params
       })
 
       console.log('AI lookup response:', { data, error })
@@ -57,7 +59,7 @@ export function useAICarbonLookup() {
         console.log('AI lookup successful:', data)
         toast({
           title: "AI Data Retrieved Successfully",
-          description: `Confidence: ${Math.round(data.confidence * 100)}% • Source: ${data.source}`,
+          description: `Total Carbon: ${data.totalCarbonFootprint?.toFixed(2)}kg CO₂e • Confidence: ${Math.round(data.confidence * 100)}%`,
         })
       }
 
@@ -79,9 +81,13 @@ export function useAICarbonLookup() {
         variant: "destructive"
       })
       
-      // Return fallback data instead of null
+      // Return fallback data with calculated totals
+      const fallbackCarbonFactor = 2.0
+      const estimatedWeight = params.weight || 1
+      
       return {
-        carbonFactor: 2.0,
+        carbonFactor: fallbackCarbonFactor,
+        totalCarbonFootprint: fallbackCarbonFactor * estimatedWeight,
         density: 500,
         confidence: 0.1,
         source: 'Default estimate',

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -32,6 +31,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     origin: '',
     quantity: 0,
     unit: '',
+    unit_count: 1,
     carbon_footprint: 0,
     carbon_source: '',
     cost_per_unit: 0,
@@ -41,6 +41,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     width: 0,
     thickness: 0,
     dimension_unit: 'mm',
+    density: 500,
     image_url: ''
   })
 
@@ -73,6 +74,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
         origin: materialToEdit.origin || '',
         quantity: materialToEdit.quantity || 0,
         unit: materialToEdit.unit || '',
+        unit_count: materialToEdit.unit_count || 1,
         carbon_footprint: materialToEdit.carbon_footprint || 0,
         carbon_source: materialToEdit.carbon_source || '',
         cost_per_unit: materialToEdit.cost_per_unit || 0,
@@ -82,10 +84,36 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
         width: materialToEdit.width || 0,
         thickness: materialToEdit.thickness || 0,
         dimension_unit: materialToEdit.dimension_unit || 'mm',
+        density: materialToEdit.density || 500,
         image_url: materialToEdit.image_url || ''
       })
     }
   }, [materialToEdit])
+
+  const calculateWeight = () => {
+    if (formData.length && formData.width && formData.thickness && formData.density) {
+      // Convert dimensions to m³
+      let volumeInM3 = 0
+      switch (formData.dimension_unit) {
+        case 'mm':
+          volumeInM3 = (formData.length * formData.width * formData.thickness) / 1000000000
+          break
+        case 'cm':
+          volumeInM3 = (formData.length * formData.width * formData.thickness) / 1000000
+          break
+        case 'm':
+          volumeInM3 = formData.length * formData.width * formData.thickness
+          break
+        default:
+          volumeInM3 = (formData.length * formData.width * formData.thickness) / 1000000000
+      }
+      
+      // Calculate total weight including unit count
+      const totalVolume = volumeInM3 * formData.unit_count
+      return totalVolume * formData.density
+    }
+    return 0
+  }
 
   const handleAILookup = async () => {
     if (!formData.type || !formData.specific_material) {
@@ -98,19 +126,34 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     }
 
     try {
-      const carbonData = await lookupCarbonData(
-        formData.type,
-        formData.specific_material,
-        formData.origin,
-        formData.dimensions
-      )
+      const estimatedWeight = calculateWeight() || 1
+      const dimensionsString = formData.length && formData.width && formData.thickness 
+        ? `${formData.length}×${formData.width}×${formData.thickness}${formData.dimension_unit}`
+        : formData.dimensions
+
+      const carbonData = await lookupCarbonData({
+        materialType: formData.type,
+        specificMaterial: formData.specific_material,
+        origin: formData.origin,
+        dimensions: dimensionsString,
+        quantity: formData.quantity,
+        unit: formData.unit,
+        unitCount: formData.unit_count,
+        weight: estimatedWeight
+      })
 
       if (carbonData) {
         setFormData(prev => ({
           ...prev,
-          carbon_footprint: carbonData.carbonFactor,
-          carbon_source: 'AI Estimation'
+          carbon_footprint: carbonData.totalCarbonFootprint, // Use total carbon footprint
+          carbon_source: 'AI Estimation',
+          density: carbonData.density
         }))
+        
+        toast({
+          title: "AI Carbon Data Applied",
+          description: `Total carbon footprint: ${carbonData.totalCarbonFootprint.toFixed(2)}kg CO₂e`,
+        })
       }
     } catch (error) {
       console.error('AI lookup failed:', error)
@@ -125,6 +168,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
       origin: '',
       quantity: 0,
       unit: '',
+      unit_count: 1,
       carbon_footprint: 0,
       carbon_source: '',
       cost_per_unit: 0,
@@ -134,6 +178,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
       width: 0,
       thickness: 0,
       dimension_unit: 'mm',
+      density: 500,
       image_url: ''
     })
   }
@@ -165,6 +210,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
         origin: formData.origin || undefined,
         quantity: formData.quantity,
         unit: formData.unit,
+        unit_count: formData.unit_count,
         carbon_footprint: formData.carbon_footprint,
         carbon_source: formData.carbon_source || undefined,
         cost_per_unit: formData.cost_per_unit,
@@ -174,6 +220,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
         width: formData.width || undefined,
         thickness: formData.thickness || undefined,
         dimension_unit: formData.dimension_unit || undefined,
+        density: formData.density,
         image_url: formData.image_url || undefined
       }
 
@@ -216,7 +263,8 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
   const handleTypeSelected = (carbonFactor: number, density: number) => {
     setFormData(prev => ({ 
       ...prev, 
-      carbon_footprint: carbonFactor
+      carbon_footprint: carbonFactor,
+      density: density
     }))
   }
 
@@ -291,11 +339,11 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
             </div>
           </div>
 
-          {/* Simplified Quantity & Cost */}
+          {/* Quantity & Cost */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground">Quantity & Cost</h3>
             
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div>
                 <Label htmlFor="quantity">Quantity *</Label>
                 <Input
@@ -322,6 +370,18 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
                   </SelectContent>
                 </Select>
               </div>
+
+              <div>
+                <Label htmlFor="unit_count">Unit Count</Label>
+                <Input
+                  id="unit_count"
+                  type="number"
+                  min="1"
+                  value={formData.unit_count}
+                  onChange={(e) => setFormData(prev => ({ ...prev, unit_count: parseInt(e.target.value) || 1 }))}
+                  placeholder="1"
+                />
+              </div>
               
               <div>
                 <Label htmlFor="cost_per_unit">Cost per Unit ($)</Label>
@@ -342,7 +402,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground">Dimensions (Optional)</h3>
             
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-5 gap-4">
               <div>
                 <Label htmlFor="length">Length</Label>
                 <Input
@@ -394,6 +454,17 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
                   </SelectContent>
                 </Select>
               </div>
+
+              <div>
+                <Label htmlFor="density">Density (kg/m³)</Label>
+                <Input
+                  id="density"
+                  type="number"
+                  value={formData.density}
+                  onChange={(e) => setFormData(prev => ({ ...prev, density: parseFloat(e.target.value) || 500 }))}
+                  placeholder="500"
+                />
+              </div>
             </div>
 
             <div>
@@ -405,6 +476,12 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
                 placeholder="e.g., 2400×1200×18mm"
               />
             </div>
+
+            {formData.length && formData.width && formData.thickness && (
+              <div className="text-sm text-muted-foreground">
+                Estimated weight: {calculateWeight().toFixed(2)}kg
+              </div>
+            )}
           </div>
 
           {/* Carbon Footprint with AI */}
@@ -424,13 +501,13 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )}
-                AI Lookup
+                AI Lookup Total
               </Button>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="carbon_footprint">Carbon Footprint (kg CO₂e)</Label>
+                <Label htmlFor="carbon_footprint">Total Carbon Footprint (kg CO₂e)</Label>
                 <Input
                   id="carbon_footprint"
                   type="number"
