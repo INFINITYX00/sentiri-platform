@@ -36,7 +36,7 @@ const Index = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar activeView={activeView} setActiveView={setActiveView} />
         <main className="flex-1 overflow-auto">
-          <div className="min-h-full">
+          <div className={`min-h-full ${activeView === 'dashboard' ? '' : 'p-6'}`}>
             {renderActiveView()}
           </div>
         </main>
