@@ -41,101 +41,107 @@ export function StockManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Stock Overview</h1>
-          <p className="text-muted-foreground mt-1">Manage your sustainable material inventory</p>
+    <div className="min-h-screen app-background">
+      {/* Header Section */}
+      <div className="page-header">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Stock Overview</h1>
+            <p className="text-muted-foreground mt-1">Manage your sustainable material inventory</p>
+          </div>
+          <Button 
+            onClick={() => setIsAddDialogOpen(true)}
+            className="bg-primary hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Material
+          </Button>
         </div>
-        <Button 
-          onClick={() => setIsAddDialogOpen(true)}
-          className="bg-primary hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Material
-        </Button>
       </div>
 
-      {/* Stock Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {stockSummary.map((category) => (
-          <Card key={category.type} className="sentiri-card">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{category.type}</p>
-                  <p className="text-xl font-bold">{category.count}</p>
-                  <p className="text-xs text-primary">{category.totalValue}</p>
+      {/* Main Content */}
+      <div className="grid-section space-y-6">
+        {/* Stock Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {stockSummary.map((category) => (
+            <Card key={category.type} className="sentiri-card">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{category.type}</p>
+                    <p className="text-xl font-bold">{category.count}</p>
+                    <p className="text-xs text-primary">{category.totalValue}</p>
+                  </div>
+                  <Package className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <Package className="h-6 w-6 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Search and Filter */}
-      <Card className="sentiri-card">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search materials by name, type, or origin..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-background/50"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleFilterClick}>
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
-              </Button>
-            </div>
-          </div>
-          
-          {/* Material Type Filters */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            {materialTypes.map((type) => (
-              <Badge
-                key={type}
-                variant={selectedType === type ? "default" : "outline"}
-                className={`cursor-pointer capitalize ${
-                  selectedType === type 
-                    ? "bg-primary text-primary-foreground" 
-                    : "hover:bg-accent/10"
-                }`}
-                onClick={() => setSelectedType(type)}
-              >
-                {type === 'all' ? 'All Materials' : type.replace('-', '-')}
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Stock Grid */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-            <p className="text-muted-foreground">Loading materials...</p>
-          </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      ) : (
-        <StockGrid 
-          materials={materials}
-          searchQuery={searchQuery} 
-          selectedType={selectedType} 
-        />
-      )}
 
-      {/* Add Material Dialog */}
-      <AddMaterialDialog 
-        open={isAddDialogOpen} 
-        onOpenChange={setIsAddDialogOpen} 
-      />
+        {/* Search and Filter */}
+        <Card className="sentiri-card">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search materials by name, type, or origin..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-background/50"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleFilterClick}>
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filters
+                </Button>
+              </div>
+            </div>
+            
+            {/* Material Type Filters */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              {materialTypes.map((type) => (
+                <Badge
+                  key={type}
+                  variant={selectedType === type ? "default" : "outline"}
+                  className={`cursor-pointer capitalize ${
+                    selectedType === type 
+                      ? "bg-primary text-primary-foreground" 
+                      : "hover:bg-accent/10"
+                  }`}
+                  onClick={() => setSelectedType(type)}
+                >
+                  {type === 'all' ? 'All Materials' : type.replace('-', '-')}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stock Grid */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+              <p className="text-muted-foreground">Loading materials...</p>
+            </div>
+          </div>
+        ) : (
+          <StockGrid 
+            materials={materials}
+            searchQuery={searchQuery} 
+            selectedType={selectedType} 
+          />
+        )}
+
+        {/* Add Material Dialog */}
+        <AddMaterialDialog 
+          open={isAddDialogOpen} 
+          onOpenChange={setIsAddDialogOpen} 
+        />
+      </div>
     </div>
   );
 }
