@@ -127,69 +127,75 @@ export function MaterialStockCard({
       
       <CardContent className="p-6">
         <div className="space-y-4">
-          <div>
-            <h3 className="font-semibold text-lg">{material.name}</h3>
+          {/* Header Section */}
+          <div className="space-y-1">
+            <h3 className="font-semibold text-lg leading-tight">{material.name}</h3>
             <p className="text-sm text-muted-foreground">
               {material.specific_material || material.type.charAt(0).toUpperCase() + material.type.slice(1)}
             </p>
           </div>
           
-          <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium flex items-center gap-1">
-                <Boxes className="h-4 w-4" />
-                Stock Overview
-              </span>
+          {/* Stock Overview Section */}
+          <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Boxes className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">Stock Overview</span>
             </div>
             
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Total Stock</span>
-                <div className="font-semibold text-lg">{unitsTotal} {material.unit}</div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="text-xs text-muted-foreground mb-1">Total Stock</div>
+                <div className="font-bold text-lg text-foreground">{unitsTotal}</div>
+                <div className="text-xs text-muted-foreground">{material.unit}</div>
               </div>
-              <div>
-                <span className="text-muted-foreground">Available</span>
-                <div className="font-semibold text-lg text-green-600">{unitsAvailable} {material.unit}</div>
+              <div className="text-center">
+                <div className="text-xs text-muted-foreground mb-1">Available</div>
+                <div className="font-bold text-lg text-green-600">{unitsAvailable}</div>
+                <div className="text-xs text-muted-foreground">{material.unit}</div>
               </div>
             </div>
             
             {unitsAllocated > 0 && (
-              <div className="text-sm">
-                <span className="text-muted-foreground">Allocated: </span>
-                <span className="font-medium text-orange-600">{unitsAllocated} {material.unit}</span>
+              <div className="text-center pt-2 border-t border-muted">
+                <div className="text-xs text-muted-foreground mb-1">Allocated</div>
+                <div className="font-semibold text-orange-600">{unitsAllocated} {material.unit}</div>
               </div>
             )}
           </div>
           
+          {/* Cost Section */}
           {material.cost_per_unit && (
-            <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
-              <span className="text-sm text-muted-foreground flex items-center gap-1">
-                <DollarSign className="h-3 w-3" />
-                Cost per {material.unit}
-              </span>
-              <span className="font-semibold text-green-700">
-                ${material.cost_per_unit.toFixed(2)}
-              </span>
+            <div className="bg-green-50 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Cost per {material.unit}</span>
+                </div>
+                <span className="font-bold text-green-700">${material.cost_per_unit.toFixed(2)}</span>
+              </div>
             </div>
           )}
           
+          {/* Projects Section */}
           {allocation && allocation.projects.length > 0 && (
-            <div className="space-y-2">
-              <span className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                Used in Projects
-              </span>
-              <div className="space-y-1">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Active Projects</span>
+              </div>
+              <div className="space-y-2">
                 {allocation.projects.slice(0, 2).map(project => (
-                  <div key={project.id} className="text-xs bg-blue-50 rounded px-2 py-1">
-                    <span className="font-medium">{project.name}</span>
-                    <span className="text-muted-foreground ml-2">
-                      {Math.max(0, project.quantity_required - project.quantity_consumed)} {material.unit}
-                    </span>
+                  <div key={project.id} className="bg-blue-50 rounded-lg p-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-blue-900 text-sm">{project.name}</span>
+                      <span className="text-xs text-blue-600 font-medium">
+                        {Math.max(0, project.quantity_required - project.quantity_consumed)} {material.unit}
+                      </span>
+                    </div>
                   </div>
                 ))}
                 {allocation.projects.length > 2 && (
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-center text-xs text-muted-foreground py-1">
                     +{allocation.projects.length - 2} more projects
                   </div>
                 )}
@@ -197,75 +203,81 @@ export function MaterialStockCard({
             </div>
           )}
           
-          <div className="space-y-2 pt-2 border-t">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-muted-foreground">Carbon Impact</span>
+          {/* Carbon Impact Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-foreground">Carbon Impact</span>
+              </div>
               {material.ai_carbon_confidence && (
                 <Badge 
                   variant="outline" 
-                  className={`h-4 px-1 text-xs ${getConfidenceBadgeColor(material.ai_carbon_confidence)}`}
+                  className={`h-5 px-2 text-xs ${getConfidenceBadgeColor(material.ai_carbon_confidence)}`}
                 >
                   <Sparkles className="h-2 w-2 mr-1" />
-                  AI {Math.round(material.ai_carbon_confidence * 100)}%
+                  {Math.round(material.ai_carbon_confidence * 100)}%
                 </Badge>
               )}
             </div>
 
-            {carbonFactor > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Carbon Factor:</span>
-                <span className="font-medium text-blue-600 text-xs">
-                  {carbonFactor.toFixed(3)} kg CO₂/kg
-                </span>
-              </div>
-            )}
-            
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total Carbon:</span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-primary text-xs">
+            <div className="space-y-2">
+              {carbonFactor > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Carbon Factor</span>
+                  <span className="font-semibold text-blue-600 text-sm">
+                    {carbonFactor.toFixed(3)} kg CO₂/kg
+                  </span>
+                </div>
+              )}
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Total Carbon</span>
+                <span className="font-semibold text-primary text-sm">
                   {material.carbon_footprint.toFixed(1)} kg CO₂e
                 </span>
               </div>
+
+              {material.carbon_source && (
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1">
+                    <Database className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Source</span>
+                  </div>
+                  <span className="font-medium text-sm text-green-600">
+                    {material.carbon_source}
+                  </span>
+                </div>
+              )}
+
+              {material.ai_carbon_source && material.ai_carbon_source !== material.carbon_source && (
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1">
+                    <Brain className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">AI Source</span>
+                  </div>
+                  <span className="font-medium text-sm text-blue-600">
+                    {material.ai_carbon_source}
+                  </span>
+                </div>
+              )}
             </div>
-
-            {material.carbon_source && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <Database className="h-3 w-3" />
-                  Source:
-                </span>
-                <span className="font-medium text-xs text-green-600">
-                  {material.carbon_source}
-                </span>
-              </div>
-            )}
-
-            {material.ai_carbon_source && material.ai_carbon_source !== material.carbon_source && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <Brain className="h-3 w-3" />
-                  AI Source:
-                </span>
-                <span className="font-medium text-xs text-blue-600">
-                  {material.ai_carbon_source}
-                </span>
-              </div>
-            )}
           </div>
 
+          {/* Origin Section */}
           {material.origin && (
-            <div className="flex justify-between text-sm pt-2 border-t">
-              <span className="text-muted-foreground">Origin:</span>
-              <span className="font-medium text-xs">{material.origin}</span>
+            <div className="flex justify-between items-center pt-3 border-t border-muted">
+              <span className="text-sm text-muted-foreground">Origin</span>
+              <span className="font-medium text-sm text-foreground">{material.origin}</span>
             </div>
           )}
           
-          <div className="grid grid-cols-4 gap-2 pt-2">
+          {/* Action Buttons */}
+          <div className="grid grid-cols-4 gap-2 pt-4 border-t border-muted">
             <Button 
               size="sm" 
               variant="outline" 
               onClick={() => onViewMaterial(material.id)}
+              className="h-9"
             >
               <Eye className="h-4 w-4" />
             </Button>
@@ -273,6 +285,7 @@ export function MaterialStockCard({
               size="sm" 
               variant="outline" 
               onClick={() => onEdit(material)}
+              className="h-9"
             >
               <Edit className="h-4 w-4" />
             </Button>
@@ -280,6 +293,7 @@ export function MaterialStockCard({
               size="sm" 
               variant="outline" 
               onClick={() => onViewQR(material)}
+              className="h-9"
             >
               <QrCode className="h-4 w-4" />
             </Button>
@@ -287,7 +301,7 @@ export function MaterialStockCard({
               size="sm" 
               variant="outline" 
               onClick={() => onDelete(material)}
-              className="hover:bg-destructive hover:text-destructive-foreground"
+              className="hover:bg-destructive hover:text-destructive-foreground h-9"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
