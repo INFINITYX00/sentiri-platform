@@ -27,83 +27,31 @@ const Index = () => {
       case 'dashboard':
         return <DashboardOverview />;
       case 'stock':
-        return (
-          <div className="page-container">
-            <StockManagement />
-          </div>
-        );
+        return <StockManagement />;
       case 'passport':
-        return (
-          <div className="page-container">
-            <MaterialPassport />
-          </div>
-        );
+        return <MaterialPassport />;
       case 'design':
-        return (
-          <div className="page-container">
-            <DesignWorkspace />
-          </div>
-        );
+        return <DesignWorkspace />;
       case 'time-logging':
-        return (
-          <div className="page-container">
-            <TimeLogging projectId="main-project" onTimeUpdate={setTimeEntries} />
-          </div>
-        );
+        return <TimeLogging projectId="main-project" onTimeUpdate={setTimeEntries} />;
       case 'manufacturing':
-        return (
-          <div className="page-container">
-            <ManufacturingStages projectId="main-project" onStageUpdate={setStages} />
-          </div>
-        );
+        return <ManufacturingStages projectId="main-project" onStageUpdate={setStages} />;
       case 'labor':
-        return (
-          <div className="page-container">
-            <LaborCalculator projectId="main-project" timeEntries={timeEntries} />
-          </div>
-        );
+        return <LaborCalculator projectId="main-project" timeEntries={timeEntries} />;
       case 'energy':
-        return (
-          <div className="page-container">
-            <EnergyEstimator projectId="main-project" />
-          </div>
-        );
+        return <EnergyEstimator projectId="main-project" />;
       case 'bom':
-        return (
-          <div className="page-container">
-            <BOMManager />
-          </div>
-        );
+        return <BOMManager />;
       case 'transport':
-        return (
-          <div className="page-container">
-            <TransportEmissions />
-          </div>
-        );
+        return <TransportEmissions />;
       case 'shipping':
-        return (
-          <div className="page-container">
-            <ShippingTracker />
-          </div>
-        );
+        return <ShippingTracker />;
       case 'takeback':
-        return (
-          <div className="page-container">
-            <TakebackSystem />
-          </div>
-        );
+        return <TakebackSystem />;
       case 'circular':
-        return (
-          <div className="page-container">
-            <CircularDesign />
-          </div>
-        );
+        return <CircularDesign />;
       case 'insights':
-        return (
-          <div className="page-container">
-            <AIInsights />
-          </div>
-        );
+        return <AIInsights />;
       default:
         return <DashboardOverview />;
     }
