@@ -16,8 +16,11 @@ serve(async (req) => {
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
     if (!anthropicApiKey) {
+      console.error('Anthropic API key not found in environment')
       throw new Error('Anthropic API key not configured')
     }
+
+    console.log('Using API key:', anthropicApiKey.substring(0, 10) + '...')
 
     const prompt = `You are an environmental data specialist. Provide realistic carbon footprint data for this material:
 
@@ -57,6 +60,8 @@ For reclaimed/recycled materials, use significantly lower carbon factors than vi
 
 Respond with only valid JSON, no additional text.`
 
+    console.log('Making request to Anthropic API...')
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -77,19 +82,29 @@ Respond with only valid JSON, no additional text.`
       }),
     })
 
+    console.log('Response status:', response.status)
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+
     if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.statusText}`)
+      const errorText = await response.text()
+      console.error('Anthropic API error response:', errorText)
+      throw new Error(`Anthropic API error: ${response.status} ${response.statusText} - ${errorText}`)
     }
 
     const data = await response.json()
+    console.log('Anthropic response:', data)
+    
     const content = data.content[0]?.text
 
     if (!content) {
-      throw new Error('No response from Claude')
+      throw new Error('No response content from Claude')
     }
+
+    console.log('Raw content from Claude:', content)
 
     // Parse the JSON response
     const carbonData = JSON.parse(content)
+    console.log('Parsed carbon data:', carbonData)
 
     return new Response(JSON.stringify(carbonData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -97,6 +112,8 @@ Respond with only valid JSON, no additional text.`
 
   } catch (error) {
     console.error('Error in ai-carbon-lookup:', error)
+    console.error('Error stack:', error.stack)
+    
     return new Response(
       JSON.stringify({ 
         error: error.message || 'Failed to get carbon data',
@@ -104,7 +121,7 @@ Respond with only valid JSON, no additional text.`
         density: 500, // Default density
         confidence: 0.1,
         source: 'Fallback estimate',
-        reasoning: 'AI lookup failed, using default estimate'
+        reasoning: 'Claude lookup failed, using default estimate'
       }),
       {
         status: 200, // Return 200 with fallback data instead of error
