@@ -1,20 +1,11 @@
 
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '@/integrations/supabase/types'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key'
+const supabaseUrl = 'https://qnorkgosfpyuzmgoenvd.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFub3JrZ29zZnB5dXptZ29lbnZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4OTQ5NTgsImV4cCI6MjA2NTQ3MDk1OH0.XNChKuZa3WMn_oGuUkq9QQviqvFj42yagPd_FN8I-Cs'
 
-// Only create client if we have real credentials
-export const supabase = supabaseUrl !== 'https://placeholder.supabase.co' 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null
-
-// Helper to check if Supabase is properly configured
-export const isSupabaseConfigured = () => {
-  return supabase !== null && 
-         import.meta.env.VITE_SUPABASE_URL && 
-         import.meta.env.VITE_SUPABASE_ANON_KEY
-}
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
 // Database types
 export interface Material {

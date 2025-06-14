@@ -9,7 +9,143 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      boms: {
+        Row: {
+          created_at: string | null
+          id: string
+          materials: Json | null
+          name: string
+          total_carbon: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          materials?: Json | null
+          name: string
+          total_carbon?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          materials?: Json | null
+          name?: string
+          total_carbon?: number | null
+        }
+        Relationships: []
+      }
+      material_passports: {
+        Row: {
+          carbon_data: Json | null
+          created_at: string | null
+          id: string
+          material_id: string | null
+          origin: Json | null
+          specifications: Json | null
+          sustainability: Json | null
+        }
+        Insert: {
+          carbon_data?: Json | null
+          created_at?: string | null
+          id?: string
+          material_id?: string | null
+          origin?: Json | null
+          specifications?: Json | null
+          sustainability?: Json | null
+        }
+        Update: {
+          carbon_data?: Json | null
+          created_at?: string | null
+          id?: string
+          material_id?: string | null
+          origin?: Json | null
+          specifications?: Json | null
+          sustainability?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_passports_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materials: {
+        Row: {
+          carbon_footprint: number
+          created_at: string | null
+          description: string | null
+          dimensions: string | null
+          id: string
+          image_url: string | null
+          name: string
+          origin: string | null
+          qr_code: string
+          quantity: number
+          type: string
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          carbon_footprint?: number
+          created_at?: string | null
+          description?: string | null
+          dimensions?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          origin?: string | null
+          qr_code: string
+          quantity?: number
+          type: string
+          unit: string
+          updated_at?: string | null
+        }
+        Update: {
+          carbon_footprint?: number
+          created_at?: string | null
+          description?: string | null
+          dimensions?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          origin?: string | null
+          qr_code?: string
+          quantity?: number
+          type?: string
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          allocated_materials: string[] | null
+          created_at: string | null
+          id: string
+          name: string
+          progress: number | null
+          status: string | null
+        }
+        Insert: {
+          allocated_materials?: string[] | null
+          created_at?: string | null
+          id?: string
+          name: string
+          progress?: number | null
+          status?: string | null
+        }
+        Update: {
+          allocated_materials?: string[] | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          progress?: number | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
