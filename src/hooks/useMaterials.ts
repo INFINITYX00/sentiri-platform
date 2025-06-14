@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+
+import { useState, useEffect, useRef } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { generateQRCode, createMaterialQRData, generateSimpleQRCode } from '@/utils/qrGenerator'
@@ -8,6 +9,7 @@ export function useMaterials() {
   const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
+  const channelRef = useRef<any>(null)
 
   const fetchMaterials = async () => {
     setLoading(true)
@@ -113,7 +115,7 @@ export function useMaterials() {
           .eq('id', newMaterial.id)
       }
 
-      console.log('Material added successfully, about to refresh materials list')
+      console.log('Material added successfully, real-time subscription will handle UI update')
       
       toast({
         title: "Success",
@@ -293,36 +295,45 @@ export function useMaterials() {
     // Initial fetch
     fetchMaterials()
 
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('materials-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'materials'
-        },
-        (payload) => {
-          console.log('Real-time update received:', payload.eventType, payload)
-          
-          if (payload.eventType === 'INSERT') {
-            console.log('Material inserted via real-time:', payload.new)
-            setMaterials(prev => [payload.new as Material, ...prev])
-          } else if (payload.eventType === 'DELETE') {
-            console.log('Material deleted via real-time:', payload.old)
-            setMaterials(prev => prev.filter(m => m.id !== payload.old.id))
-          } else if (payload.eventType === 'UPDATE') {
-            console.log('Material updated via real-time:', payload.new)
-            setMaterials(prev => prev.map(m => m.id === payload.new.id ? payload.new as Material : m))
+    // Only set up subscription if we don't already have one
+    if (!channelRef.current) {
+      // Set up real-time subscription with a unique channel name
+      const channelName = `materials-changes-${Date.now()}`
+      const channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+            schema: 'public',
+            table: 'materials'
+          },
+          (payload) => {
+            console.log('Real-time update received:', payload.eventType, payload)
+            
+            if (payload.eventType === 'INSERT') {
+              console.log('Material inserted via real-time:', payload.new)
+              setMaterials(prev => [payload.new as Material, ...prev])
+            } else if (payload.eventType === 'DELETE') {
+              console.log('Material deleted via real-time:', payload.old)
+              setMaterials(prev => prev.filter(m => m.id !== payload.old.id))
+            } else if (payload.eventType === 'UPDATE') {
+              console.log('Material updated via real-time:', payload.new)
+              setMaterials(prev => prev.map(m => m.id === payload.new.id ? payload.new as Material : m))
+            }
           }
-        }
-      )
-      .subscribe()
+        )
+        .subscribe()
+
+      channelRef.current = channel
+    }
 
     return () => {
       console.log('Cleaning up materials subscription')
-      supabase.removeChannel(channel)
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
     }
   }, [])
 
