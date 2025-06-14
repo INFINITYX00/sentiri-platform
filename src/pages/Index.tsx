@@ -28,79 +28,79 @@ const Index = () => {
         return <DashboardOverview />;
       case 'stock':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <StockManagement />
           </div>
         );
       case 'passport':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <MaterialPassport />
           </div>
         );
       case 'design':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <DesignWorkspace />
           </div>
         );
       case 'time-logging':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <TimeLogging projectId="main-project" onTimeUpdate={setTimeEntries} />
           </div>
         );
       case 'manufacturing':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <ManufacturingStages projectId="main-project" onStageUpdate={setStages} />
           </div>
         );
       case 'labor':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <LaborCalculator projectId="main-project" timeEntries={timeEntries} />
           </div>
         );
       case 'energy':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <EnergyEstimator projectId="main-project" />
           </div>
         );
       case 'bom':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <BOMManager />
           </div>
         );
       case 'transport':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <TransportEmissions />
           </div>
         );
       case 'shipping':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <ShippingTracker />
           </div>
         );
       case 'takeback':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <TakebackSystem />
           </div>
         );
       case 'circular':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <CircularDesign />
           </div>
         );
       case 'insights':
         return (
-          <div className="ml-72">
+          <div className="ml-72 px-6 py-4">
             <AIInsights />
           </div>
         );
@@ -113,7 +113,7 @@ const Index = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full app-background">
         <AppSidebar activeView={activeView} setActiveView={setActiveView} />
-        <main className="flex-1 overflow-auto pt-4 pb-6">
+        <main className="flex-1 overflow-auto">
           <div className="min-h-full">
             {renderActiveView()}
           </div>
