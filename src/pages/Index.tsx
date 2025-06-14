@@ -27,31 +27,83 @@ const Index = () => {
       case 'dashboard':
         return <DashboardOverview />;
       case 'stock':
-        return <StockManagement />;
+        return (
+          <div className="ml-72">
+            <StockManagement />
+          </div>
+        );
       case 'passport':
-        return <MaterialPassport />;
+        return (
+          <div className="ml-72">
+            <MaterialPassport />
+          </div>
+        );
       case 'design':
-        return <DesignWorkspace />;
+        return (
+          <div className="ml-72">
+            <DesignWorkspace />
+          </div>
+        );
       case 'time-logging':
-        return <TimeLogging projectId="main-project" onTimeUpdate={setTimeEntries} />;
+        return (
+          <div className="ml-72">
+            <TimeLogging projectId="main-project" onTimeUpdate={setTimeEntries} />
+          </div>
+        );
       case 'manufacturing':
-        return <ManufacturingStages projectId="main-project" onStageUpdate={setStages} />;
+        return (
+          <div className="ml-72">
+            <ManufacturingStages projectId="main-project" onStageUpdate={setStages} />
+          </div>
+        );
       case 'labor':
-        return <LaborCalculator projectId="main-project" timeEntries={timeEntries} />;
+        return (
+          <div className="ml-72">
+            <LaborCalculator projectId="main-project" timeEntries={timeEntries} />
+          </div>
+        );
       case 'energy':
-        return <EnergyEstimator projectId="main-project" />;
+        return (
+          <div className="ml-72">
+            <EnergyEstimator projectId="main-project" />
+          </div>
+        );
       case 'bom':
-        return <BOMManager />;
+        return (
+          <div className="ml-72">
+            <BOMManager />
+          </div>
+        );
       case 'transport':
-        return <TransportEmissions />;
+        return (
+          <div className="ml-72">
+            <TransportEmissions />
+          </div>
+        );
       case 'shipping':
-        return <ShippingTracker />;
+        return (
+          <div className="ml-72">
+            <ShippingTracker />
+          </div>
+        );
       case 'takeback':
-        return <TakebackSystem />;
+        return (
+          <div className="ml-72">
+            <TakebackSystem />
+          </div>
+        );
       case 'circular':
-        return <CircularDesign />;
+        return (
+          <div className="ml-72">
+            <CircularDesign />
+          </div>
+        );
       case 'insights':
-        return <AIInsights />;
+        return (
+          <div className="ml-72">
+            <AIInsights />
+          </div>
+        );
       default:
         return <DashboardOverview />;
     }
@@ -61,7 +113,7 @@ const Index = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full app-background">
         <AppSidebar activeView={activeView} setActiveView={setActiveView} />
-        <main className="flex-1 overflow-auto pl-6 pr-6 pt-4 pb-6">
+        <main className="flex-1 overflow-auto pt-4 pb-6">
           <div className="min-h-full">
             {renderActiveView()}
           </div>
