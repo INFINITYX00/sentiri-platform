@@ -1,14 +1,19 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Layers, Package, Clock, Users, Zap, Calculator } from "lucide-react";
+import { Plus, Layers, Package, Clock, Users, Zap, Calculator, Recycle, Truck, Box } from "lucide-react";
 import { TimeLogging } from "@/components/project/TimeLogging";
 import { ManufacturingStages } from "@/components/project/ManufacturingStages";
 import { LaborCalculator } from "@/components/project/LaborCalculator";
 import { EnergyEstimator } from "@/components/project/EnergyEstimator";
+import { TransportEmissions } from "@/components/carbon/TransportEmissions";
+import { ShippingTracker } from "@/components/shipping/ShippingTracker";
+import { TakebackSystem } from "@/components/lifecycle/TakebackSystem";
+import { CircularDesign } from "@/components/design/CircularDesign";
 
 export function DesignWorkspace() {
   const [timeEntries, setTimeEntries] = useState<any[]>([]);
@@ -149,12 +154,20 @@ export function DesignWorkspace() {
 
       {/* Enhanced Project Management */}
       <Tabs defaultValue="projects" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="projects">Projects</TabsTrigger>
+          
+          {/* Phase 1 tabs */}
           <TabsTrigger value="time">Time Tracking</TabsTrigger>
           <TabsTrigger value="manufacturing">Manufacturing</TabsTrigger>
           <TabsTrigger value="labor">Labor & Costs</TabsTrigger>
           <TabsTrigger value="energy">Energy</TabsTrigger>
+          
+          {/* Phase 2 tabs */}
+          <TabsTrigger value="transport">Transport</TabsTrigger>
+          <TabsTrigger value="shipping">Shipping</TabsTrigger>
+          <TabsTrigger value="takeback">Take-back</TabsTrigger>
+          <TabsTrigger value="circular">Circular Design</TabsTrigger>
         </TabsList>
 
         <TabsContent value="projects" className="space-y-6">
@@ -255,6 +268,7 @@ export function DesignWorkspace() {
           </div>
         </TabsContent>
 
+        {/* Phase 1 Components */}
         <TabsContent value="time">
           <TimeLogging 
             projectId="current-project" 
@@ -278,6 +292,23 @@ export function DesignWorkspace() {
 
         <TabsContent value="energy">
           <EnergyEstimator projectId="current-project" />
+        </TabsContent>
+
+        {/* Phase 2 Components */}
+        <TabsContent value="transport">
+          <TransportEmissions />
+        </TabsContent>
+
+        <TabsContent value="shipping">
+          <ShippingTracker />
+        </TabsContent>
+
+        <TabsContent value="takeback">
+          <TakebackSystem />
+        </TabsContent>
+
+        <TabsContent value="circular">
+          <CircularDesign />
         </TabsContent>
       </Tabs>
     </div>
