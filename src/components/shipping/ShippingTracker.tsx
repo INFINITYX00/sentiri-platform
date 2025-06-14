@@ -7,126 +7,54 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Package, TrendingUp, CalendarClock, MapPin, Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-
-interface ShipmentItem {
-  id: string;
-  trackingNumber: string;
-  destination: string;
-  status: string;
-  estimatedArrival: string;
-  actualArrival: string | null;
-  carrier: string;
-  items: string[];
-  carbonOffset: boolean;
-}
+import { useShipments } from "@/hooks/useShipments";
 
 export function ShippingTracker() {
-  const { toast } = useToast();
-  
-  const [shipments, setShipments] = useState<ShipmentItem[]>([
-    {
-      id: "1",
-      trackingNumber: "ECO-2404-0023",
-      destination: "Green Spaces Co, London",
-      status: "in-transit",
-      estimatedArrival: "2024-06-20",
-      actualArrival: null,
-      carrier: "Low-Emission Logistics",
-      items: ["Eco-Chair x2", "Coffee Table"],
-      carbonOffset: true
-    },
-    {
-      id: "2",
-      trackingNumber: "ECO-2404-0019",
-      destination: "Sustainable Homes, Manchester",
-      status: "delivered",
-      estimatedArrival: "2024-06-10",
-      actualArrival: "2024-06-09",
-      carrier: "Urban Green Delivery",
-      items: ["Modular Shelving Unit", "Desk"],
-      carbonOffset: true
-    },
-    {
-      id: "3",
-      trackingNumber: "ECO-2404-0015",
-      destination: "EcoOffices, Brighton",
-      status: "preparing",
-      estimatedArrival: "2024-06-25",
-      actualArrival: null,
-      carrier: "Regional Eco Transport",
-      items: ["Conference Table", "Chairs x8"],
-      carbonOffset: false
-    }
-  ]);
+  const { shipments, loading, addShipment, updateShipmentStatus } = useShipments();
   
   const [newShipment, setNewShipment] = useState({
-    trackingNumber: "",
+    tracking_number: "",
     destination: "",
     status: "preparing",
-    estimatedArrival: "",
+    estimated_arrival: "",
     carrier: "",
     items: "",
-    carbonOffset: false
+    carbon_offset: false
   });
   
-  const addShipment = () => {
-    if (!newShipment.trackingNumber || !newShipment.destination || !newShipment.estimatedArrival) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required shipment details",
-        variant: "destructive",
-      });
+  const handleAddShipment = async () => {
+    if (!newShipment.tracking_number || !newShipment.destination || !newShipment.estimated_arrival) {
       return;
     }
     
-    const shipment: ShipmentItem = {
-      id: Date.now().toString(),
-      trackingNumber: newShipment.trackingNumber,
+    const shipmentData = {
+      tracking_number: newShipment.tracking_number,
       destination: newShipment.destination,
       status: newShipment.status,
-      estimatedArrival: newShipment.estimatedArrival,
-      actualArrival: null,
+      estimated_arrival: newShipment.estimated_arrival,
+      actual_arrival: null,
       carrier: newShipment.carrier,
       items: newShipment.items.split(',').map(item => item.trim()),
-      carbonOffset: newShipment.carbonOffset
+      carbon_offset: newShipment.carbon_offset
     };
     
-    setShipments([...shipments, shipment]);
+    const result = await addShipment(shipmentData);
     
-    toast({
-      title: "Shipment added",
-      description: `Tracking number: ${newShipment.trackingNumber}`,
-    });
-    
-    setNewShipment({
-      trackingNumber: "",
-      destination: "",
-      status: "preparing",
-      estimatedArrival: "",
-      carrier: "",
-      items: "",
-      carbonOffset: false
-    });
+    if (result) {
+      setNewShipment({
+        tracking_number: "",
+        destination: "",
+        status: "preparing",
+        estimated_arrival: "",
+        carrier: "",
+        items: "",
+        carbon_offset: false
+      });
+    }
   };
   
-  const updateStatus = (id: string, status: string) => {
-    setShipments(shipments.map(shipment => {
-      if (shipment.id === id) {
-        const updatedShipment = { 
-          ...shipment, 
-          status, 
-          actualArrival: status === 'delivered' ? new Date().toISOString().split('T')[0] : shipment.actualArrival 
-        };
-        return updatedShipment;
-      }
-      return shipment;
-    }));
-    
-    toast({
-      title: "Status updated",
-      description: `Shipment status changed to: ${status}`,
-    });
+  const handleUpdateStatus = async (id: string, status: string) => {
+    await updateShipmentStatus(id, status);
   };
   
   const getStatusBadge = (status: string) => {
@@ -145,8 +73,12 @@ export function ShippingTracker() {
   const inTransitCount = shipments.filter(s => s.status === 'in-transit').length;
   const deliveredCount = shipments.filter(s => s.status === 'delivered').length;
   const offsetPercentage = shipments.length > 0 
-    ? Math.round((shipments.filter(s => s.carbonOffset).length / shipments.length) * 100)
+    ? Math.round((shipments.filter(s => s.carbon_offset).length / shipments.length) * 100)
     : 0;
+
+  if (loading) {
+    return <div>Loading shipments data...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -201,8 +133,8 @@ export function ShippingTracker() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               placeholder="Tracking Number"
-              value={newShipment.trackingNumber}
-              onChange={(e) => setNewShipment({...newShipment, trackingNumber: e.target.value})}
+              value={newShipment.tracking_number}
+              onChange={(e) => setNewShipment({...newShipment, tracking_number: e.target.value})}
             />
             
             <Input
@@ -228,8 +160,8 @@ export function ShippingTracker() {
             <Input
               type="date"
               placeholder="Estimated Arrival"
-              value={newShipment.estimatedArrival}
-              onChange={(e) => setNewShipment({...newShipment, estimatedArrival: e.target.value})}
+              value={newShipment.estimated_arrival}
+              onChange={(e) => setNewShipment({...newShipment, estimated_arrival: e.target.value})}
             />
             
             <Input
@@ -248,14 +180,14 @@ export function ShippingTracker() {
               <input
                 type="checkbox"
                 id="carbonOffset"
-                checked={newShipment.carbonOffset}
-                onChange={(e) => setNewShipment({...newShipment, carbonOffset: e.target.checked})}
+                checked={newShipment.carbon_offset}
+                onChange={(e) => setNewShipment({...newShipment, carbon_offset: e.target.checked})}
                 className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
               />
               <label htmlFor="carbonOffset" className="text-sm text-gray-700">Carbon Offset</label>
             </div>
             
-            <Button onClick={addShipment} className="bg-primary hover:bg-primary/90">
+            <Button onClick={handleAddShipment} className="bg-primary hover:bg-primary/90">
               Add Shipment
             </Button>
           </div>
@@ -284,14 +216,14 @@ export function ShippingTracker() {
             <TableBody>
               {shipments.map((shipment) => (
                 <TableRow key={shipment.id}>
-                  <TableCell className="font-medium">{shipment.trackingNumber}</TableCell>
+                  <TableCell className="font-medium">{shipment.tracking_number}</TableCell>
                   <TableCell>{shipment.destination}</TableCell>
                   <TableCell>{shipment.carrier}</TableCell>
                   <TableCell>{getStatusBadge(shipment.status)}</TableCell>
-                  <TableCell>{shipment.actualArrival || shipment.estimatedArrival}</TableCell>
+                  <TableCell>{shipment.actual_arrival || shipment.estimated_arrival}</TableCell>
                   <TableCell><span className="text-xs">{shipment.items.join(', ')}</span></TableCell>
                   <TableCell>
-                    {shipment.carbonOffset ? 
+                    {shipment.carbon_offset ? 
                       <Badge className="bg-green-100 text-green-800 border-green-300">Offset</Badge> : 
                       <Badge variant="outline">Not Offset</Badge>
                     }
@@ -302,7 +234,7 @@ export function ShippingTracker() {
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          onClick={() => updateStatus(shipment.id, 'preparing')}
+                          onClick={() => handleUpdateStatus(shipment.id, 'preparing')}
                           className="h-7 px-2 text-xs"
                         >
                           Set Preparing
@@ -313,7 +245,7 @@ export function ShippingTracker() {
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          onClick={() => updateStatus(shipment.id, 'in-transit')}
+                          onClick={() => handleUpdateStatus(shipment.id, 'in-transit')}
                           className="h-7 px-2 text-xs"
                         >
                           Set In Transit
@@ -324,7 +256,7 @@ export function ShippingTracker() {
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          onClick={() => updateStatus(shipment.id, 'delivered')}
+                          onClick={() => handleUpdateStatus(shipment.id, 'delivered')}
                           className="h-7 px-2 text-xs"
                         >
                           Set Delivered

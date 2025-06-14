@@ -5,64 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Play, Square, Users, Calculator } from "lucide-react";
-
-interface TimeEntry {
-  id: string;
-  stage: string;
-  task: string;
-  duration: number;
-  worker: string;
-  hourlyRate: number;
-  cost: number;
-  timestamp: string;
-}
+import { Clock, Play, Users, Calculator } from "lucide-react";
+import { useTimeEntries } from "@/hooks/useTimeEntries";
 
 interface TimeLoggingProps {
   projectId: string;
-  onTimeUpdate: (entries: TimeEntry[]) => void;
+  onTimeUpdate?: (entries: any[]) => void;
 }
 
 export function TimeLogging({ projectId, onTimeUpdate }: TimeLoggingProps) {
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([
-    {
-      id: "1",
-      stage: "design",
-      task: "CAD modeling",
-      duration: 4.5,
-      worker: "Sarah Chen",
-      hourlyRate: 45,
-      cost: 202.5,
-      timestamp: "2024-01-15T09:00:00Z"
-    },
-    {
-      id: "2",
-      stage: "machining",
-      task: "Cutting reclaimed wood",
-      duration: 6.0,
-      worker: "Mike Rodriguez",
-      hourlyRate: 38,
-      cost: 228,
-      timestamp: "2024-01-16T08:30:00Z"
-    },
-    {
-      id: "3",
-      stage: "assembly",
-      task: "Table assembly",
-      duration: 3.5,
-      worker: "Anna Thompson",
-      hourlyRate: 42,
-      cost: 147,
-      timestamp: "2024-01-16T14:00:00Z"
-    }
-  ]);
+  const { timeEntries, loading, addTimeEntry } = useTimeEntries(projectId);
 
   const [newEntry, setNewEntry] = useState({
     stage: "",
     task: "",
     duration: "",
     worker: "",
-    hourlyRate: "40"
+    hourly_rate: "40"
   });
 
   const stages = [
@@ -76,31 +35,39 @@ export function TimeLogging({ projectId, onTimeUpdate }: TimeLoggingProps) {
     "Sarah Chen", "Mike Rodriguez", "Anna Thompson", "David Wilson", "Emma Davis"
   ];
 
-  const addTimeEntry = () => {
+  const handleAddTimeEntry = async () => {
     if (!newEntry.stage || !newEntry.task || !newEntry.duration || !newEntry.worker) return;
 
-    const entry: TimeEntry = {
-      id: Date.now().toString(),
+    const duration = parseFloat(newEntry.duration);
+    const hourlyRate = parseFloat(newEntry.hourly_rate);
+    const cost = duration * hourlyRate;
+
+    const entryData = {
+      project_id: projectId,
       stage: newEntry.stage,
       task: newEntry.task,
-      duration: parseFloat(newEntry.duration),
+      duration,
       worker: newEntry.worker,
-      hourlyRate: parseFloat(newEntry.hourlyRate),
-      cost: parseFloat(newEntry.duration) * parseFloat(newEntry.hourlyRate),
+      hourly_rate: hourlyRate,
+      cost,
       timestamp: new Date().toISOString()
     };
 
-    const updatedEntries = [...timeEntries, entry];
-    setTimeEntries(updatedEntries);
-    onTimeUpdate(updatedEntries);
+    const result = await addTimeEntry(entryData);
     
-    setNewEntry({
-      stage: "",
-      task: "",
-      duration: "",
-      worker: "",
-      hourlyRate: "40"
-    });
+    if (result) {
+      setNewEntry({
+        stage: "",
+        task: "",
+        duration: "",
+        worker: "",
+        hourly_rate: "40"
+      });
+
+      if (onTimeUpdate) {
+        onTimeUpdate(timeEntries);
+      }
+    }
   };
 
   const totalCost = timeEntries.reduce((sum, entry) => sum + entry.cost, 0);
@@ -109,6 +76,10 @@ export function TimeLogging({ projectId, onTimeUpdate }: TimeLoggingProps) {
   const getStageColor = (stage: string) => {
     return stages.find(s => s.value === stage)?.color || "bg-gray-500";
   };
+
+  if (loading) {
+    return <div>Loading time entries...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -143,7 +114,7 @@ export function TimeLogging({ projectId, onTimeUpdate }: TimeLoggingProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Avg Rate</p>
-                <p className="text-2xl font-bold">${(totalCost / totalHours).toFixed(0)}/hr</p>
+                <p className="text-2xl font-bold">${totalHours > 0 ? (totalCost / totalHours).toFixed(0) : 0}/hr</p>
               </div>
               <Users className="h-6 w-6 text-blue-400" />
             </div>
@@ -201,7 +172,7 @@ export function TimeLogging({ projectId, onTimeUpdate }: TimeLoggingProps) {
               </SelectContent>
             </Select>
 
-            <Button onClick={addTimeEntry} className="bg-primary hover:bg-primary/90">
+            <Button onClick={handleAddTimeEntry} className="bg-primary hover:bg-primary/90">
               Add Entry
             </Button>
           </div>
@@ -228,7 +199,7 @@ export function TimeLogging({ projectId, onTimeUpdate }: TimeLoggingProps) {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">{entry.duration}h × ${entry.hourlyRate}/hr</p>
+                    <p className="font-medium">{entry.duration}h × ${entry.hourly_rate}/hr</p>
                     <p className="text-sm text-primary font-semibold">${entry.cost.toFixed(2)}</p>
                   </div>
                 </div>

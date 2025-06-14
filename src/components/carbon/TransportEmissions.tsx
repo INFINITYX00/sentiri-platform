@@ -7,17 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Truck, PlusCircle, MapPin, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-
-interface TransportRoute {
-  id: string;
-  origin: string;
-  destination: string;
-  distance: number;
-  transportType: string;
-  carbonImpact: number;
-  date: string;
-}
+import { useTransportRoutes } from "@/hooks/useTransportRoutes";
 
 const transportEmissionFactors = {
   "electric-van": 0.02, // kg CO2e per km
@@ -28,77 +18,48 @@ const transportEmissionFactors = {
 };
 
 export function TransportEmissions() {
-  const { toast } = useToast();
-  const [routes, setRoutes] = useState<TransportRoute[]>([
-    {
-      id: "1",
-      origin: "Rotterdam Port, Netherlands",
-      destination: "Birmingham Workshop, UK",
-      distance: 585,
-      transportType: "diesel-truck",
-      carbonImpact: 497.25, // 585 * 0.85
-      date: "2024-05-10"
-    },
-    {
-      id: "2",
-      origin: "Birmingham Workshop, UK",
-      destination: "London Showroom, UK",
-      distance: 163,
-      transportType: "electric-van",
-      carbonImpact: 3.26, // 163 * 0.02
-      date: "2024-05-15"
-    }
-  ]);
-
+  const { routes, loading, addRoute } = useTransportRoutes();
+  
   const [newRoute, setNewRoute] = useState({
     origin: "",
     destination: "",
     distance: "",
-    transportType: "diesel-van",
+    transport_type: "diesel-van",
     date: new Date().toISOString().split('T')[0]
   });
 
-  const addRoute = () => {
+  const handleAddRoute = async () => {
     if (!newRoute.origin || !newRoute.destination || !newRoute.distance) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all route details",
-        variant: "destructive",
-      });
       return;
     }
 
     const distance = parseFloat(newRoute.distance);
-    const emissionFactor = transportEmissionFactors[newRoute.transportType as keyof typeof transportEmissionFactors];
-    const carbonImpact = distance * emissionFactor;
+    const emissionFactor = transportEmissionFactors[newRoute.transport_type as keyof typeof transportEmissionFactors];
+    const carbon_impact = distance * emissionFactor;
 
-    const route: TransportRoute = {
-      id: Date.now().toString(),
+    const routeData = {
       origin: newRoute.origin,
       destination: newRoute.destination,
       distance,
-      transportType: newRoute.transportType,
-      carbonImpact,
+      transport_type: newRoute.transport_type,
+      carbon_impact,
       date: newRoute.date
     };
 
-    setRoutes([...routes, route]);
+    const result = await addRoute(routeData);
     
-    toast({
-      title: "Route added",
-      description: `Added route with ${carbonImpact.toFixed(2)} kg CO₂e impact`,
-    });
-
-    setNewRoute({
-      origin: "",
-      destination: "",
-      distance: "",
-      transportType: "diesel-van",
-      date: new Date().toISOString().split('T')[0]
-    });
+    if (result) {
+      setNewRoute({
+        origin: "",
+        destination: "",
+        distance: "",
+        transport_type: "diesel-van",
+        date: new Date().toISOString().split('T')[0]
+      });
+    }
   };
 
-  const totalEmissions = routes.reduce((sum, route) => sum + route.carbonImpact, 0);
+  const totalEmissions = routes.reduce((sum, route) => sum + route.carbon_impact, 0);
   const averagePerRoute = routes.length > 0 ? totalEmissions / routes.length : 0;
 
   const getTransportTypeLabel = (type: string) => {
@@ -122,6 +83,10 @@ export function TransportEmissions() {
       default: return "bg-gray-500";
     }
   };
+
+  if (loading) {
+    return <div>Loading transport emissions data...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -194,8 +159,8 @@ export function TransportEmissions() {
             />
 
             <Select 
-              value={newRoute.transportType} 
-              onValueChange={(value) => setNewRoute({...newRoute, transportType: value})}
+              value={newRoute.transport_type} 
+              onValueChange={(value) => setNewRoute({...newRoute, transport_type: value})}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Transport Type" />
@@ -209,7 +174,7 @@ export function TransportEmissions() {
               </SelectContent>
             </Select>
 
-            <Button onClick={addRoute} className="bg-primary hover:bg-primary/90">
+            <Button onClick={handleAddRoute} className="bg-primary hover:bg-primary/90">
               Add Route
             </Button>
           </div>
@@ -240,11 +205,11 @@ export function TransportEmissions() {
                   <TableCell>{route.destination}</TableCell>
                   <TableCell>{route.distance} km</TableCell>
                   <TableCell>
-                    <Badge className={`${getTransportTypeColor(route.transportType)} text-white`}>
-                      {getTransportTypeLabel(route.transportType)}
+                    <Badge className={`${getTransportTypeColor(route.transport_type)} text-white`}>
+                      {getTransportTypeLabel(route.transport_type)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{route.carbonImpact.toFixed(2)} kg CO₂e</TableCell>
+                  <TableCell>{route.carbon_impact.toFixed(2)} kg CO₂e</TableCell>
                   <TableCell>{route.date}</TableCell>
                 </TableRow>
               ))}

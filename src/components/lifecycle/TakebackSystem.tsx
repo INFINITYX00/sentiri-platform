@@ -2,168 +2,106 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Recycle, Clock, Box, CircleArrowUp, Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-
-interface TakebackItem {
-  id: string;
-  productName: string;
-  serialNumber: string;
-  customerName: string;
-  requestDate: string;
-  status: string;
-  scheduledDate: string | null;
-  assessmentNotes: string;
-  recoveryValue: number;
-  carbonSaved: number;
-}
+import { Textarea } from "@/components/ui/textarea";
+import { Package, Recycle, Calendar, DollarSign, Plus } from "lucide-react";
+import { useTakebackItems } from "@/hooks/useTakebackItems";
 
 export function TakebackSystem() {
-  const { toast } = useToast();
+  const { items, loading, addItem, updateItemStatus } = useTakebackItems();
   
-  const [takebackItems, setTakebackItems] = useState<TakebackItem[]>([
-    {
-      id: "1",
-      productName: "Eco-Chair Series",
-      serialNumber: "ECH-2022-0056",
-      customerName: "Green Spaces Co",
-      requestDate: "2024-06-01",
-      status: "assessment",
-      scheduledDate: "2024-06-18",
-      assessmentNotes: "Minor wear on armrests, upholstery in good condition",
-      recoveryValue: 120,
-      carbonSaved: 18.5
-    },
-    {
-      id: "2",
-      productName: "Sustainable Desk",
-      serialNumber: "SDK-2021-0102",
-      customerName: "Sustainable Homes",
-      requestDate: "2024-05-15",
-      status: "processing",
-      scheduledDate: "2024-05-30",
-      assessmentNotes: "Surface scratches, all hardware intact",
-      recoveryValue: 95,
-      carbonSaved: 22.3
-    },
-    {
-      id: "3",
-      productName: "Modular Shelving Unit",
-      serialNumber: "MSU-2023-0034",
-      customerName: "EcoOffices",
-      requestDate: "2024-06-05",
-      status: "reclaimed",
-      scheduledDate: "2024-06-10",
-      assessmentNotes: "Excellent condition, successfully disassembled for reuse",
-      recoveryValue: 180,
-      carbonSaved: 34.8
-    }
-  ]);
-  
-  const [newTakeback, setNewTakeback] = useState({
-    productName: "",
-    serialNumber: "",
-    customerName: "",
+  const [newItem, setNewItem] = useState({
+    product_name: "",
+    serial_number: "",
+    customer_name: "",
+    request_date: new Date().toISOString().split('T')[0],
     status: "requested",
-    scheduledDate: "",
-    assessmentNotes: ""
+    scheduled_date: "",
+    assessment_notes: "",
+    recovery_value: "0",
+    carbon_saved: "0"
   });
-  
-  const addTakeback = () => {
-    if (!newTakeback.productName || !newTakeback.serialNumber || !newTakeback.customerName) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required takeback details",
-        variant: "destructive",
-      });
+
+  const handleAddItem = async () => {
+    if (!newItem.product_name || !newItem.serial_number || !newItem.customer_name) {
       return;
     }
-    
-    const recoveryValue = Math.floor(Math.random() * 200) + 50; // Random value between 50-250
-    const carbonSaved = +(Math.random() * 40 + 10).toFixed(1); // Random value between 10-50
-    
-    const takeback: TakebackItem = {
-      id: Date.now().toString(),
-      productName: newTakeback.productName,
-      serialNumber: newTakeback.serialNumber,
-      customerName: newTakeback.customerName,
-      requestDate: new Date().toISOString().split('T')[0],
-      status: newTakeback.status,
-      scheduledDate: newTakeback.scheduledDate || null,
-      assessmentNotes: newTakeback.assessmentNotes,
-      recoveryValue,
-      carbonSaved
+
+    const itemData = {
+      product_name: newItem.product_name,
+      serial_number: newItem.serial_number,
+      customer_name: newItem.customer_name,
+      request_date: newItem.request_date,
+      status: newItem.status,
+      scheduled_date: newItem.scheduled_date || null,
+      assessment_notes: newItem.assessment_notes || null,
+      recovery_value: parseFloat(newItem.recovery_value) || 0,
+      carbon_saved: parseFloat(newItem.carbon_saved) || 0
     };
+
+    const result = await addItem(itemData);
     
-    setTakebackItems([...takebackItems, takeback]);
-    
-    toast({
-      title: "Takeback request added",
-      description: `Product: ${newTakeback.productName} from ${newTakeback.customerName}`,
-    });
-    
-    setNewTakeback({
-      productName: "",
-      serialNumber: "",
-      customerName: "",
-      status: "requested",
-      scheduledDate: "",
-      assessmentNotes: ""
-    });
+    if (result) {
+      setNewItem({
+        product_name: "",
+        serial_number: "",
+        customer_name: "",
+        request_date: new Date().toISOString().split('T')[0],
+        status: "requested",
+        scheduled_date: "",
+        assessment_notes: "",
+        recovery_value: "0",
+        carbon_saved: "0"
+      });
+    }
   };
-  
-  const updateStatus = (id: string, status: string) => {
-    setTakebackItems(takebackItems.map(item => {
-      if (item.id === id) {
-        return { ...item, status };
-      }
-      return item;
-    }));
-    
-    toast({
-      title: "Status updated",
-      description: `Takeback status changed to: ${status}`,
-    });
+
+  const handleStatusUpdate = async (id: string, status: string) => {
+    let scheduledDate;
+    if (status === 'scheduled') {
+      scheduledDate = new Date().toISOString().split('T')[0];
+    }
+    await updateItemStatus(id, status, scheduledDate);
   };
-  
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'requested':
         return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">Requested</Badge>;
       case 'scheduled':
-        return <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">Scheduled</Badge>;
-      case 'assessment':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Assessment</Badge>;
-      case 'processing':
-        return <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">Processing</Badge>;
-      case 'reclaimed':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Reclaimed</Badge>;
+        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Scheduled</Badge>;
+      case 'collected':
+        return <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">Collected</Badge>;
+      case 'processed':
+        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Processed</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const totalItems = takebackItems.length;
-  const totalCarbon = takebackItems.reduce((sum, item) => sum + item.carbonSaved, 0);
-  const totalValue = takebackItems.reduce((sum, item) => sum + item.recoveryValue, 0);
+  const requestedCount = items.filter(item => item.status === 'requested').length;
+  const totalRecoveryValue = items.reduce((sum, item) => sum + item.recovery_value, 0);
+  const totalCarbonSaved = items.reduce((sum, item) => sum + item.carbon_saved, 0);
+
+  if (loading) {
+    return <div>Loading takeback system data...</div>;
+  }
 
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="sentiri-card">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Takebacks</p>
-                <p className="text-2xl font-bold">{totalItems}</p>
+                <p className="text-sm text-muted-foreground">Pending Requests</p>
+                <p className="text-2xl font-bold">{requestedCount}</p>
               </div>
-              <Box className="h-6 w-6 text-primary" />
+              <Package className="h-6 w-6 text-blue-400" />
             </div>
           </CardContent>
         </Card>
@@ -172,8 +110,8 @@ export function TakebackSystem() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Carbon Saved</p>
-                <p className="text-2xl font-bold">{totalCarbon.toFixed(1)} kg CO₂e</p>
+                <p className="text-sm text-muted-foreground">Total Items</p>
+                <p className="text-2xl font-bold">{items.length}</p>
               </div>
               <Recycle className="h-6 w-6 text-green-500" />
             </div>
@@ -185,9 +123,21 @@ export function TakebackSystem() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Recovery Value</p>
-                <p className="text-2xl font-bold">£{totalValue}</p>
+                <p className="text-2xl font-bold">${totalRecoveryValue.toFixed(0)}</p>
               </div>
-              <CircleArrowUp className="h-6 w-6 text-blue-500" />
+              <DollarSign className="h-6 w-6 text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="sentiri-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Carbon Saved</p>
+                <p className="text-2xl font-bold">{totalCarbonSaved.toFixed(1)} kg</p>
+              </div>
+              <div className="text-primary">CO₂</div>
             </div>
           </CardContent>
         </Card>
@@ -205,65 +155,61 @@ export function TakebackSystem() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               placeholder="Product Name"
-              value={newTakeback.productName}
-              onChange={(e) => setNewTakeback({...newTakeback, productName: e.target.value})}
+              value={newItem.product_name}
+              onChange={(e) => setNewItem({...newItem, product_name: e.target.value})}
             />
             
             <Input
               placeholder="Serial Number"
-              value={newTakeback.serialNumber}
-              onChange={(e) => setNewTakeback({...newTakeback, serialNumber: e.target.value})}
+              value={newItem.serial_number}
+              onChange={(e) => setNewItem({...newItem, serial_number: e.target.value})}
             />
             
             <Input
               placeholder="Customer Name"
-              value={newTakeback.customerName}
-              onChange={(e) => setNewTakeback({...newTakeback, customerName: e.target.value})}
+              value={newItem.customer_name}
+              onChange={(e) => setNewItem({...newItem, customer_name: e.target.value})}
             />
-            
-            <Select 
-              value={newTakeback.status} 
-              onValueChange={(value) => setNewTakeback({...newTakeback, status: value})}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="requested">Requested</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="assessment">Assessment</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="reclaimed">Reclaimed</SelectItem>
-              </SelectContent>
-            </Select>
             
             <Input
               type="date"
-              placeholder="Scheduled Date"
-              value={newTakeback.scheduledDate}
-              onChange={(e) => setNewTakeback({...newTakeback, scheduledDate: e.target.value})}
+              value={newItem.request_date}
+              onChange={(e) => setNewItem({...newItem, request_date: e.target.value})}
+            />
+            
+            <Input
+              type="number"
+              placeholder="Recovery Value ($)"
+              value={newItem.recovery_value}
+              onChange={(e) => setNewItem({...newItem, recovery_value: e.target.value})}
+            />
+            
+            <Input
+              type="number"
+              placeholder="Carbon Saved (kg)"
+              value={newItem.carbon_saved}
+              onChange={(e) => setNewItem({...newItem, carbon_saved: e.target.value})}
             />
             
             <div className="md:col-span-2">
               <Textarea
                 placeholder="Assessment Notes"
-                value={newTakeback.assessmentNotes}
-                onChange={(e) => setNewTakeback({...newTakeback, assessmentNotes: e.target.value})}
-                rows={3}
+                value={newItem.assessment_notes}
+                onChange={(e) => setNewItem({...newItem, assessment_notes: e.target.value})}
               />
             </div>
             
-            <Button onClick={addTakeback} className="bg-primary hover:bg-primary/90">
+            <Button onClick={handleAddItem} className="bg-primary hover:bg-primary/90 md:col-span-2">
               Add Takeback Request
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Takeback Table */}
+      {/* Takeback Items Table */}
       <Card className="sentiri-card">
         <CardHeader>
-          <CardTitle>Takeback Requests</CardTitle>
+          <CardTitle>Takeback Items</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -272,41 +218,58 @@ export function TakebackSystem() {
                 <TableHead>Product</TableHead>
                 <TableHead>Serial #</TableHead>
                 <TableHead>Customer</TableHead>
-                <TableHead>Request Date</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Scheduled Date</TableHead>
+                <TableHead>Request Date</TableHead>
                 <TableHead>Recovery Value</TableHead>
                 <TableHead>Carbon Saved</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {takebackItems.map((item) => (
+              {items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.productName}</TableCell>
-                  <TableCell>{item.serialNumber}</TableCell>
-                  <TableCell>{item.customerName}</TableCell>
-                  <TableCell>{item.requestDate}</TableCell>
+                  <TableCell className="font-medium">{item.product_name}</TableCell>
+                  <TableCell>{item.serial_number}</TableCell>
+                  <TableCell>{item.customer_name}</TableCell>
                   <TableCell>{getStatusBadge(item.status)}</TableCell>
-                  <TableCell>{item.scheduledDate || "-"}</TableCell>
-                  <TableCell>£{item.recoveryValue}</TableCell>
-                  <TableCell>{item.carbonSaved} kg CO₂e</TableCell>
+                  <TableCell>{item.request_date}</TableCell>
+                  <TableCell>${item.recovery_value.toFixed(2)}</TableCell>
+                  <TableCell>{item.carbon_saved.toFixed(1)} kg CO₂</TableCell>
                   <TableCell>
-                    <Select 
-                      defaultValue={item.status}
-                      onValueChange={(value) => updateStatus(item.id, value)}
-                    >
-                      <SelectTrigger className="h-8 w-[140px]">
-                        <SelectValue placeholder="Update Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="requested">Requested</SelectItem>
-                        <SelectItem value="scheduled">Scheduled</SelectItem>
-                        <SelectItem value="assessment">Assessment</SelectItem>
-                        <SelectItem value="processing">Processing</SelectItem>
-                        <SelectItem value="reclaimed">Reclaimed</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex space-x-1">
+                      {item.status === 'requested' && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleStatusUpdate(item.id, 'scheduled')}
+                          className="h-7 px-2 text-xs"
+                        >
+                          Schedule
+                        </Button>
+                      )}
+                      
+                      {item.status === 'scheduled' && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleStatusUpdate(item.id, 'collected')}
+                          className="h-7 px-2 text-xs"
+                        >
+                          Collect
+                        </Button>
+                      )}
+                      
+                      {item.status === 'collected' && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleStatusUpdate(item.id, 'processed')}
+                          className="h-7 px-2 text-xs"
+                        >
+                          Process
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
