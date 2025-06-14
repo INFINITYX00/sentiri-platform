@@ -71,10 +71,6 @@ const workspaceMenuItems = [
       { title: "Manufacturing Stages", url: "manufacturing", icon: Layers },
       { title: "Labor Calculator", url: "labor", icon: Calculator },
       { title: "Energy Estimator", url: "energy", icon: Zap },
-      { title: "Transport Emissions", url: "transport", icon: TrendingUp },
-      { title: "Shipping Tracker", url: "shipping", icon: Truck },
-      { title: "Take-back System", url: "takeback", icon: Recycle },
-      { title: "Circular Design", url: "circular", icon: Recycle }
     ]
   },
   {
@@ -82,6 +78,24 @@ const workspaceMenuItems = [
     url: "bom",
     icon: ShoppingCart,
     items: []
+  },
+  {
+    title: "Transport & Shipping",
+    url: "transport",
+    icon: Truck,
+    items: [
+      { title: "Transport Emissions", url: "transport", icon: TrendingUp },
+      { title: "Shipping Tracker", url: "shipping", icon: Truck },
+    ]
+  },
+  {
+    title: "Lifecycle Management",
+    url: "takeback",
+    icon: Recycle,
+    items: [
+      { title: "Take-back System", url: "takeback", icon: Recycle },
+      { title: "Circular Design", url: "circular", icon: Recycle }
+    ]
   },
   {
     title: "AI Insights",
@@ -145,7 +159,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           <img 
             src="/lovable-uploads/3acb41e9-62fb-4c55-ba24-9bada4c245de.png" 
             alt="Sentiri Logo" 
-            className="h-20 w-auto max-w-full"
+            className="h-24 w-auto max-w-full"
           />
         </div>
       </SidebarHeader>
