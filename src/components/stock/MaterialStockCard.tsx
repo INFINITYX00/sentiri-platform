@@ -7,7 +7,7 @@ import {
   Eye, 
   QrCode, 
   Trash2, 
-  Hash, 
+  Edit,
   DollarSign, 
   Database,
   Sparkles,
@@ -24,6 +24,7 @@ interface MaterialStockCardProps {
   allocation?: MaterialAllocation
   onViewQR: (material: Material) => void
   onViewMaterial: (materialId: string) => void
+  onEdit: (material: Material) => void
   onDelete: (material: Material) => void
 }
 
@@ -32,6 +33,7 @@ export function MaterialStockCard({
   allocation, 
   onViewQR, 
   onViewMaterial, 
+  onEdit,
   onDelete 
 }: MaterialStockCardProps) {
   const unitsTotal = material.unit_count || 1
@@ -199,13 +201,20 @@ export function MaterialStockCard({
           </div>
           
           {/* Actions */}
-          <div className="grid grid-cols-3 gap-2 pt-2">
+          <div className="grid grid-cols-4 gap-2 pt-2">
             <Button 
               size="sm" 
               variant="outline" 
               onClick={() => onViewMaterial(material.id)}
             >
               <Eye className="h-4 w-4" />
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => onEdit(material)}
+            >
+              <Edit className="h-4 w-4" />
             </Button>
             <Button 
               size="sm" 

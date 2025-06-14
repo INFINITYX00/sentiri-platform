@@ -6,6 +6,7 @@ import { useStockAllocations } from "@/hooks/useStockAllocations";
 import { useState } from "react";
 import { Package, Loader2 } from "lucide-react";
 import { MaterialStockCard } from "./MaterialStockCard";
+import { AddMaterialDialog } from "./AddMaterialDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,8 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   const [qrViewerOpen, setQrViewerOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [materialToEdit, setMaterialToEdit] = useState<Material | null>(null);
 
   console.log('StockGrid rendering with materials:', materials.length, materials);
 
@@ -86,6 +89,11 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
     window.open(`/material/${materialId}`, '_blank');
   };
 
+  const handleEditMaterial = (material: Material) => {
+    setMaterialToEdit(material);
+    setEditDialogOpen(true);
+  };
+
   const handleDeleteClick = (material: Material) => {
     setMaterialToDelete(material);
     setDeleteDialogOpen(true);
@@ -112,6 +120,7 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
               allocation={allocation}
               onViewQR={handleViewQR}
               onViewMaterial={handleViewMaterial}
+              onEdit={handleEditMaterial}
               onDelete={handleDeleteClick}
             />
           );
@@ -127,6 +136,16 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
           setSelectedMaterial(null);
         }}
         onRegenerate={regenerateQRCode}
+      />
+
+      {/* Edit Material Dialog */}
+      <AddMaterialDialog
+        open={editDialogOpen}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setMaterialToEdit(null);
+        }}
+        materialToEdit={materialToEdit}
       />
 
       {/* Delete Confirmation Dialog */}

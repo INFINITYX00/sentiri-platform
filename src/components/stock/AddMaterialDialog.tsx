@@ -1,5 +1,5 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -9,17 +9,19 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { useMaterials } from '@/hooks/useMaterials'
 import { useAICarbonLookup } from '@/hooks/useAICarbonLookup'
+import { Material } from '@/lib/supabase'
 import { MaterialImageUpload } from './MaterialImageUpload'
 import { MaterialTypeManager } from './MaterialTypeManager'
-import { Sparkles, QrCode, Loader2 } from 'lucide-react'
+import { Sparkles, QrCode, Loader2, Edit } from 'lucide-react'
 
 interface AddMaterialDialogProps {
   open: boolean
   onClose: () => void
+  materialToEdit?: Material | null
 }
 
-export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
-  const { addMaterial } = useMaterials()
+export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterialDialogProps) {
+  const { addMaterial, updateMaterial } = useMaterials()
   const { lookupCarbonData, loading: aiLoading } = useAICarbonLookup()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -42,6 +44,8 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
     image_url: ''
   })
 
+  const isEditing = !!materialToEdit
+
   const units = [
     'kg', 'g', 'tons', 'm', 'cm', 'mm', 'm²', 'cm²', 
     'mm²', 'm³', 'cm³', 'mm³', 'pieces', 'boards', 
@@ -58,6 +62,30 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
     'Environmental Product Declaration',
     'Other'
   ]
+
+  // Populate form when editing
+  useEffect(() => {
+    if (materialToEdit) {
+      setFormData({
+        name: materialToEdit.name || '',
+        type: materialToEdit.type || '',
+        specific_material: materialToEdit.specific_material || '',
+        origin: materialToEdit.origin || '',
+        quantity: materialToEdit.quantity || 0,
+        unit: materialToEdit.unit || '',
+        carbon_footprint: materialToEdit.carbon_footprint || 0,
+        carbon_source: materialToEdit.carbon_source || '',
+        cost_per_unit: materialToEdit.cost_per_unit || 0,
+        description: materialToEdit.description || '',
+        dimensions: materialToEdit.dimensions || '',
+        length: materialToEdit.length || 0,
+        width: materialToEdit.width || 0,
+        thickness: materialToEdit.thickness || 0,
+        dimension_unit: materialToEdit.dimension_unit || 'mm',
+        image_url: materialToEdit.image_url || ''
+      })
+    }
+  }, [materialToEdit])
 
   const handleAILookup = async () => {
     if (!formData.type || !formData.specific_material) {
@@ -130,7 +158,7 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
         dimensionsString = `${formData.length}×${formData.width}×${formData.thickness}${formData.dimension_unit}`
       }
 
-      await addMaterial({
+      const materialData = {
         name: formData.name,
         type: formData.type,
         specific_material: formData.specific_material || undefined,
@@ -147,19 +175,29 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
         thickness: formData.thickness || undefined,
         dimension_unit: formData.dimension_unit || undefined,
         image_url: formData.image_url || undefined
-      })
+      }
 
-      toast({
-        title: "Success",
-        description: "Material added successfully with QR code generated!",
-      })
+      if (isEditing && materialToEdit) {
+        await updateMaterial(materialToEdit.id, materialData)
+        toast({
+          title: "Success",
+          description: "Material updated successfully!",
+        })
+      } else {
+        await addMaterial(materialData)
+        toast({
+          title: "Success",
+          description: "Material added successfully with QR code generated!",
+        })
+      }
+
       resetForm()
       onClose()
     } catch (error) {
-      console.error("Error adding material:", error)
+      console.error("Error saving material:", error)
       toast({
         title: "Error",
-        description: "Failed to add material.",
+        description: `Failed to ${isEditing ? 'update' : 'add'} material.`,
         variant: "destructive"
       })
     } finally {
@@ -182,13 +220,18 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
     }))
   }
 
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <QrCode className="h-5 w-5" />
-            Add New Material
+            {isEditing ? <Edit className="h-5 w-5" /> : <QrCode className="h-5 w-5" />}
+            {isEditing ? 'Edit Material' : 'Add New Material'}
           </DialogTitle>
         </DialogHeader>
         
@@ -419,19 +462,19 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
 
           {/* Submit Button */}
           <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            <Button type="button" variant="outline" onClick={handleClose} className="flex-1">
               Cancel
             </Button>
             <Button type="submit" disabled={loading} className="flex-1">
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Adding...
+                  {isEditing ? 'Updating...' : 'Adding...'}
                 </>
               ) : (
                 <>
-                  <QrCode className="h-4 w-4 mr-2" />
-                  Add Material
+                  {isEditing ? <Edit className="h-4 w-4 mr-2" /> : <QrCode className="h-4 w-4 mr-2" />}
+                  {isEditing ? 'Update Material' : 'Add Material'}
                 </>
               )}
             </Button>
