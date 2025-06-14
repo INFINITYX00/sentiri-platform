@@ -36,7 +36,8 @@ export function MaterialStockCard({
   onEdit,
   onDelete 
 }: MaterialStockCardProps) {
-  const unitsTotal = material.unit_count || 1
+  // Use the actual quantity from the material, not unit_count
+  const unitsTotal = material.quantity || 0
   const unitsAllocated = allocation?.total_allocated || 0
   const unitsAvailable = Math.max(0, unitsTotal - unitsAllocated)
 
@@ -116,19 +117,19 @@ export function MaterialStockCard({
             
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-muted-foreground">Total Units</span>
-                <div className="font-semibold text-lg">{unitsTotal}</div>
+                <span className="text-muted-foreground">Total Stock</span>
+                <div className="font-semibold text-lg">{unitsTotal} {material.unit}</div>
               </div>
               <div>
                 <span className="text-muted-foreground">Available</span>
-                <div className="font-semibold text-lg text-green-600">{unitsAvailable}</div>
+                <div className="font-semibold text-lg text-green-600">{unitsAvailable} {material.unit}</div>
               </div>
             </div>
             
             {unitsAllocated > 0 && (
               <div className="text-sm">
                 <span className="text-muted-foreground">Allocated: </span>
-                <span className="font-medium text-orange-600">{unitsAllocated} units</span>
+                <span className="font-medium text-orange-600">{unitsAllocated} {material.unit}</span>
               </div>
             )}
           </div>
@@ -138,7 +139,7 @@ export function MaterialStockCard({
             <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
               <span className="text-sm text-muted-foreground flex items-center gap-1">
                 <DollarSign className="h-3 w-3" />
-                Cost per Unit
+                Cost per {material.unit}
               </span>
               <span className="font-semibold text-green-700">
                 ${material.cost_per_unit.toFixed(2)}
@@ -158,7 +159,7 @@ export function MaterialStockCard({
                   <div key={project.id} className="text-xs bg-blue-50 rounded px-2 py-1">
                     <span className="font-medium">{project.name}</span>
                     <span className="text-muted-foreground ml-2">
-                      {Math.max(0, project.quantity_required - project.quantity_consumed)} units
+                      {Math.max(0, project.quantity_required - project.quantity_consumed)} {material.unit}
                     </span>
                   </div>
                 ))}

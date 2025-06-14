@@ -28,6 +28,8 @@ export function useAICarbonLookup() {
   ): Promise<CarbonLookupData | null> => {
     setLoading(true)
     try {
+      console.log('Starting AI carbon lookup for:', { materialType, specificMaterial, origin, dimensions })
+      
       const { data, error } = await supabase.functions.invoke('ai-carbon-lookup', {
         body: {
           materialType,
@@ -36,6 +38,8 @@ export function useAICarbonLookup() {
           dimensions
         }
       })
+
+      console.log('AI lookup response:', { data, error })
 
       if (error) {
         console.error('Edge function error:', error)
@@ -46,12 +50,13 @@ export function useAICarbonLookup() {
         console.warn('Claude lookup returned fallback data:', data.error)
         toast({
           title: "Using Fallback Data",
-          description: "Claude lookup unavailable, using default estimates",
+          description: "AI lookup encountered an issue, using default estimates",
           variant: "default"
         })
       } else {
+        console.log('AI lookup successful:', data)
         toast({
-          title: "Claude AI Data Retrieved",
+          title: "AI Data Retrieved Successfully",
           description: `Confidence: ${Math.round(data.confidence * 100)}% • Source: ${data.source}`,
         })
       }
@@ -59,17 +64,28 @@ export function useAICarbonLookup() {
       return data
     } catch (error) {
       console.error('Error looking up carbon data:', error)
+      
+      // Provide more specific error messages
+      let errorMessage = "AI lookup failed, using default estimates"
+      if (error.message?.includes('network')) {
+        errorMessage = "Network error during AI lookup"
+      } else if (error.message?.includes('api key')) {
+        errorMessage = "AI service configuration issue"
+      }
+      
       toast({
-        title: "Lookup Failed",
-        description: "Using default carbon estimates",
+        title: "AI Lookup Failed",
+        description: errorMessage,
         variant: "destructive"
       })
+      
+      // Return fallback data instead of null
       return {
         carbonFactor: 2.0,
         density: 500,
         confidence: 0.1,
         source: 'Default estimate',
-        reasoning: 'Claude lookup failed, using system default'
+        reasoning: 'AI lookup failed, using system default values'
       }
     } finally {
       setLoading(false)

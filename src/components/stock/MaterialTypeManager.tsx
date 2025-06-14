@@ -1,5 +1,5 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -30,24 +30,37 @@ export function MaterialTypeManager({
   const [newDensity, setNewDensity] = useState(500)
   const [newCarbonFactor, setNewCarbonFactor] = useState(2.0)
 
+  console.log('MaterialTypeManager props:', { selectedCategory, selectedSpecificType })
+  console.log('Available material types:', materialTypes)
+
   const categories = [...new Set(materialTypes.map(mt => mt.category))].sort()
   const specificTypes = materialTypes.filter(mt => mt.category === selectedCategory)
 
+  console.log('Categories:', categories)
+  console.log('Specific types for category:', selectedCategory, specificTypes)
+
   const handleCategoryChange = (category: string) => {
+    console.log('Category changed to:', category)
     onCategoryChange(category)
     // Auto-select first specific type if available
     const typesInCategory = materialTypes.filter(mt => mt.category === category)
     if (typesInCategory.length > 0) {
       const firstType = typesInCategory[0]
+      console.log('Auto-selecting first type:', firstType.specific_type)
       onSpecificTypeChange(firstType.specific_type)
       onTypeSelected(firstType.carbon_factor || 2.0, firstType.density || 500)
+    } else {
+      // Clear specific type if no types available for this category
+      onSpecificTypeChange('')
     }
   }
 
   const handleSpecificTypeChange = (specificType: string) => {
+    console.log('Specific type changed to:', specificType)
     onSpecificTypeChange(specificType)
     const type = materialTypes.find(mt => mt.specific_type === specificType)
     if (type) {
+      console.log('Found type data:', type)
       onTypeSelected(type.carbon_factor || 2.0, type.density || 500)
     }
   }
@@ -131,7 +144,7 @@ export function MaterialTypeManager({
               </DialogContent>
             </Dialog>
           </div>
-          <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+          <Select value={selectedCategory || ""} onValueChange={handleCategoryChange}>
             <SelectTrigger>
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
@@ -147,7 +160,7 @@ export function MaterialTypeManager({
 
         <div>
           <Label htmlFor="specific_type">Specific Material</Label>
-          <Select value={selectedSpecificType} onValueChange={handleSpecificTypeChange}>
+          <Select value={selectedSpecificType || ""} onValueChange={handleSpecificTypeChange}>
             <SelectTrigger>
               <SelectValue placeholder="Select specific type" />
             </SelectTrigger>
