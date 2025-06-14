@@ -42,6 +42,12 @@ export function MaterialStockCard({
   const unitsAllocated = allocation?.total_allocated || 0
   const unitsAvailable = Math.max(0, unitsTotal - unitsAllocated)
 
+  // Calculate per-unit carbon factor if we have total carbon and weight
+  const estimatedWeight = material.weight || 1
+  const carbonFactor = material.carbon_footprint && estimatedWeight 
+    ? material.carbon_footprint / estimatedWeight 
+    : 0
+
   return (
     <Card className="sentiri-card hover:border-accent/30 transition-all duration-200 group">
       <div className="relative">
@@ -183,30 +189,39 @@ export function MaterialStockCard({
             </div>
           )}
           
-          {/* Additional Info with AI Sources */}
+          {/* Carbon Information */}
           <div className="space-y-2 pt-2 border-t">
-            {material.origin && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-muted-foreground">Carbon Impact</span>
+              {material.ai_carbon_confidence && (
+                <Badge variant="outline" className="h-4 px-1 text-xs bg-purple-50 text-purple-600">
+                  <Sparkles className="h-2 w-2 mr-1" />
+                  AI {Math.round(material.ai_carbon_confidence * 100)}%
+                </Badge>
+              )}
+            </div>
+
+            {/* Carbon Factor (per unit) */}
+            {carbonFactor > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Origin:</span>
-                <span className="font-medium text-xs">{material.origin}</span>
+                <span className="text-muted-foreground">Carbon Factor:</span>
+                <span className="font-medium text-blue-600 text-xs">
+                  {carbonFactor.toFixed(2)} kg CO₂/kg
+                </span>
               </div>
             )}
             
+            {/* Total Carbon */}
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Carbon:</span>
+              <span className="text-muted-foreground">Total Carbon:</span>
               <div className="flex items-center gap-2">
                 <span className="font-medium text-primary text-xs">
-                  {material.carbon_footprint.toFixed(1)} kg CO₂
+                  {material.carbon_footprint.toFixed(1)} kg CO₂e
                 </span>
-                {material.ai_carbon_confidence && (
-                  <Badge variant="outline" className="h-4 px-1 text-xs bg-purple-50 text-purple-600">
-                    <Sparkles className="h-2 w-2 mr-1" />
-                    AI
-                  </Badge>
-                )}
               </div>
             </div>
 
+            {/* Carbon Source */}
             {material.carbon_source && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground flex items-center gap-1">
@@ -219,6 +234,7 @@ export function MaterialStockCard({
               </div>
             )}
 
+            {/* AI Carbon Source */}
             {material.ai_carbon_source && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground flex items-center gap-1">
@@ -231,6 +247,14 @@ export function MaterialStockCard({
               </div>
             )}
           </div>
+
+          {/* Additional Info */}
+          {material.origin && (
+            <div className="flex justify-between text-sm pt-2 border-t">
+              <span className="text-muted-foreground">Origin:</span>
+              <span className="font-medium text-xs">{material.origin}</span>
+            </div>
+          )}
           
           {/* Actions */}
           <div className="grid grid-cols-4 gap-2 pt-2">
