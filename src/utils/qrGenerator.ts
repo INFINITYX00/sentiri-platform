@@ -21,6 +21,14 @@ export async function generateQRCode(data: string): Promise<string> {
 
 export function parseQRCode(qrData: string): { type: string; id: string } | null {
   try {
+    // Handle web URLs (new format)
+    if (qrData.includes('/material/')) {
+      const materialId = qrData.split('/material/')[1];
+      if (materialId) {
+        return { type: 'material', id: materialId };
+      }
+    }
+    
     // Expected format: "material:uuid" or "passport:uuid"
     if (qrData.includes(':')) {
       const [type, id] = qrData.split(':')
@@ -40,9 +48,10 @@ export function parseQRCode(qrData: string): { type: string; id: string } | null
   }
 }
 
-// Generate QR data for materials
+// Generate QR data for materials - now creates web links
 export function createMaterialQRData(materialId: string): string {
-  return `material:${materialId}`
+  const baseUrl = window.location.origin;
+  return `${baseUrl}/material/${materialId}`;
 }
 
 // Generate QR data for material passports

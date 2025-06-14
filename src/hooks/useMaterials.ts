@@ -3,6 +3,7 @@ import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { generateQRCode } from '@/utils/qrGenerator'
 import { uploadFile } from '@/utils/fileUpload'
+import { createMaterialQRData } from '@/utils/qrGenerator'
 
 export function useMaterials() {
   const [materials, setMaterials] = useState<Material[]>([])
@@ -49,8 +50,8 @@ export function useMaterials() {
 
       if (insertError) throw insertError
 
-      // Generate meaningful QR code data
-      const qrData = `material:${newMaterial.id}`
+      // Generate web-linkable QR code data
+      const qrData = createMaterialQRData(newMaterial.id);
       
       // Generate QR code image
       const qrCodeDataURL = await generateQRCode(qrData)
@@ -85,7 +86,7 @@ export function useMaterials() {
       await fetchMaterials()
       toast({
         title: "Success",
-        description: `Material "${materialData.name}" added with QR code ${finalQRCode}`,
+        description: `Material "${materialData.name}" added with web-linkable QR code ${finalQRCode}`,
       })
 
       return { ...newMaterial, qr_code: finalQRCode }
@@ -152,7 +153,7 @@ export function useMaterials() {
 
   const generateQRCodeForMaterial = async (materialId: string) => {
     try {
-      const qrData = `material:${materialId}`
+      const qrData = createMaterialQRData(materialId);
       const qrCodeDataURL = await generateQRCode(qrData)
       
       // Convert to downloadable blob
@@ -171,7 +172,7 @@ export function useMaterials() {
       
       toast({
         title: "Success",
-        description: "QR code downloaded successfully",
+        description: "Web-linkable QR code downloaded successfully",
       })
     } catch (error) {
       console.error('Error generating QR code:', error)
