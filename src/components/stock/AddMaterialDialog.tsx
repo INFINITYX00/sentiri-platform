@@ -43,6 +43,8 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   const [aiCarbonData, setAiCarbonData] = useState<any>(null);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [showAddMaterialType, setShowAddMaterialType] = useState(false);
+  const [newMaterialTypeName, setNewMaterialTypeName] = useState('');
   const [calculatedMetrics, setCalculatedMetrics] = useState({
     volume: 0,
     quantity: 0,
@@ -182,6 +184,54 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
       setFormData(prev => ({ ...prev, type: newCategoryName.trim() }));
       setNewCategoryName('');
       setShowAddCategory(false);
+    }
+  };
+
+  const handleAddNewMaterialType = async () => {
+    if (!newMaterialTypeName.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a material type name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.type) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a category first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if this material type already exists
+    const existingMaterialType = getMaterialTypeBySpecific(newMaterialTypeName.trim());
+    if (existingMaterialType) {
+      toast({
+        title: "Already Exists",
+        description: "This material type already exists in the database",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const result = await addMaterialType({
+      category: formData.type,
+      specific_type: newMaterialTypeName.trim(),
+      density: undefined,
+      carbon_factor: 2.0 // Default carbon factor
+    });
+
+    if (result) {
+      setFormData(prev => ({ 
+        ...prev, 
+        specific_material: newMaterialTypeName.trim(),
+        use_custom_material: false
+      }));
+      setNewMaterialTypeName('');
+      setShowAddMaterialType(false);
     }
   };
 
@@ -546,49 +596,92 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                   </div>
 
                   {!formData.use_custom_material ? (
-                    <div className="flex gap-2">
-                      <Select 
-                        value={formData.specific_material} 
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, specific_material: value }))}
-                        disabled={uploading || !formData.type}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select specific material" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getTypesByCategory(formData.type).map((materialType) => (
-                            <div key={materialType.id} className="flex items-center group">
-                              <SelectItem value={materialType.specific_type} className="flex-1">
-                                {materialType.specific_type}
-                              </SelectItem>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 ml-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleDeleteMaterialType(materialType);
-                                }}
-                                title={`Delete "${materialType.specific_type}"`}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handleAddCustomMaterialType}
-                        disabled={!formData.type || !formData.specific_material}
-                        title="Add this material type to database for future use"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Select 
+                          value={formData.specific_material} 
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, specific_material: value }))}
+                          disabled={uploading || !formData.type}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Select specific material" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getTypesByCategory(formData.type).map((materialType) => (
+                              <div key={materialType.id} className="flex items-center group">
+                                <SelectItem value={materialType.specific_type} className="flex-1">
+                                  {materialType.specific_type}
+                                </SelectItem>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 ml-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleDeleteMaterialType(materialType);
+                                  }}
+                                  title={`Delete "${materialType.specific_type}"`}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setShowAddMaterialType(true)}
+                          disabled={!formData.type}
+                          title="Add new material type"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Add Material Type Input */}
+                      {showAddMaterialType && (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Enter new material type name"
+                            value={newMaterialTypeName}
+                            onChange={(e) => setNewMaterialTypeName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddNewMaterialType();
+                              }
+                              if (e.key === 'Escape') {
+                                setShowAddMaterialType(false);
+                                setNewMaterialTypeName('');
+                              }
+                            }}
+                            className="flex-1"
+                            autoFocus
+                          />
+                          <Button 
+                            type="button" 
+                            size="sm" 
+                            onClick={handleAddNewMaterialType}
+                          >
+                            Add
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setShowAddMaterialType(false);
+                              setNewMaterialTypeName('');
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="flex gap-2">
