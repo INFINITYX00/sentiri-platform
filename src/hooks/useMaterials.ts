@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -67,12 +66,13 @@ export function useMaterials() {
       
       if (uploadResult.error) {
         console.warn('QR code image upload failed:', uploadResult.error)
-        // Update material with just the QR data, no image
+        // Update material with just the QR data, no QR image, but keep original material image
         await supabase
           .from('materials')
           .update({ 
             qr_code: qrData, // Store the web-linkable URL
             qr_image_url: null
+            // Keep the original image_url from materialData
           })
           .eq('id', newMaterial.id)
           
@@ -81,13 +81,13 @@ export function useMaterials() {
           description: "QR code generated but image upload failed. Material added successfully.",
         })
       } else {
-        // Update material with both QR data and image URL
+        // Update material with QR data and QR image URL, but keep original material image
         await supabase
           .from('materials')
           .update({ 
             qr_code: qrData, // Store the web-linkable URL
-            qr_image_url: uploadResult.url,
-            image_url: materialData.image_url || uploadResult.url // Use material image or QR as fallback
+            qr_image_url: uploadResult.url
+            // Keep the original image_url from materialData - don't overwrite it
           })
           .eq('id', newMaterial.id)
       }
@@ -210,13 +210,14 @@ export function useMaterials() {
         throw new Error(uploadResult.error)
       }
       
-      // Update material with new QR image URL
+      // Update material with new QR image URL, but don't change the material image
       await supabase
         .from('materials')
         .update({ 
           qr_code: qrData,
           qr_image_url: uploadResult.url,
           updated_at: new Date().toISOString()
+          // Don't update image_url - that should remain the original material image
         })
         .eq('id', materialId)
       
