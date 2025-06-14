@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,12 @@ import { useAICarbonLookup } from '@/hooks/useAICarbonLookup';
 import { uploadFile } from '@/utils/fileUpload';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 interface AddMaterialDialogProps {
   open: boolean;
@@ -50,7 +55,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   });
   
   const { addMaterial } = useMaterials();
-  const { materialTypes, getCategories, getTypesByCategory, getMaterialTypeBySpecific, addMaterialType } = useMaterialTypes();
+  const { materialTypes, getCategories, getTypesByCategory, getMaterialTypeBySpecific, addMaterialType, deleteMaterialType } = useMaterialTypes();
   const { lookupCarbonData, loading: aiLoading } = useAICarbonLookup();
   const { toast } = useToast();
 
@@ -314,6 +319,16 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
     }
   };
 
+  const handleDeleteMaterialType = async (materialType: any) => {
+    const result = await deleteMaterialType(materialType.id);
+    if (result) {
+      // Clear the form field if the deleted item was selected
+      if (formData.specific_material === materialType.specific_type) {
+        setFormData(prev => ({ ...prev, specific_material: '' }));
+      }
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[900px] sentiri-card border max-h-[90vh] overflow-y-auto">
@@ -445,9 +460,21 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                         </SelectTrigger>
                         <SelectContent>
                           {getTypesByCategory(formData.type).map((materialType) => (
-                            <SelectItem key={materialType.id} value={materialType.specific_type}>
-                              {materialType.specific_type}
-                            </SelectItem>
+                            <ContextMenu key={materialType.id}>
+                              <ContextMenuTrigger asChild>
+                                <SelectItem value={materialType.specific_type}>
+                                  {materialType.specific_type}
+                                </SelectItem>
+                              </ContextMenuTrigger>
+                              <ContextMenuContent>
+                                <ContextMenuItem
+                                  onClick={() => handleDeleteMaterialType(materialType)}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  Delete "{materialType.specific_type}"
+                                </ContextMenuItem>
+                              </ContextMenuContent>
+                            </ContextMenu>
                           ))}
                         </SelectContent>
                       </Select>

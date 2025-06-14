@@ -60,6 +60,34 @@ export function useMaterialTypes() {
     }
   }
 
+  const deleteMaterialType = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('material_types')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+      
+      setMaterialTypes(prev => prev.filter(mt => mt.id !== id))
+      
+      toast({
+        title: "Success",
+        description: "Material type deleted successfully",
+      })
+      
+      return true
+    } catch (error) {
+      console.error('Error deleting material type:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete material type",
+        variant: "destructive"
+      })
+      return false
+    }
+  }
+
   const getMaterialTypeBySpecific = (specificType: string) => {
     return materialTypes.find(mt => mt.specific_type === specificType)
   }
@@ -80,6 +108,7 @@ export function useMaterialTypes() {
     materialTypes,
     loading,
     addMaterialType,
+    deleteMaterialType,
     getMaterialTypeBySpecific,
     getTypesByCategory,
     getCategories,
