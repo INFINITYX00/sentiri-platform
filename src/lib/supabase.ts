@@ -19,6 +19,7 @@ export interface Material {
   description?: string
   image_url?: string
   qr_code: string
+  qr_image_url?: string
   carbon_footprint: number
   created_at: string
   updated_at: string

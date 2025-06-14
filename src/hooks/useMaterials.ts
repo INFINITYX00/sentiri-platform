@@ -1,9 +1,9 @@
+
 import { useState, useEffect } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
-import { generateQRCode } from '@/utils/qrGenerator'
+import { generateQRCode, createMaterialQRData, generateSimpleQRCode } from '@/utils/qrGenerator'
 import { uploadFile } from '@/utils/fileUpload'
-import { createMaterialQRData } from '@/utils/qrGenerator'
 
 export function useMaterials() {
   const [materials, setMaterials] = useState<Material[]>([])
@@ -32,7 +32,7 @@ export function useMaterials() {
     }
   }
 
-  const addMaterial = async (materialData: Omit<Material, 'id' | 'created_at' | 'updated_at' | 'qr_code'>) => {
+  const addMaterial = async (materialData: Omit<Material, 'id' | 'created_at' | 'updated_at' | 'qr_code' | 'qr_image_url'>) => {
     setLoading(true)
     try {
       // First insert the material to get the ID
@@ -50,8 +50,9 @@ export function useMaterials() {
 
       if (insertError) throw insertError
 
-      // Generate web-linkable QR code data
+      // Generate web-linkable QR code data and simple identifier
       const qrData = createMaterialQRData(newMaterial.id);
+      const simpleQRCode = generateSimpleQRCode(newMaterial.id);
       
       // Generate QR code image
       const qrCodeDataURL = await generateQRCode(qrData)
@@ -64,21 +65,29 @@ export function useMaterials() {
       // Upload QR code image to storage
       const uploadResult = await uploadFile(qrFile, 'material-images', 'qr-codes')
       
-      let finalQRCode = `QR${newMaterial.id.slice(-6).toUpperCase()}`
-      
       if (uploadResult.error) {
         console.warn('QR code image upload failed:', uploadResult.error)
+        // Update material with just the QR data, no image
+        await supabase
+          .from('materials')
+          .update({ 
+            qr_code: qrData, // Store the web-linkable URL
+            qr_image_url: null
+          })
+          .eq('id', newMaterial.id)
+          
         toast({
           title: "Warning",
           description: "QR code generated but image upload failed. Material added successfully.",
         })
       } else {
-        // Update material with QR code image URL
+        // Update material with both QR data and image URL
         await supabase
           .from('materials')
           .update({ 
-            qr_code: finalQRCode,
-            image_url: materialData.image_url || uploadResult.url // Use QR as fallback image if no image provided
+            qr_code: qrData, // Store the web-linkable URL
+            qr_image_url: uploadResult.url,
+            image_url: materialData.image_url || uploadResult.url // Use material image or QR as fallback
           })
           .eq('id', newMaterial.id)
       }
@@ -86,10 +95,10 @@ export function useMaterials() {
       await fetchMaterials()
       toast({
         title: "Success",
-        description: `Material "${materialData.name}" added with web-linkable QR code ${finalQRCode}`,
+        description: `Material "${materialData.name}" added with QR code ${simpleQRCode}`,
       })
 
-      return { ...newMaterial, qr_code: finalQRCode }
+      return { ...newMaterial, qr_code: qrData, qr_image_url: uploadResult.url }
     } catch (error) {
       console.error('Error adding material:', error)
       toast({
@@ -184,6 +193,48 @@ export function useMaterials() {
     }
   }
 
+  const regenerateQRCode = async (materialId: string) => {
+    try {
+      const qrData = createMaterialQRData(materialId);
+      const qrCodeDataURL = await generateQRCode(qrData)
+      
+      // Convert data URL to blob for upload
+      const response = await fetch(qrCodeDataURL)
+      const blob = await response.blob()
+      const qrFile = new File([blob], `qr-${materialId}.png`, { type: 'image/png' })
+      
+      // Upload new QR code image
+      const uploadResult = await uploadFile(qrFile, 'material-images', 'qr-codes')
+      
+      if (uploadResult.error) {
+        throw new Error(uploadResult.error)
+      }
+      
+      // Update material with new QR image URL
+      await supabase
+        .from('materials')
+        .update({ 
+          qr_code: qrData,
+          qr_image_url: uploadResult.url,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', materialId)
+      
+      await fetchMaterials()
+      toast({
+        title: "Success",
+        description: "QR code regenerated successfully",
+      })
+    } catch (error) {
+      console.error('Error regenerating QR code:', error)
+      toast({
+        title: "Error",
+        description: "Failed to regenerate QR code",
+        variant: "destructive"
+      })
+    }
+  }
+
   useEffect(() => {
     fetchMaterials()
   }, [])
@@ -195,7 +246,8 @@ export function useMaterials() {
     updateMaterial,
     deleteMaterial,
     refreshMaterials: fetchMaterials,
-    generateQRCodeForMaterial
+    generateQRCodeForMaterial,
+    regenerateQRCode
   }
 }
 

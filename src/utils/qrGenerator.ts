@@ -58,3 +58,8 @@ export function createMaterialQRData(materialId: string): string {
 export function createPassportQRData(passportId: string): string {
   return `passport:${passportId}`
 }
+
+// Generate a simple QR code identifier
+export function generateSimpleQRCode(materialId: string): string {
+  return `QR${materialId.slice(-6).toUpperCase()}`;
+}

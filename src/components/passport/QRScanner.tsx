@@ -41,7 +41,23 @@ export function QRScanner({ isOpen, onClose, onMaterialFound }: QRScannerProps) 
         }
       }
 
-      // If not found by ID, search by QR code string
+      // If not found by ID, try searching by QR code URL
+      if (!material && qrCode.includes('/material/')) {
+        const materialId = qrCode.split('/material/')[1];
+        if (materialId) {
+          const { data, error } = await supabase
+            .from('materials')
+            .select('*')
+            .eq('id', materialId)
+            .single();
+          
+          if (!error && data) {
+            material = data;
+          }
+        }
+      }
+
+      // If still not found, search by QR code string in the qr_code field
       if (!material) {
         const { data, error } = await supabase
           .from('materials')
@@ -51,6 +67,19 @@ export function QRScanner({ isOpen, onClose, onMaterialFound }: QRScannerProps) 
         
         if (!error && data) {
           material = data;
+        }
+      }
+
+      // Last resort: search for materials where qr_code contains the input
+      if (!material) {
+        const { data, error } = await supabase
+          .from('materials')
+          .select('*')
+          .ilike('qr_code', `%${qrCode}%`)
+          .limit(1);
+        
+        if (!error && data && data.length > 0) {
+          material = data[0];
         }
       }
 
@@ -164,12 +193,12 @@ export function QRScanner({ isOpen, onClose, onMaterialFound }: QRScannerProps) 
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="qr-code">Enter QR Code</Label>
+                <Label htmlFor="qr-code">Enter QR Code or URL</Label>
                 <Input
                   id="qr-code"
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value)}
-                  placeholder="e.g., QR001, material:uuid, or QR code text..."
+                  placeholder="e.g., QR001, material ID, or full URL..."
                   className="bg-background/50"
                   disabled={searching}
                   onKeyDown={(e) => {
@@ -179,7 +208,7 @@ export function QRScanner({ isOpen, onClose, onMaterialFound }: QRScannerProps) 
                   }}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Enter the QR code printed on the material label
+                  Enter QR code, material ID, or the full URL from scanning
                 </p>
               </div>
               
@@ -219,6 +248,13 @@ export function QRScanner({ isOpen, onClose, onMaterialFound }: QRScannerProps) 
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Usage Note */}
+          <div className="bg-muted/20 rounded-lg p-3">
+            <p className="text-xs text-muted-foreground">
+              <strong>Supported formats:</strong> QR codes with URLs, material IDs, or legacy QR codes. The scanner will try multiple search methods to find your material.
+            </p>
           </div>
         </div>
       </DialogContent>

@@ -236,6 +236,7 @@ export type Database = {
           name: string
           origin: string | null
           qr_code: string
+          qr_image_url: string | null
           quantity: number
           type: string
           unit: string
@@ -251,6 +252,7 @@ export type Database = {
           name: string
           origin?: string | null
           qr_code: string
+          qr_image_url?: string | null
           quantity?: number
           type: string
           unit: string
@@ -266,6 +268,7 @@ export type Database = {
           name?: string
           origin?: string | null
           qr_code?: string
+          qr_image_url?: string | null
           quantity?: number
           type?: string
           unit?: string
