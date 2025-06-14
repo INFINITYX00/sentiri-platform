@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,13 +19,12 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface StockGridProps {
-  materials: Material[];
   searchQuery: string;
   selectedType: string;
 }
 
-export function StockGrid({ materials, searchQuery, selectedType }: StockGridProps) {
-  const { regenerateQRCode, deleteMaterial } = useMaterials();
+export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
+  const { materials, regenerateQRCode, deleteMaterial } = useMaterials();
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [qrViewerOpen, setQrViewerOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
