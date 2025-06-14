@@ -2,7 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QrCode, Eye, Package, ExternalLink, Trash2, Loader2, Ruler, Weight } from "lucide-react";
+import { QrCode, Eye, Package, ExternalLink, Trash2, Loader2, Ruler, Weight, Sparkles, Hash } from "lucide-react";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useState } from "react";
@@ -120,6 +120,18 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
                   {generateSimpleQRCode(item.id)}
                 </Badge>
               </div>
+              {/* AI Data Indicator */}
+              {item.ai_carbon_confidence && (
+                <div className="absolute bottom-3 left-3">
+                  <Badge 
+                    variant="secondary" 
+                    className="h-6 px-2 bg-purple-100 text-purple-700 border-purple-200"
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    AI {Math.round(item.ai_carbon_confidence * 100)}%
+                  </Badge>
+                </div>
+              )}
               {/* QR Code Indicator */}
               {item.qr_image_url && (
                 <div className="absolute bottom-3 right-3">
@@ -145,6 +157,16 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
                 </div>
                 
                 <div className="space-y-2">
+                  {item.unit_count && item.unit_count > 1 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Hash className="h-3 w-3" />
+                        Units:
+                      </span>
+                      <span className="font-medium">{item.unit_count}</span>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground flex items-center gap-1">
                       <Ruler className="h-3 w-3" />
@@ -181,6 +203,13 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
                     <span className="text-muted-foreground">Carbon:</span>
                     <span className="font-medium text-primary text-xs">{item.carbon_footprint.toFixed(1)} kg CO₂</span>
                   </div>
+
+                  {item.ai_carbon_source && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">AI Source:</span>
+                      <span className="font-medium text-xs text-purple-600">{item.ai_carbon_source}</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-3 gap-2 pt-2">

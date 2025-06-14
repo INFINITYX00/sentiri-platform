@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Camera, Calculator, Plus } from "lucide-react";
+import { Upload, Camera, Calculator, Plus, Sparkles, AlertCircle } from "lucide-react";
 import { useMaterials } from '@/hooks/useMaterials';
 import { useMaterialTypes } from '@/hooks/useMaterialTypes';
+import { useAICarbonLookup } from '@/hooks/useAICarbonLookup';
 import { uploadFile } from '@/utils/fileUpload';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AddMaterialDialogProps {
   open: boolean;
@@ -26,14 +28,18 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
     width: '',
     thickness: '',
     dimension_unit: 'mm',
+    unit_count: '1',
     origin: '',
     description: '',
     image: null as File | null,
     density: '',
-    custom_density: false
+    carbon_factor: '',
+    custom_density: false,
+    custom_carbon: false
   });
   
   const [uploading, setUploading] = useState(false);
+  const [aiCarbonData, setAiCarbonData] = useState<any>(null);
   const [calculatedMetrics, setCalculatedMetrics] = useState({
     volume: 0,
     quantity: 0,
@@ -43,13 +49,15 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   
   const { addMaterial } = useMaterials();
   const { materialTypes, getCategories, getTypesByCategory, getMaterialTypeBySpecific, addMaterialType } = useMaterialTypes();
+  const { lookupCarbonData, loading: aiLoading } = useAICarbonLookup();
   const { toast } = useToast();
 
-  // Calculate metrics when dimensions or material type changes
+  // Calculate metrics when dimensions, unit count, or material type changes
   useEffect(() => {
     const length = parseFloat(formData.length) || 0;
     const width = parseFloat(formData.width) || 0;
     const thickness = parseFloat(formData.thickness) || 0;
+    const unitCount = parseInt(formData.unit_count) || 1;
     
     if (length > 0 && width > 0 && thickness > 0) {
       let volumeInM3 = 0;
@@ -69,26 +77,38 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
           volumeInM3 = (length * width * thickness) / 1000000000;
       }
       
-      const quantityInMm3 = volumeInM3 * 1000000000; // Convert back to mm³ for display
+      // Calculate total volume for all units
+      const totalVolumeInM3 = volumeInM3 * unitCount;
+      const quantityInMm3 = totalVolumeInM3 * 1000000000; // Convert back to mm³ for display
       
-      // Get density from material type or custom input
+      // Get density from AI data, material type, or custom input
       let density = 0;
       if (formData.custom_density) {
         density = parseFloat(formData.density) || 0;
+      } else if (aiCarbonData?.density) {
+        density = aiCarbonData.density;
       } else {
         const materialType = getMaterialTypeBySpecific(formData.specific_material);
         density = materialType?.density || 0;
       }
       
-      const weight = volumeInM3 * density; // kg
+      const weight = totalVolumeInM3 * density; // kg
       
-      // Calculate carbon footprint
-      const materialType = getMaterialTypeBySpecific(formData.specific_material);
-      const carbonFactor = materialType?.carbon_factor || 2.0;
-      const carbonFootprint = weight * carbonFactor;
+      // Calculate carbon footprint per unit, then multiply by unit count
+      let carbonFactorPerKg = 0;
+      if (formData.custom_carbon) {
+        carbonFactorPerKg = parseFloat(formData.carbon_factor) || 0;
+      } else if (aiCarbonData?.carbonFactor) {
+        carbonFactorPerKg = aiCarbonData.carbonFactor;
+      } else {
+        const materialType = getMaterialTypeBySpecific(formData.specific_material);
+        carbonFactorPerKg = materialType?.carbon_factor || 2.0;
+      }
+      
+      const carbonFootprint = weight * carbonFactorPerKg;
       
       setCalculatedMetrics({
-        volume: volumeInM3,
+        volume: totalVolumeInM3,
         quantity: quantityInMm3,
         weight,
         carbonFootprint
@@ -96,7 +116,40 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
     } else {
       setCalculatedMetrics({ volume: 0, quantity: 0, weight: 0, carbonFootprint: 0 });
     }
-  }, [formData.length, formData.width, formData.thickness, formData.dimension_unit, formData.specific_material, formData.density, formData.custom_density, getMaterialTypeBySpecific]);
+  }, [formData.length, formData.width, formData.thickness, formData.dimension_unit, formData.unit_count, formData.specific_material, formData.density, formData.carbon_factor, formData.custom_density, formData.custom_carbon, aiCarbonData, getMaterialTypeBySpecific]);
+
+  const handleAICarbonLookup = async () => {
+    if (!formData.type || !formData.specific_material) {
+      toast({
+        title: "Missing Information",
+        description: "Please select material type and specific material first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const dimensions = formData.length && formData.width && formData.thickness 
+      ? `${formData.length}${formData.dimension_unit} × ${formData.width}${formData.dimension_unit} × ${formData.thickness}${formData.dimension_unit}`
+      : undefined;
+
+    const data = await lookupCarbonData(
+      formData.type,
+      formData.specific_material,
+      formData.origin,
+      dimensions
+    );
+
+    if (data) {
+      setAiCarbonData(data);
+      // Update form with AI data
+      if (!formData.custom_density && data.density) {
+        setFormData(prev => ({ ...prev, density: data.density.toString() }));
+      }
+      if (!formData.custom_carbon && data.carbonFactor) {
+        setFormData(prev => ({ ...prev, carbon_factor: data.carbonFactor.toString() }));
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +173,8 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
 
       // Get material type data
       const materialType = getMaterialTypeBySpecific(formData.specific_material);
-      const density = formData.custom_density ? parseFloat(formData.density) : materialType?.density;
+      const density = formData.custom_density ? parseFloat(formData.density) : 
+                      aiCarbonData?.density || materialType?.density;
 
       const result = await addMaterial({
         name: formData.name,
@@ -130,13 +184,17 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
         width: parseFloat(formData.width) || undefined,
         thickness: parseFloat(formData.thickness) || undefined,
         dimension_unit: formData.dimension_unit,
+        unit_count: parseInt(formData.unit_count) || 1,
         density: density || undefined,
         origin: formData.origin,
         description: formData.description,
         image_url: imageUrl,
         quantity: calculatedMetrics.quantity,
         unit: 'mm³',
-        carbon_footprint: calculatedMetrics.carbonFootprint
+        carbon_footprint: calculatedMetrics.carbonFootprint,
+        ai_carbon_confidence: aiCarbonData?.confidence,
+        ai_carbon_source: aiCarbonData?.source,
+        ai_carbon_updated_at: aiCarbonData ? new Date().toISOString() : undefined
       });
 
       if (result) {
@@ -150,16 +208,20 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
           width: '',
           thickness: '',
           dimension_unit: 'mm',
+          unit_count: '1',
           origin: '',
           description: '',
           image: null,
           density: '',
-          custom_density: false
+          carbon_factor: '',
+          custom_density: false,
+          custom_carbon: false
         });
+        setAiCarbonData(null);
         
         toast({
           title: "Success",
-          description: "Material added successfully with automatic calculations!",
+          description: "Material added successfully with AI-enhanced carbon data!",
         });
       }
     } catch (error) {
@@ -230,7 +292,30 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                 id="image"
                 type="file"
                 accept="image/*"
-                onChange={handleImageUpload}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (file.size > 5 * 1024 * 1024) {
+                      toast({
+                        title: "Error",
+                        description: "Image file size must be less than 5MB",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    
+                    if (!file.type.startsWith('image/')) {
+                      toast({
+                        title: "Error",
+                        description: "Please select a valid image file",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    
+                    setFormData(prev => ({ ...prev, image: file }));
+                  }
+                }}
                 className="hidden"
                 disabled={uploading}
               />
@@ -304,7 +389,17 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                     type="button" 
                     variant="outline" 
                     size="sm" 
-                    onClick={handleAddCustomMaterialType}
+                    onClick={async () => {
+                      if (formData.type && formData.specific_material) {
+                        const density = formData.custom_density ? parseFloat(formData.density) : undefined;
+                        await addMaterialType({
+                          category: formData.type,
+                          specific_type: formData.specific_material,
+                          density: density,
+                          carbon_factor: 2.0
+                        });
+                      }
+                    }}
                     disabled={!formData.type || !formData.specific_material}
                   >
                     <Plus className="h-4 w-4" />
@@ -342,12 +437,12 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
               </div>
             </div>
 
-            {/* Right Column - Dimensions & Calculations */}
+            {/* Right Column - Dimensions & AI Calculations */}
             <div className="space-y-4">
               <div className="space-y-4 p-4 border rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <Calculator className="h-4 w-4" />
-                  <Label className="text-sm font-medium">Dimensions</Label>
+                  <Label className="text-sm font-medium">Dimensions & Quantity</Label>
                 </div>
                 
                 <div className="grid grid-cols-3 gap-2">
@@ -386,47 +481,117 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-xs">Unit</Label>
-                  <Select 
-                    value={formData.dimension_unit} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, dimension_unit: value }))}
-                    disabled={uploading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mm">Millimeters (mm)</SelectItem>
-                      <SelectItem value="cm">Centimeters (cm)</SelectItem>
-                      <SelectItem value="m">Meters (m)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Unit</Label>
+                    <Select 
+                      value={formData.dimension_unit} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, dimension_unit: value }))}
+                      disabled={uploading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mm">Millimeters (mm)</SelectItem>
+                        <SelectItem value="cm">Centimeters (cm)</SelectItem>
+                        <SelectItem value="m">Meters (m)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Number of Units</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={formData.unit_count}
+                      onChange={(e) => setFormData(prev => ({ ...prev, unit_count: e.target.value }))}
+                      placeholder="1"
+                      disabled={uploading}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Density Override */}
+              {/* AI Carbon Lookup */}
               <div className="space-y-2 p-4 border rounded-lg">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="custom_density"
-                    checked={formData.custom_density}
-                    onChange={(e) => setFormData(prev => ({ ...prev, custom_density: e.target.checked }))}
-                    className="rounded"
-                  />
-                  <Label htmlFor="custom_density" className="text-sm">Custom Density (kg/m³)</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-purple-500" />
+                    AI Carbon Data
+                  </Label>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleAICarbonLookup}
+                    disabled={aiLoading || !formData.type || !formData.specific_material}
+                    className="gap-2"
+                  >
+                    {aiLoading ? (
+                      <>Loading...</>
+                    ) : (
+                      <>
+                        <Sparkles className="h-3 w-3" />
+                        Get AI Data
+                      </>
+                    )}
+                  </Button>
                 </div>
-                {formData.custom_density && (
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={formData.density}
-                    onChange={(e) => setFormData(prev => ({ ...prev, density: e.target.value }))}
-                    placeholder="e.g., 500"
-                    disabled={uploading}
-                  />
+
+                {aiCarbonData && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      <strong>AI Confidence:</strong> {Math.round(aiCarbonData.confidence * 100)}%<br/>
+                      <strong>Source:</strong> {aiCarbonData.source}<br/>
+                      <strong>Reasoning:</strong> {aiCarbonData.reasoning}
+                    </AlertDescription>
+                  </Alert>
                 )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="custom_density"
+                        checked={formData.custom_density}
+                        onChange={(e) => setFormData(prev => ({ ...prev, custom_density: e.target.checked }))}
+                        className="rounded"
+                      />
+                      <Label htmlFor="custom_density" className="text-xs">Custom Density</Label>
+                    </div>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={formData.density}
+                      onChange={(e) => setFormData(prev => ({ ...prev, density: e.target.value }))}
+                      placeholder="kg/m³"
+                      disabled={uploading || !formData.custom_density}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="custom_carbon"
+                        checked={formData.custom_carbon}
+                        onChange={(e) => setFormData(prev => ({ ...prev, custom_carbon: e.target.checked }))}
+                        className="rounded"
+                      />
+                      <Label htmlFor="custom_carbon" className="text-xs">Custom Carbon</Label>
+                    </div>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.carbon_factor}
+                      onChange={(e) => setFormData(prev => ({ ...prev, carbon_factor: e.target.value }))}
+                      placeholder="kg CO₂/kg"
+                      disabled={uploading || !formData.custom_carbon}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Calculated Results */}
@@ -434,19 +599,19 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                 <Label className="text-sm font-medium">Calculated Metrics</Label>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <span>Volume:</span>
+                    <span>Units:</span>
+                    <span>{formData.unit_count || 1}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Volume:</span>
                     <span>{calculatedMetrics.volume.toFixed(6)} m³</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Quantity:</span>
-                    <span>{calculatedMetrics.quantity.toFixed(0)} mm³</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Weight:</span>
+                    <span>Total Weight:</span>
                     <span>{calculatedMetrics.weight.toFixed(2)} kg</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Carbon Footprint:</span>
+                    <span>Total Carbon:</span>
                     <span>{calculatedMetrics.carbonFootprint.toFixed(2)} kg CO₂</span>
                   </div>
                 </div>

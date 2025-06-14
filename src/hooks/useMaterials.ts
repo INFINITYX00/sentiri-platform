@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -116,9 +117,12 @@ export function useMaterials() {
 
       console.log('Material added successfully, real-time subscription will handle UI update')
       
+      const unitText = materialData.unit_count && materialData.unit_count > 1 ? ` (${materialData.unit_count} units)` : '';
+      const aiText = materialData.ai_carbon_confidence ? ` with AI carbon data` : '';
+      
       toast({
         title: "Success",
-        description: `Material "${materialData.name}" added with QR code ${simpleQRCode}`,
+        description: `Material "${materialData.name}"${unitText} added with QR code ${simpleQRCode}${aiText}`,
       })
 
       const finalResult = { 
@@ -355,10 +359,67 @@ export function useMaterials() {
     materials,
     loading,
     addMaterial,
-    updateMaterial,
+    updateMaterial: async (id: string, updates: Partial<Material>) => {
+      setLoading(true)
+      try {
+        const { error } = await supabase
+          .from('materials')
+          .update({ ...updates, updated_at: new Date().toISOString() })
+          .eq('id', id)
+
+        if (error) throw error
+
+        console.log('Material updated successfully, materials will update via real-time subscription')
+        
+        toast({
+          title: "Success",
+          description: "Material updated successfully",
+        })
+      } catch (error) {
+        console.error('Error updating material:', error)
+        toast({
+          title: "Error",
+          description: "Failed to update material",
+          variant: "destructive"
+        })
+      } finally {
+        setLoading(false)
+      }
+    },
     deleteMaterial,
     refreshMaterials: fetchMaterials,
-    generateQRCodeForMaterial,
+    generateQRCodeForMaterial: async (materialId: string) => {
+      try {
+        const qrData = createMaterialQRData(materialId);
+        const qrCodeDataURL = await generateQRCode(qrData)
+        
+        // Convert to downloadable blob
+        const response = await fetch(qrCodeDataURL)
+        const blob = await response.blob()
+        
+        // Create download link
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `material-qr-${materialId}.png`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        
+        toast({
+          title: "Success",
+          description: "Web-linkable QR code downloaded successfully",
+        })
+      } catch (error) {
+        console.error('Error generating QR code:', error)
+        toast({
+          title: "Error",
+          description: "Failed to generate QR code",
+          variant: "destructive"
+        })
+      }
+    },
     regenerateQRCode
   }
 }

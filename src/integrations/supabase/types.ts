@@ -227,33 +227,48 @@ export type Database = {
       }
       material_types: {
         Row: {
+          ai_sourced: boolean | null
           carbon_factor: number | null
           category: string
+          confidence_score: number | null
           created_at: string | null
+          data_source: string | null
           density: number | null
           id: string
+          last_updated: string | null
           specific_type: string
         }
         Insert: {
+          ai_sourced?: boolean | null
           carbon_factor?: number | null
           category: string
+          confidence_score?: number | null
           created_at?: string | null
+          data_source?: string | null
           density?: number | null
           id?: string
+          last_updated?: string | null
           specific_type: string
         }
         Update: {
+          ai_sourced?: boolean | null
           carbon_factor?: number | null
           category?: string
+          confidence_score?: number | null
           created_at?: string | null
+          data_source?: string | null
           density?: number | null
           id?: string
+          last_updated?: string | null
           specific_type?: string
         }
         Relationships: []
       }
       materials: {
         Row: {
+          ai_carbon_confidence: number | null
+          ai_carbon_source: string | null
+          ai_carbon_updated_at: string | null
           carbon_footprint: number
           created_at: string | null
           density: number | null
@@ -272,12 +287,16 @@ export type Database = {
           thickness: number | null
           type: string
           unit: string
+          unit_count: number | null
           updated_at: string | null
           volume: number | null
           weight: number | null
           width: number | null
         }
         Insert: {
+          ai_carbon_confidence?: number | null
+          ai_carbon_source?: string | null
+          ai_carbon_updated_at?: string | null
           carbon_footprint?: number
           created_at?: string | null
           density?: number | null
@@ -296,12 +315,16 @@ export type Database = {
           thickness?: number | null
           type: string
           unit?: string
+          unit_count?: number | null
           updated_at?: string | null
           volume?: number | null
           weight?: number | null
           width?: number | null
         }
         Update: {
+          ai_carbon_confidence?: number | null
+          ai_carbon_source?: string | null
+          ai_carbon_updated_at?: string | null
           carbon_footprint?: number
           created_at?: string | null
           density?: number | null
@@ -320,6 +343,7 @@ export type Database = {
           thickness?: number | null
           type?: string
           unit?: string
+          unit_count?: number | null
           updated_at?: string | null
           volume?: number | null
           weight?: number | null

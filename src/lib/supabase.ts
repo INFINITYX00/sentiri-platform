@@ -28,6 +28,10 @@ export interface Material {
   qr_code: string
   qr_image_url?: string
   carbon_footprint: number
+  unit_count?: number
+  ai_carbon_confidence?: number
+  ai_carbon_source?: string
+  ai_carbon_updated_at?: string
   created_at: string
   updated_at: string
 }
@@ -38,6 +42,10 @@ export interface MaterialType {
   specific_type: string
   density?: number
   carbon_factor?: number
+  ai_sourced?: boolean
+  confidence_score?: number
+  data_source?: string
+  last_updated?: string
   created_at: string
 }
 
