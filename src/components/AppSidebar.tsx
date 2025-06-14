@@ -32,7 +32,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     <Sidebar className="border-r border-slate-200/20 bg-white">
       <AppSidebarHeader />
 
-      <SidebarContent className="p-4 bg-white">
+      <SidebarContent className="pt-2 px-4 bg-white">
         <SidebarGroup>
           <SidebarGroupContent>
             <Accordion type="single" collapsible className="w-full space-y-1">
