@@ -115,7 +115,9 @@ export function useMaterials() {
           .eq('id', newMaterial.id)
       }
 
+      // Force refresh the materials list
       await fetchMaterials()
+      
       toast({
         title: "Success",
         description: `Material "${materialData.name}" added with QR code ${simpleQRCode}`,
@@ -152,7 +154,9 @@ export function useMaterials() {
 
       if (error) throw error
 
+      // Force refresh the materials list
       await fetchMaterials()
+      
       toast({
         title: "Success",
         description: "Material updated successfully",
@@ -176,7 +180,9 @@ export function useMaterials() {
 
       if (error) throw error
 
+      // Force refresh the materials list
       await fetchMaterials()
+      
       toast({
         title: "Success",
         description: "Material deleted successfully",
@@ -259,7 +265,9 @@ export function useMaterials() {
         })
         .eq('id', materialId)
       
+      // Force refresh the materials list
       await fetchMaterials()
+      
       toast({
         title: "Success",
         description: "QR code regenerated successfully",
