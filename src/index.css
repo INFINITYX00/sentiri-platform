@@ -94,7 +94,7 @@
   }
 
   .page-container {
-    @apply p-6 space-y-6;
+    @apply space-y-4;
   }
 
   .page-title {
