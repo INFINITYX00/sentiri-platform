@@ -5,6 +5,7 @@ import {
   FileText, 
   ShoppingCart, 
   TrendingUp,
+  Leaf,
 } from "lucide-react";
 import { MenuItem, WorkspaceMenuItem } from "./types";
 
@@ -28,9 +29,15 @@ export const workspaceMenuItems: WorkspaceMenuItem[] = [
     items: []
   },
   {
-    title: "BOM & Carbon",
+    title: "Projects",
     url: "bom",
     icon: ShoppingCart,
+    items: []
+  },
+  {
+    title: "Carbon Tracking",
+    url: "carbon",
+    icon: Leaf,
     items: []
   },
   {

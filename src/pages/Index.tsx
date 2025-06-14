@@ -6,6 +6,7 @@ import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { StockManagement } from "@/components/stock/StockManagement";
 import { MaterialPassport } from "@/components/passport/MaterialPassport";
 import { BOMManager } from "@/components/bom/BOMManager";
+import { CarbonTracker } from "@/components/carbon/CarbonTracker";
 import { AIInsights } from "@/components/insights/AIInsights";
 
 const Index = () => {
@@ -21,6 +22,8 @@ const Index = () => {
         return <MaterialPassport />;
       case 'bom':
         return <BOMManager />;
+      case 'carbon':
+        return <CarbonTracker />;
       case 'insights':
         return <AIInsights />;
       default:

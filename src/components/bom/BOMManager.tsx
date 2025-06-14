@@ -2,35 +2,33 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, TrendingUp, Leaf, FolderOpen, Workflow } from "lucide-react";
-import { CarbonCalculator } from "./CarbonCalculator";
-import { CarbonJourney } from "./CarbonJourney";
+import { Upload, FileText, FolderOpen, Workflow, Package } from "lucide-react";
 import { EnhancedBOMUploader } from "./EnhancedBOMUploader";
 import { StepByStepBOM } from "./StepByStepBOM";
 import { ProjectsManager } from "../projects/ProjectsManager";
 
 export function BOMManager() {
-  const [activeTab, setActiveTab] = useState<'projects' | 'guided' | 'upload' | 'calculate' | 'journey'>('guided');
+  const [activeTab, setActiveTab] = useState<'projects' | 'guided' | 'upload'>('guided');
 
-  const bomStats = [
+  const projectStats = [
     { label: "Active Projects", value: "8", icon: FolderOpen, color: "text-blue-400" },
-    { label: "Avg Carbon Impact", value: "12.3 kg CO₂", icon: Leaf, color: "text-primary" },
-    { label: "Cost Savings", value: "$2,340", icon: TrendingUp, color: "text-green-400" },
-    { label: "Materials Tracked", value: "156", icon: Upload, color: "text-purple-400" }
+    { label: "Total Materials", value: "156", icon: Package, color: "text-purple-400" },
+    { label: "Completed BOMs", value: "12", icon: FileText, color: "text-green-400" },
+    { label: "In Progress", value: "5", icon: Workflow, color: "text-orange-400" }
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">BOM & Carbon Journey</h1>
-          <p className="text-muted-foreground mt-1">Create projects, track materials and calculate carbon footprint</p>
+          <h1 className="text-3xl font-bold">Projects</h1>
+          <p className="text-muted-foreground mt-1">Manage projects, create BOMs and track manufacturing</p>
         </div>
       </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {bomStats.map((stat) => (
+        {projectStats.map((stat) => (
           <Card key={stat.label} className="sentiri-card">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -73,30 +71,12 @@ export function BOMManager() {
               <Upload className="h-4 w-4 mr-2" />
               Advanced BOM
             </Button>
-            <Button
-              variant={activeTab === 'calculate' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('calculate')}
-              className="flex-1 min-w-[120px]"
-            >
-              <Leaf className="h-4 w-4 mr-2" />
-              Calculator
-            </Button>
-            <Button
-              variant={activeTab === 'journey' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('journey')}
-              className="flex-1 min-w-[120px]"
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Journey
-            </Button>
           </div>
 
           {/* Tab Content */}
           {activeTab === 'guided' && <StepByStepBOM />}
           {activeTab === 'projects' && <ProjectsManager />}
           {activeTab === 'upload' && <EnhancedBOMUploader />}
-          {activeTab === 'calculate' && <CarbonCalculator />}
-          {activeTab === 'journey' && <CarbonJourney />}
         </CardContent>
       </Card>
     </div>
