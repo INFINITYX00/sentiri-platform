@@ -88,6 +88,80 @@ export function useMaterialTypes() {
     }
   }
 
+  const deleteCategory = async (category: string) => {
+    try {
+      const { error } = await supabase
+        .from('material_types')
+        .delete()
+        .eq('category', category)
+
+      if (error) throw error
+      
+      setMaterialTypes(prev => prev.filter(mt => mt.category !== category))
+      
+      toast({
+        title: "Success",
+        description: `Category "${category}" and all its material types deleted successfully`,
+      })
+      
+      return true
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete category",
+        variant: "destructive"
+      })
+      return false
+    }
+  }
+
+  const addCategory = async (categoryName: string) => {
+    // Check if category already exists
+    const existingCategory = materialTypes.find(mt => mt.category === categoryName)
+    if (existingCategory) {
+      toast({
+        title: "Already Exists",
+        description: "This category already exists",
+        variant: "destructive"
+      })
+      return null
+    }
+
+    // Add a default material type for the new category
+    try {
+      const { data, error } = await supabase
+        .from('material_types')
+        .insert([{
+          category: categoryName,
+          specific_type: `Default ${categoryName}`,
+          density: 500,
+          carbon_factor: 2.0
+        }])
+        .select()
+        .single()
+
+      if (error) throw error
+      
+      setMaterialTypes(prev => [...prev, data])
+      
+      toast({
+        title: "Success",
+        description: `Category "${categoryName}" added successfully`,
+      })
+      
+      return data
+    } catch (error) {
+      console.error('Error adding category:', error)
+      toast({
+        title: "Error",
+        description: "Failed to add category",
+        variant: "destructive"
+      })
+      return null
+    }
+  }
+
   const getMaterialTypeBySpecific = (specificType: string) => {
     return materialTypes.find(mt => mt.specific_type === specificType)
   }
@@ -109,6 +183,8 @@ export function useMaterialTypes() {
     loading,
     addMaterialType,
     deleteMaterialType,
+    deleteCategory,
+    addCategory,
     getMaterialTypeBySpecific,
     getTypesByCategory,
     getCategories,

@@ -41,6 +41,8 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   
   const [uploading, setUploading] = useState(false);
   const [aiCarbonData, setAiCarbonData] = useState<any>(null);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
   const [calculatedMetrics, setCalculatedMetrics] = useState({
     volume: 0,
     quantity: 0,
@@ -49,7 +51,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   });
   
   const { addMaterial } = useMaterials();
-  const { materialTypes, getCategories, getTypesByCategory, getMaterialTypeBySpecific, addMaterialType, deleteMaterialType } = useMaterialTypes();
+  const { materialTypes, getCategories, getTypesByCategory, getMaterialTypeBySpecific, addMaterialType, deleteMaterialType, deleteCategory, addCategory } = useMaterialTypes();
   const { lookupCarbonData, loading: aiLoading } = useAICarbonLookup();
   const { toast } = useToast();
 
@@ -161,6 +163,40 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
       }
       if (!formData.custom_carbon) {
         setFormData(prev => ({ ...prev, carbon_factor: data.carbonFactor?.toString() || '' }));
+      }
+    }
+  };
+
+  const handleAddNewCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a category name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const result = await addCategory(newCategoryName.trim());
+    if (result) {
+      setFormData(prev => ({ ...prev, type: newCategoryName.trim() }));
+      setNewCategoryName('');
+      setShowAddCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (category: string) => {
+    const result = await deleteCategory(category);
+    if (result) {
+      // Clear the form field if the deleted category was selected
+      if (formData.type === category) {
+        setFormData(prev => ({ 
+          ...prev, 
+          type: '', 
+          specific_material: '', 
+          custom_specific_material: '',
+          use_custom_material: false
+        }));
       }
     }
   };
@@ -397,28 +433,96 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
 
               <div className="space-y-2">
                 <Label htmlFor="type">Category</Label>
-                <Select 
-                  value={formData.type} 
-                  onValueChange={(value) => setFormData(prev => ({ 
-                    ...prev, 
-                    type: value, 
-                    specific_material: '',
-                    custom_specific_material: '',
-                    use_custom_material: false
-                  }))}
-                  disabled={uploading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getCategories().map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category.replace('_', ' ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select 
+                    value={formData.type} 
+                    onValueChange={(value) => setFormData(prev => ({ 
+                      ...prev, 
+                      type: value, 
+                      specific_material: '',
+                      custom_specific_material: '',
+                      use_custom_material: false
+                    }))}
+                    disabled={uploading}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getCategories().map((category) => (
+                        <div key={category} className="flex items-center group">
+                          <SelectItem value={category} className="flex-1">
+                            {category.replace('_', ' ')}
+                          </SelectItem>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 ml-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteCategory(category);
+                            }}
+                            title={`Delete "${category}" category`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowAddCategory(true)}
+                    title="Add new category"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {/* Add Category Input */}
+                {showAddCategory && (
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      placeholder="Enter new category name"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddNewCategory();
+                        }
+                        if (e.key === 'Escape') {
+                          setShowAddCategory(false);
+                          setNewCategoryName('');
+                        }
+                      }}
+                      className="flex-1"
+                      autoFocus
+                    />
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      onClick={handleAddNewCategory}
+                    >
+                      Add
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        setShowAddCategory(false);
+                        setNewCategoryName('');
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
