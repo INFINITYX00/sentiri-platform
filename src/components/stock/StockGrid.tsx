@@ -1,12 +1,23 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QrCode, Eye, Package, ExternalLink } from "lucide-react";
+import { QrCode, Eye, Package, ExternalLink, Trash2 } from "lucide-react";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useState } from "react";
 import { QRCodeViewer } from "@/components/qr/QRCodeViewer";
 import { generateSimpleQRCode } from "@/utils/qrGenerator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface StockGridProps {
   materials: Material[];
@@ -15,9 +26,11 @@ interface StockGridProps {
 }
 
 export function StockGrid({ materials, searchQuery, selectedType }: StockGridProps) {
-  const { regenerateQRCode } = useMaterials();
+  const { regenerateQRCode, deleteMaterial } = useMaterials();
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [qrViewerOpen, setQrViewerOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
 
   const filteredItems = materials.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -43,6 +56,19 @@ export function StockGrid({ materials, searchQuery, selectedType }: StockGridPro
   const handleViewMaterial = (materialId: string) => {
     // Navigate to material detail page
     window.open(`/material/${materialId}`, '_blank');
+  };
+
+  const handleDeleteClick = (material: Material) => {
+    setMaterialToDelete(material);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (materialToDelete) {
+      await deleteMaterial(materialToDelete.id);
+      setDeleteDialogOpen(false);
+      setMaterialToDelete(null);
+    }
   };
 
   return (
@@ -120,7 +146,7 @@ export function StockGrid({ materials, searchQuery, selectedType }: StockGridPro
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2 pt-2">
+                <div className="grid grid-cols-3 gap-2 pt-2">
                   <Button 
                     size="sm" 
                     variant="outline" 
@@ -134,6 +160,14 @@ export function StockGrid({ materials, searchQuery, selectedType }: StockGridPro
                     onClick={() => handleViewQR(item)}
                   >
                     <QrCode className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => handleDeleteClick(item)}
+                    className="hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -152,6 +186,29 @@ export function StockGrid({ materials, searchQuery, selectedType }: StockGridPro
         }}
         onRegenerate={regenerateQRCode}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Material</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{materialToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setMaterialToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
