@@ -27,31 +27,83 @@ const Index = () => {
       case 'dashboard':
         return <DashboardOverview />;
       case 'stock':
-        return <StockManagement />;
+        return (
+          <div className="min-h-screen app-background">
+            <StockManagement />
+          </div>
+        );
       case 'passport':
-        return <MaterialPassport />;
+        return (
+          <div className="min-h-screen app-background">
+            <MaterialPassport />
+          </div>
+        );
       case 'design':
-        return <DesignWorkspace />;
+        return (
+          <div className="min-h-screen app-background">
+            <DesignWorkspace />
+          </div>
+        );
       case 'time-logging':
-        return <TimeLogging projectId="main-project" onTimeUpdate={setTimeEntries} />;
+        return (
+          <div className="min-h-screen app-background">
+            <TimeLogging projectId="main-project" onTimeUpdate={setTimeEntries} />
+          </div>
+        );
       case 'manufacturing':
-        return <ManufacturingStages projectId="main-project" onStageUpdate={setStages} />;
+        return (
+          <div className="min-h-screen app-background">
+            <ManufacturingStages projectId="main-project" onStageUpdate={setStages} />
+          </div>
+        );
       case 'labor':
-        return <LaborCalculator projectId="main-project" timeEntries={timeEntries} />;
+        return (
+          <div className="min-h-screen app-background">
+            <LaborCalculator projectId="main-project" timeEntries={timeEntries} />
+          </div>
+        );
       case 'energy':
-        return <EnergyEstimator projectId="main-project" />;
+        return (
+          <div className="min-h-screen app-background">
+            <EnergyEstimator projectId="main-project" />
+          </div>
+        );
       case 'bom':
-        return <BOMManager />;
+        return (
+          <div className="min-h-screen app-background">
+            <BOMManager />
+          </div>
+        );
       case 'transport':
-        return <TransportEmissions />;
+        return (
+          <div className="min-h-screen app-background">
+            <TransportEmissions />
+          </div>
+        );
       case 'shipping':
-        return <ShippingTracker />;
+        return (
+          <div className="min-h-screen app-background">
+            <ShippingTracker />
+          </div>
+        );
       case 'takeback':
-        return <TakebackSystem />;
+        return (
+          <div className="min-h-screen app-background">
+            <TakebackSystem />
+          </div>
+        );
       case 'circular':
-        return <CircularDesign />;
+        return (
+          <div className="min-h-screen app-background">
+            <CircularDesign />
+          </div>
+        );
       case 'insights':
-        return <AIInsights />;
+        return (
+          <div className="min-h-screen app-background">
+            <AIInsights />
+          </div>
+        );
       default:
         return <DashboardOverview />;
     }
