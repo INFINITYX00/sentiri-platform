@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -89,6 +88,7 @@ export function useMaterials() {
         unit: materialData.unit,
         cost_per_unit: materialData.cost_per_unit ? Number(materialData.cost_per_unit) : null,
         carbon_footprint: Number(materialData.carbon_footprint || 0),
+        carbon_source: materialData.carbon_source || null,
         description: materialData.description || null,
         dimensions: materialData.dimensions || null,
         length: materialData.length ? Number(materialData.length) : null,

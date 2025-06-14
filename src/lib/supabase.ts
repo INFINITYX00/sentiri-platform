@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/integrations/supabase/types'
 
@@ -32,6 +31,7 @@ export interface Material {
   qr_code: string
   qr_image_url?: string
   carbon_footprint: number
+  carbon_source?: string // Added carbon source field
   unit_count?: number
   ai_carbon_confidence?: number
   ai_carbon_source?: string

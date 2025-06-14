@@ -31,6 +31,7 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
     quantity: 0,
     unit: '',
     carbon_footprint: 0,
+    carbon_source: '',
     cost_per_unit: 0,
     description: '',
     dimensions: '',
@@ -45,6 +46,17 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
     'kg', 'g', 'tons', 'm', 'cm', 'mm', 'm²', 'cm²', 
     'mm²', 'm³', 'cm³', 'mm³', 'pieces', 'boards', 
     'sheets', 'rolls', 'units'
+  ]
+
+  const carbonSources = [
+    'Supplier Documentation',
+    'Industry Database',
+    'Third-party Certification',
+    'Life Cycle Assessment',
+    'AI Estimation',
+    'Manual Calculation',
+    'Environmental Product Declaration',
+    'Other'
   ]
 
   const handleAILookup = async () => {
@@ -68,7 +80,8 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
       if (carbonData) {
         setFormData(prev => ({
           ...prev,
-          carbon_footprint: carbonData.carbonFactor
+          carbon_footprint: carbonData.carbonFactor,
+          carbon_source: 'AI Estimation'
         }))
       }
     } catch (error) {
@@ -85,6 +98,7 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
       quantity: 0,
       unit: '',
       carbon_footprint: 0,
+      carbon_source: '',
       cost_per_unit: 0,
       description: '',
       dimensions: '',
@@ -124,6 +138,7 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
         quantity: formData.quantity,
         unit: formData.unit,
         carbon_footprint: formData.carbon_footprint,
+        carbon_source: formData.carbon_source || undefined,
         cost_per_unit: formData.cost_per_unit,
         description: formData.description || undefined,
         dimensions: dimensionsString || undefined,
@@ -370,16 +385,35 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
               </Button>
             </div>
             
-            <div>
-              <Label htmlFor="carbon_footprint">Carbon Footprint (kg CO₂e)</Label>
-              <Input
-                id="carbon_footprint"
-                type="number"
-                step="0.01"
-                value={formData.carbon_footprint}
-                onChange={(e) => setFormData(prev => ({ ...prev, carbon_footprint: parseFloat(e.target.value) || 0 }))}
-                placeholder="0.00"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="carbon_footprint">Carbon Footprint (kg CO₂e)</Label>
+                <Input
+                  id="carbon_footprint"
+                  type="number"
+                  step="0.01"
+                  value={formData.carbon_footprint}
+                  onChange={(e) => setFormData(prev => ({ ...prev, carbon_footprint: parseFloat(e.target.value) || 0 }))}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="carbon_source">Carbon Data Source</Label>
+                <Select 
+                  value={formData.carbon_source} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, carbon_source: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select source" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {carbonSources.map(source => (
+                      <SelectItem key={source} value={source}>{source}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 

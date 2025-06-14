@@ -1,7 +1,8 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QrCode, Eye, Package, ExternalLink, Trash2, Loader2, Ruler, Weight, Sparkles, Hash } from "lucide-react";
+import { QrCode, Eye, Package, ExternalLink, Trash2, Loader2, Ruler, Weight, Sparkles, Hash, Database } from "lucide-react";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useState } from "react";
@@ -239,6 +240,24 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
                       <span className="font-medium text-xs text-purple-600">{item.ai_carbon_source}</span>
                     </div>
                   )}
+
+                  {/* Display Carbon Source */}
+                  {(item as any).carbon_source && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Database className="h-3 w-3" />
+                        Source:
+                      </span>
+                      <span className="font-medium text-xs text-green-600">{(item as any).carbon_source}</span>
+                    </div>
+                  )}
+
+                  {item.cost_per_unit && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Cost:</span>
+                      <span className="font-medium text-xs">${item.cost_per_unit.toFixed(2)}/{item.unit}</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-3 gap-2 pt-2">
@@ -301,7 +320,7 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
             >
               Delete
             </AlertDialogAction>
-          </AlertDialogFooter>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
