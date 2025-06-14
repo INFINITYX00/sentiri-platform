@@ -269,13 +269,47 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   const handleAddCustomMaterialType = async () => {
     const effectiveMaterial = formData.use_custom_material ? formData.custom_specific_material : formData.specific_material;
     
-    if (formData.type && effectiveMaterial) {
+    if (!formData.type || !effectiveMaterial) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a category and material type first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if this material type already exists
+    const existingMaterialType = getMaterialTypeBySpecific(effectiveMaterial);
+    if (existingMaterialType) {
+      toast({
+        title: "Already Exists",
+        description: "This material type already exists in the database",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
       const density = formData.custom_density ? parseFloat(formData.density) : undefined;
-      await addMaterialType({
+      const result = await addMaterialType({
         category: formData.type,
         specific_type: effectiveMaterial,
         density: density,
         carbon_factor: 2.0 // Default carbon factor
+      });
+
+      if (result) {
+        toast({
+          title: "Success",
+          description: "Material type added to database",
+        });
+      }
+    } catch (error) {
+      console.error('Error adding material type:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add material type",
+        variant: "destructive"
       });
     }
   };
@@ -423,18 +457,32 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                         size="sm" 
                         onClick={handleAddCustomMaterialType}
                         disabled={!formData.type || !formData.specific_material}
+                        title="Add this material type to database for future use"
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
                   ) : (
-                    <Input
-                      placeholder="Enter custom material type (e.g., Reclaimed Oak Board)"
-                      value={formData.custom_specific_material}
-                      onChange={(e) => setFormData(prev => ({ ...prev, custom_specific_material: e.target.value }))}
-                      disabled={uploading}
-                      required={formData.use_custom_material}
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter custom material type (e.g., Reclaimed Oak Board)"
+                        value={formData.custom_specific_material}
+                        onChange={(e) => setFormData(prev => ({ ...prev, custom_specific_material: e.target.value }))}
+                        disabled={uploading}
+                        required={formData.use_custom_material}
+                        className="flex-1"
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleAddCustomMaterialType}
+                        disabled={!formData.type || !formData.custom_specific_material}
+                        title="Add this custom material type to database for future use"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>
