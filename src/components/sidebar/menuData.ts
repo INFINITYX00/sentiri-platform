@@ -15,15 +15,13 @@ import {
 } from "lucide-react";
 import { MenuItem, WorkspaceMenuItem } from "./types";
 
-export const mainMenuItems: MenuItem[] = [
+export const workspaceMenuItems: WorkspaceMenuItem[] = [
   {
     title: "Dashboard",
     url: "dashboard",
     icon: Home,
+    items: []
   },
-];
-
-export const workspaceMenuItems: WorkspaceMenuItem[] = [
   {
     title: "Stock Overview",
     url: "stock",

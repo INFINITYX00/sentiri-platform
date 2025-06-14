@@ -4,15 +4,13 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarMenu,
 } from "@/components/ui/sidebar";
 import { Accordion } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { AppSidebarHeader } from "./sidebar/SidebarHeader";
 import { AppSidebarFooter } from "./sidebar/SidebarFooter";
-import { MainMenuItem } from "./sidebar/MainMenuItem";
 import { WorkspaceMenuItem } from "./sidebar/WorkspaceMenuItem";
-import { mainMenuItems, workspaceMenuItems } from "./sidebar/menuData";
+import { workspaceMenuItems } from "./sidebar/menuData";
 
 interface AppSidebarProps {
   activeView: string;
@@ -35,21 +33,6 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
       <AppSidebarHeader />
 
       <SidebarContent className="p-4">
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {mainMenuItems.map((item) => (
-                <MainMenuItem
-                  key={item.title}
-                  item={item}
-                  isActive={activeView === item.url}
-                  onClick={() => setActiveView(item.url)}
-                />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
         <SidebarGroup>
           <SidebarGroupContent>
             <Accordion type="single" collapsible className="w-full space-y-1">
