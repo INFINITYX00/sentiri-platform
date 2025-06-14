@@ -25,7 +25,11 @@ const Index = () => {
   const renderActiveView = () => {
     switch (activeView) {
       case 'dashboard':
-        return <DashboardOverview />;
+        return (
+          <div className="min-h-screen app-background">
+            <DashboardOverview />
+          </div>
+        );
       case 'stock':
         return (
           <div className="min-h-screen app-background">
@@ -105,13 +109,17 @@ const Index = () => {
           </div>
         );
       default:
-        return <DashboardOverview />;
+        return (
+          <div className="min-h-screen app-background">
+            <DashboardOverview />
+          </div>
+        );
     }
   };
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full app-background">
+      <div className="min-h-screen flex w-full">
         <AppSidebar activeView={activeView} setActiveView={setActiveView} />
         <main className="flex-1 overflow-auto">
           <div className="min-h-full">
