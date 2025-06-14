@@ -148,6 +148,7 @@ export function useMaterials() {
   }
 
   const updateMaterial = async (id: string, updates: Partial<Material>) => {
+    setLoading(true)
     try {
       const { error } = await supabase
         .from('materials')
@@ -171,10 +172,13 @@ export function useMaterials() {
         description: "Failed to update material",
         variant: "destructive"
       })
+    } finally {
+      setLoading(false)
     }
   }
 
   const deleteMaterial = async (id: string) => {
+    setLoading(true)
     try {
       const { error } = await supabase
         .from('materials')
@@ -198,6 +202,8 @@ export function useMaterials() {
         description: "Failed to delete material",
         variant: "destructive"
       })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -235,6 +241,7 @@ export function useMaterials() {
   }
 
   const regenerateQRCode = async (materialId: string) => {
+    setLoading(true)
     try {
       // First get the current material to preserve its image_url
       const { data: currentMaterial } = await supabase
@@ -284,6 +291,8 @@ export function useMaterials() {
         description: "Failed to regenerate QR code",
         variant: "destructive"
       })
+    } finally {
+      setLoading(false)
     }
   }
 

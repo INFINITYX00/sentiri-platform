@@ -1,7 +1,8 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QrCode, Eye, Package, ExternalLink, Trash2 } from "lucide-react";
+import { QrCode, Eye, Package, ExternalLink, Trash2, Loader2 } from "lucide-react";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useState } from "react";
@@ -24,7 +25,7 @@ interface StockGridProps {
 }
 
 export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
-  const { materials, regenerateQRCode, deleteMaterial } = useMaterials();
+  const { materials, loading, regenerateQRCode, deleteMaterial } = useMaterials();
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [qrViewerOpen, setQrViewerOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -36,6 +37,15 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
     const matchesType = selectedType === 'all' || item.type === selectedType;
     return matchesSearch && matchesType;
   });
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <Loader2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-spin" />
+        <p className="text-muted-foreground">Loading materials...</p>
+      </div>
+    );
+  }
 
   if (filteredItems.length === 0) {
     return (
@@ -71,9 +81,9 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" key={materials.length}>
         {filteredItems.map((item) => (
-          <Card key={item.id} className="sentiri-card hover:border-accent/30 transition-all duration-200 group">
+          <Card key={`${item.id}-${item.updated_at}`} className="sentiri-card hover:border-accent/30 transition-all duration-200 group">
             <div className="relative">
               {item.image_url ? (
                 <img 
