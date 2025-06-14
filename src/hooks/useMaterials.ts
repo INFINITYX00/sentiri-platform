@@ -19,6 +19,7 @@ export function useMaterials() {
 
       if (error) throw error
       setMaterials(data || [])
+      console.log('Materials fetched:', data?.length || 0)
     } catch (error) {
       console.error('Error fetching materials:', error)
       toast({
@@ -115,8 +116,9 @@ export function useMaterials() {
           .eq('id', newMaterial.id)
       }
 
-      // Force refresh the materials list
+      // Immediately refresh the materials list to show the new material
       await fetchMaterials()
+      console.log('Materials list refreshed after adding new material')
       
       toast({
         title: "Success",
@@ -154,8 +156,9 @@ export function useMaterials() {
 
       if (error) throw error
 
-      // Force refresh the materials list
+      // Immediately refresh the materials list
       await fetchMaterials()
+      console.log('Materials list refreshed after update')
       
       toast({
         title: "Success",
@@ -180,8 +183,9 @@ export function useMaterials() {
 
       if (error) throw error
 
-      // Force refresh the materials list
+      // Immediately refresh the materials list
       await fetchMaterials()
+      console.log('Materials list refreshed after deletion')
       
       toast({
         title: "Success",
@@ -265,8 +269,9 @@ export function useMaterials() {
         })
         .eq('id', materialId)
       
-      // Force refresh the materials list
+      // Immediately refresh the materials list
       await fetchMaterials()
+      console.log('Materials list refreshed after QR regeneration')
       
       toast({
         title: "Success",
