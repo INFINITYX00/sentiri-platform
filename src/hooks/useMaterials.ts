@@ -313,7 +313,15 @@ export function useMaterials() {
             
             if (payload.eventType === 'INSERT') {
               console.log('Material inserted via real-time:', payload.new)
-              setMaterials(prev => [payload.new as Material, ...prev])
+              setMaterials(prev => {
+                // Check if material already exists to avoid duplicates
+                const exists = prev.some(m => m.id === payload.new.id)
+                if (exists) {
+                  console.log('Material already exists, skipping duplicate')
+                  return prev
+                }
+                return [payload.new as Material, ...prev]
+              })
             } else if (payload.eventType === 'DELETE') {
               console.log('Material deleted via real-time:', payload.old)
               setMaterials(prev => prev.filter(m => m.id !== payload.old.id))
@@ -323,7 +331,9 @@ export function useMaterials() {
             }
           }
         )
-        .subscribe()
+        .subscribe((status) => {
+          console.log('Real-time subscription status:', status)
+        })
 
       channelRef.current = channel
     }
