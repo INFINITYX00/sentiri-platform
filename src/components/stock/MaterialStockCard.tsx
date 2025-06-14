@@ -87,26 +87,11 @@ export function MaterialStockCard({
             >
               <Sparkles className="h-3 w-3 mr-1" />
               AI {Math.round(material.ai_carbon_confidence * 100)}%
-            </Badge>
-          )}
-          
-          {material.ai_carbon_source && (
-            <Badge 
-              variant="outline" 
-              className="h-6 px-2 bg-blue-50 text-blue-700 border-blue-200"
-            >
-              <Brain className="h-3 w-3 mr-1" />
-              {material.ai_carbon_source}
-            </Badge>
-          )}
-
-          {material.ai_carbon_confidence && material.ai_carbon_confidence < 0.6 && (
-            <Badge 
-              variant="outline" 
-              className="h-6 px-2 bg-orange-50 text-orange-700 border-orange-200"
-            >
-              <AlertTriangle className="h-3 w-3 mr-1" />
-              Low Confidence
+              {material.ai_carbon_confidence < 0.6 && (
+                <>
+                  <AlertTriangle className="h-3 w-3 ml-1" />
+                </>
+              )}
             </Badge>
           )}
         </div>
@@ -237,26 +222,18 @@ export function MaterialStockCard({
                 </span>
               </div>
 
-              {material.carbon_source && (
+              {(material.carbon_source || material.ai_carbon_source) && (
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-1">
-                    <Database className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Source</span>
+                    {material.ai_carbon_source ? (
+                      <Brain className="h-3 w-3 text-blue-600" />
+                    ) : (
+                      <Database className="h-3 w-3 text-green-600" />
+                    )}
+                    <span className="text-sm text-muted-foreground">Data Source</span>
                   </div>
-                  <span className="font-medium text-sm text-green-600">
-                    {material.carbon_source}
-                  </span>
-                </div>
-              )}
-
-              {material.ai_carbon_source && material.ai_carbon_source !== material.carbon_source && (
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-1">
-                    <Brain className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">AI Source</span>
-                  </div>
-                  <span className="font-medium text-sm text-blue-600">
-                    {material.ai_carbon_source}
+                  <span className={`font-medium text-sm ${material.ai_carbon_source ? 'text-blue-600' : 'text-green-600'}`}>
+                    {material.ai_carbon_source || material.carbon_source}
                   </span>
                 </div>
               )}
