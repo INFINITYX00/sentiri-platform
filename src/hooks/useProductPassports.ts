@@ -15,7 +15,7 @@ export interface ProductPassport {
   qr_code: string
   qr_image_url?: string
   image_url?: string
-  specifications: Record<string, any>
+  specifications: any // Changed from Record<string, any> to any to match Json type
   production_date: string
   created_at: string
   updated_at: string

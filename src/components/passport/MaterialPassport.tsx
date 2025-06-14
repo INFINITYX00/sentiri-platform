@@ -59,16 +59,10 @@ export function MaterialPassport() {
       </div>
 
       {/* QR Scanner */}
-      {showScanner && (
-        <Card>
-          <CardHeader>
-            <CardTitle>QR Code Scanner</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <QRScanner />
-          </CardContent>
-        </Card>
-      )}
+      <QRScanner 
+        isOpen={showScanner} 
+        onClose={() => setShowScanner(false)}
+      />
 
       {/* Search and Filter */}
       <Card>
