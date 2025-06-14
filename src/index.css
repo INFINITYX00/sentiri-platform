@@ -7,48 +7,48 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
-    --card: 17 24% 9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
 
-    --popover: 17 24% 9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
 
     --primary: 142 76% 36%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
     --accent: 142 76% 46%;
-    --accent-foreground: 210 40% 98%;
+    --accent-foreground: 222.2 84% 4.9%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
     --ring: 142 76% 36%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --sidebar-background: 17 24% 9%;
-    --sidebar-foreground: 210 40% 98%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 222.2 84% 4.9%;
     --sidebar-primary: 142 76% 36%;
     --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222.2 84% 4.9%;
+    --sidebar-border: 214.3 31.8% 91.4%;
     --sidebar-ring: 142 76% 36%;
 
-    --sentiri-navy: #11182A;
-    --sentiri-green: #19D88C;
-    --sentiri-dark-green: #0F7B5F;
+    --sentiri-navy: #374151;
+    --sentiri-green: #10B981;
+    --sentiri-light-green: #D1FAE5;
   }
 
   * {
@@ -56,24 +56,32 @@
   }
 
   body {
-    @apply bg-[#11182A] text-foreground font-inter;
+    @apply bg-background text-foreground font-inter;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   .sentiri-gradient {
-    background: linear-gradient(135deg, #11182A 0%, #1A2332 50%, #11182A 100%);
+    background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 50%, #F9FAFB 100%);
   }
 
   .sentiri-card {
-    @apply bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl;
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200;
   }
 
   .sentiri-green {
-    color: #19D88C;
+    color: #10B981;
   }
 
   .sentiri-green-bg {
-    background-color: #19D88C;
+    background-color: #10B981;
+  }
+
+  .metric-card {
+    @apply bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-all duration-200;
+  }
+
+  .chart-container {
+    @apply bg-white border border-gray-200 rounded-lg p-6 shadow-sm;
   }
 }
 

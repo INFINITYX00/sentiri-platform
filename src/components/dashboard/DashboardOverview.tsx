@@ -11,28 +11,36 @@ export function DashboardOverview() {
       value: "147",
       change: "+12%",
       icon: Package,
-      color: "text-blue-400"
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      changeColor: "text-red-500"
     },
     {
       title: "Carbon Footprint",
       value: "2.3t CO₂",
       change: "-8%",
       icon: Leaf,
-      color: "text-primary"
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      changeColor: "text-green-600"
     },
     {
       title: "Energy Usage",
       value: "1,240 kWh",
       change: "-5%",
       icon: Zap,
-      color: "text-yellow-400"
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-50",
+      changeColor: "text-green-600"
     },
     {
       title: "Waste Reduced",
       value: "34%",
       change: "+15%",
       icon: TrendingDown,
-      color: "text-green-400"
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      changeColor: "text-red-500"
     }
   ];
 
@@ -49,13 +57,13 @@ export function DashboardOverview() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-8 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome back to your sustainable manufacturing hub</p>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-2">Welcome back to your sustainable manufacturing hub</p>
         </div>
-        <Badge variant="outline" className="border-primary/30 text-primary">
+        <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50 px-4 py-2">
           Carbon Neutral Goals: 67% Complete
         </Badge>
       </div>
@@ -63,99 +71,94 @@ export function DashboardOverview() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {metrics.map((metric) => (
-          <Card key={metric.title} className="sentiri-card hover:border-accent/30 transition-colors">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{metric.title}</p>
-                  <p className="text-2xl font-bold mt-1">{metric.value}</p>
-                  <p className={`text-sm mt-1 ${metric.change.startsWith('+') ? 'text-red-400' : 'text-green-400'}`}>
-                    {metric.change} from last month
-                  </p>
-                </div>
-                <metric.icon className={`h-8 w-8 ${metric.color}`} />
+          <div key={metric.title} className="metric-card">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600 mb-1">{metric.title}</p>
+                <p className="text-2xl font-bold text-gray-900 mb-1">{metric.value}</p>
+                <p className={`text-sm font-medium ${metric.changeColor}`}>
+                  {metric.change} from last month
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <div className={`p-3 rounded-lg ${metric.bgColor}`}>
+                <metric.icon className={`h-6 w-6 ${metric.color}`} />
+              </div>
+            </div>
+          </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Projects */}
-        <Card className="sentiri-card">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Leaf className="h-5 w-5 text-primary" />
-              <span>Active Projects</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="chart-container">
+          <div className="flex items-center space-x-2 mb-6">
+            <Leaf className="h-5 w-5 text-green-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Active Projects</h3>
+          </div>
+          <div className="space-y-6">
             {recentProjects.map((project, index) => (
-              <div key={index} className="space-y-2">
+              <div key={index} className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium">{project.name}</h4>
-                  <Badge variant={project.status === 'In Progress' ? 'default' : 'secondary'}>
+                  <h4 className="font-medium text-gray-900">{project.name}</h4>
+                  <Badge 
+                    variant={project.status === 'In Progress' ? 'default' : 'secondary'}
+                    className={project.status === 'In Progress' ? 'bg-green-100 text-green-800 hover:bg-green-100' : 'bg-gray-100 text-gray-700 hover:bg-gray-100'}
+                  >
                     {project.status}
                   </Badge>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <Progress value={project.completion} className="flex-1" />
-                  <span className="text-sm text-muted-foreground">{project.completion}%</span>
+                  <Progress value={project.completion} className="flex-1 h-2" />
+                  <span className="text-sm font-medium text-gray-600">{project.completion}%</span>
                 </div>
-                <p className="text-xs text-muted-foreground">{project.materials} materials allocated</p>
+                <p className="text-xs text-gray-500">{project.materials} materials allocated</p>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Low Stock Alert */}
-        <Card className="sentiri-card border-orange-500/20">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-orange-400">
-              <Package className="h-5 w-5" />
-              <span>Low Stock Alerts</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="chart-container border-orange-200">
+          <div className="flex items-center space-x-2 mb-6">
+            <Package className="h-5 w-5 text-orange-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Low Stock Alerts</h3>
+          </div>
+          <div className="space-y-4">
             {lowStockItems.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-orange-500/5 rounded-lg border border-orange-500/20">
+              <div key={index} className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
                 <div>
-                  <h4 className="font-medium">{item.name}</h4>
-                  <p className="text-sm text-muted-foreground">
+                  <h4 className="font-medium text-gray-900">{item.name}</h4>
+                  <p className="text-sm text-gray-600">
                     {item.quantity} {item.unit} remaining
                   </p>
                 </div>
-                <Badge variant="outline" className="border-orange-500/30 text-orange-400">
+                <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-50">
                   Reorder Soon
                 </Badge>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Quick Actions */}
-      <Card className="sentiri-card">
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 hover:bg-primary/20 transition-colors cursor-pointer">
-              <h4 className="font-medium text-primary">Add New Material</h4>
-              <p className="text-sm text-muted-foreground mt-1">Upload photos and create material passport</p>
-            </div>
-            <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20 hover:bg-blue-500/20 transition-colors cursor-pointer">
-              <h4 className="font-medium text-blue-400">Upload BOM</h4>
-              <p className="text-sm text-muted-foreground mt-1">Calculate carbon footprint for new project</p>
-            </div>
-            <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20 hover:bg-purple-500/20 transition-colors cursor-pointer">
-              <h4 className="font-medium text-purple-400">Generate Report</h4>
-              <p className="text-sm text-muted-foreground mt-1">Export sustainability metrics and insights</p>
-            </div>
+      <div className="chart-container">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors cursor-pointer">
+            <h4 className="font-semibold text-green-700 mb-2">Add New Material</h4>
+            <p className="text-sm text-green-600">Upload photos and create material passport</p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="p-6 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer">
+            <h4 className="font-semibold text-blue-700 mb-2">Upload BOM</h4>
+            <p className="text-sm text-blue-600">Calculate carbon footprint for new project</p>
+          </div>
+          <div className="p-6 bg-purple-50 rounded-lg border border-purple-200 hover:bg-purple-100 transition-colors cursor-pointer">
+            <h4 className="font-semibold text-purple-700 mb-2">Generate Report</h4>
+            <p className="text-sm text-purple-600">Export sustainability metrics and insights</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

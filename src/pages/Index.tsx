@@ -33,10 +33,10 @@ const Index = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full sentiri-gradient">
+      <div className="min-h-screen flex w-full bg-gray-50">
         <AppSidebar activeView={activeView} setActiveView={setActiveView} />
-        <main className="flex-1 p-6">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1">
+          <div className="max-w-full">
             {renderActiveView()}
           </div>
         </main>
