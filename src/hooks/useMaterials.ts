@@ -10,7 +10,6 @@ export function useMaterials() {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
   const channelRef = useRef<any>(null)
-  const subscriptionSetupRef = useRef(false)
 
   const fetchMaterials = async () => {
     setLoading(true)
@@ -40,38 +39,21 @@ export function useMaterials() {
     try {
       console.log('Starting optimized material creation with data:', materialData);
       
-      const originalImageUrl = materialData.image_url;
-      console.log('Original image URL to preserve:', originalImageUrl);
-      
-      // Step 1: First insert the material to get the ID
-      const { data: newMaterial, error: insertError } = await supabase
-        .from('materials')
-        .insert([{
-          ...materialData,
-          qr_code: `TEMP_${Date.now()}`, // Temporary placeholder
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
-        .select()
-        .single()
-
-      if (insertError) throw insertError
-      console.log('Material inserted with ID:', newMaterial.id);
-
-      // Step 2: Generate complete QR package
+      // Step 1: Generate QR package first
+      const tempId = crypto.randomUUID();
       let qrData: string;
       let qrImageUrl: string | null = null;
       let simpleQRCode: string;
       
       try {
-        const qrPackage = await generateCompleteQRPackage(newMaterial.id);
+        const qrPackage = await generateCompleteQRPackage(tempId);
         qrData = qrPackage.qrData;
         simpleQRCode = qrPackage.simpleCode;
         
         // Convert QR code to file and upload
         const response = await fetch(qrPackage.qrCodeDataURL);
         const blob = await response.blob();
-        const qrFile = new File([blob], `qr-${newMaterial.id}.png`, { type: 'image/png' });
+        const qrFile = new File([blob], `qr-${tempId}.png`, { type: 'image/png' });
         
         console.log('Generated QR code file:', qrFile.name, qrFile.size);
         
@@ -79,10 +61,6 @@ export function useMaterials() {
         
         if (uploadResult.error) {
           console.warn('QR code image upload failed:', uploadResult.error);
-          toast({
-            title: "Warning",
-            description: "QR code generated but image upload failed",
-          });
         } else {
           qrImageUrl = uploadResult.url;
           console.log('QR code uploaded successfully:', qrImageUrl);
@@ -90,36 +68,30 @@ export function useMaterials() {
       } catch (qrError) {
         console.error('QR generation failed:', qrError);
         // Use fallback QR data
-        qrData = `${window.location.origin}/material/${newMaterial.id}`;
-        simpleQRCode = `QR${newMaterial.id.slice(-6).toUpperCase()}`;
-        
-        toast({
-          title: "Warning",
-          description: "Material added but QR code generation failed",
-        });
+        qrData = `${window.location.origin}/material/${tempId}`;
+        simpleQRCode = `QR${tempId.slice(-6).toUpperCase()}`;
       }
 
-      // Step 3: Update material with complete QR data in single operation
-      const finalUpdateData = {
+      // Step 2: Insert complete material with QR data in single operation
+      const completeData = {
+        ...materialData,
+        id: tempId,
         qr_code: qrData,
         qr_image_url: qrImageUrl,
-        image_url: originalImageUrl, // Preserve original image
+        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
       
-      console.log('Updating material with final data:', finalUpdateData);
+      console.log('Inserting complete material data:', completeData);
       
-      const { error: updateError } = await supabase
+      const { data: newMaterial, error: insertError } = await supabase
         .from('materials')
-        .update(finalUpdateData)
-        .eq('id', newMaterial.id);
+        .insert([completeData])
+        .select()
+        .single()
 
-      if (updateError) {
-        console.error('Failed to update material with QR data:', updateError);
-        throw updateError;
-      }
-
-      console.log('Material creation completed successfully');
+      if (insertError) throw insertError
+      console.log('Material creation completed successfully with ID:', newMaterial.id);
       
       // Show success message
       const unitText = materialData.unit_count && materialData.unit_count > 1 ? ` (${materialData.unit_count} units)` : '';
@@ -131,10 +103,7 @@ export function useMaterials() {
       });
 
       // Real-time subscription will handle UI update automatically
-      return { 
-        ...newMaterial, 
-        ...finalUpdateData
-      };
+      return newMaterial;
       
     } catch (error) {
       console.error('Error adding material:', error)
@@ -293,67 +262,70 @@ export function useMaterials() {
   }
 
   useEffect(() => {
-    console.log('Setting up materials hook with improved real-time subscription')
+    console.log('Setting up materials hook with fixed real-time subscription')
     
     // Initial fetch
     fetchMaterials()
 
-    // Set up real-time subscription only once
-    if (!subscriptionSetupRef.current) {
-      subscriptionSetupRef.current = true
-      
-      const channelName = `materials-realtime-${Date.now()}`
-      console.log('Creating improved real-time channel:', channelName)
-      
-      const channel = supabase
-        .channel(channelName)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'materials'
-          },
-          (payload) => {
-            console.log('Real-time update received:', payload.eventType, payload)
-            
-            setMaterials(prev => {
-              if (payload.eventType === 'INSERT') {
-                console.log('Adding new material via real-time:', payload.new)
-                // Check for duplicates
-                const exists = prev.some(m => m.id === payload.new.id)
-                if (exists) {
-                  console.log('Material already exists, skipping')
-                  return prev
-                }
-                return [payload.new as Material, ...prev]
-              } 
-              
-              if (payload.eventType === 'UPDATE') {
-                console.log('Updating material via real-time:', payload.new)
-                return prev.map(m => 
-                  m.id === payload.new.id ? payload.new as Material : m
-                )
-              }
-              
-              if (payload.eventType === 'DELETE') {
-                console.log('Removing material via real-time:', payload.old)
-                return prev.filter(m => m.id !== payload.old.id)
-              }
-              
-              return prev
-            })
-          }
-        )
-        .subscribe((status) => {
-          console.log('Real-time subscription status:', status)
-          if (status === 'SUBSCRIBED') {
-            console.log('Real-time subscription active')
-          }
-        })
-
-      channelRef.current = channel
+    // Clean up any existing channel first
+    if (channelRef.current) {
+      console.log('Cleaning up existing channel before creating new one')
+      supabase.removeChannel(channelRef.current)
+      channelRef.current = null
     }
+    
+    // Create new channel with unique name
+    const channelName = `materials-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    console.log('Creating new real-time channel:', channelName)
+    
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'materials'
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload.eventType, payload)
+          
+          setMaterials(prev => {
+            if (payload.eventType === 'INSERT') {
+              console.log('Adding new material via real-time:', payload.new)
+              // Check for duplicates
+              const exists = prev.some(m => m.id === payload.new.id)
+              if (exists) {
+                console.log('Material already exists, skipping')
+                return prev
+              }
+              return [payload.new as Material, ...prev]
+            } 
+            
+            if (payload.eventType === 'UPDATE') {
+              console.log('Updating material via real-time:', payload.new)
+              return prev.map(m => 
+                m.id === payload.new.id ? payload.new as Material : m
+              )
+            }
+            
+            if (payload.eventType === 'DELETE') {
+              console.log('Removing material via real-time:', payload.old)
+              return prev.filter(m => m.id !== payload.old.id)
+            }
+            
+            return prev
+          })
+        }
+      )
+      .subscribe((status) => {
+        console.log('Real-time subscription status:', status)
+        if (status === 'SUBSCRIBED') {
+          console.log('Real-time subscription active for channel:', channelName)
+        }
+      })
+
+    channelRef.current = channel
 
     return () => {
       console.log('Cleaning up materials subscription')
@@ -361,9 +333,8 @@ export function useMaterials() {
         supabase.removeChannel(channelRef.current)
         channelRef.current = null
       }
-      subscriptionSetupRef.current = false
     }
-  }, [])
+  }, []) // Empty dependency array to run only once
 
   return {
     materials,
