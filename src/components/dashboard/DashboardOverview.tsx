@@ -58,11 +58,10 @@ export function DashboardOverview() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 ml-6">
       {/* Header Section */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-emerald-100 px-8 py-6">
+      <div className="px-8 py-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-emerald-900">Overview</h1>
-            <p className="text-emerald-600">Welcome back to your sustainable manufacturing hub</p>
+            <h1 className="text-3xl font-bold text-black">Overview</h1>
           </div>
           <div className="flex items-center space-x-3">
             <select className="text-sm border border-emerald-200 rounded-lg px-3 py-2 bg-white/90 text-emerald-700 focus:ring-2 focus:ring-emerald-200">
