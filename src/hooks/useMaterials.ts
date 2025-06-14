@@ -18,8 +18,8 @@ export function useMaterials() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
+      console.log('Materials fetched:', data?.length || 0, 'materials')
       setMaterials(data || [])
-      console.log('Materials fetched:', data?.length || 0)
     } catch (error) {
       console.error('Error fetching materials:', error)
       toast({
@@ -37,7 +37,6 @@ export function useMaterials() {
     try {
       console.log('Starting material creation with data:', materialData);
       
-      // Store the original image URL
       const originalImageUrl = materialData.image_url;
       console.log('Original image URL to preserve:', originalImageUrl);
       
@@ -46,7 +45,7 @@ export function useMaterials() {
         .from('materials')
         .insert([{
           ...materialData,
-          qr_code: `TEMP_${Date.now()}`, // Temporary QR code
+          qr_code: `TEMP_${Date.now()}`,
           dimensions: simulateAIDimensions(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -82,11 +81,10 @@ export function useMaterials() {
       
       if (uploadResult.error) {
         console.warn('QR code image upload failed:', uploadResult.error)
-        // Update material with just the QR data, preserving original image
         const updateData = { 
           qr_code: qrData,
           qr_image_url: null,
-          image_url: originalImageUrl // Explicitly preserve the original image
+          image_url: originalImageUrl
         };
         
         console.log('Updating material with QR data only, preserving image:', updateData);
@@ -101,11 +99,10 @@ export function useMaterials() {
           description: "QR code generated but image upload failed. Material added successfully.",
         })
       } else {
-        // Update material with QR data and QR image URL, preserving original image
         const updateData = { 
           qr_code: qrData,
           qr_image_url: uploadResult.url,
-          image_url: originalImageUrl // Explicitly preserve the original image
+          image_url: originalImageUrl
         };
         
         console.log('Updating material with QR data and image, preserving original:', updateData);
@@ -116,9 +113,7 @@ export function useMaterials() {
           .eq('id', newMaterial.id)
       }
 
-      // Immediately refresh the materials list to show the new material
-      await fetchMaterials()
-      console.log('Materials list refreshed after adding new material')
+      console.log('Material added successfully, about to refresh materials list')
       
       toast({
         title: "Success",
@@ -129,7 +124,7 @@ export function useMaterials() {
         ...newMaterial, 
         qr_code: qrData, 
         qr_image_url: uploadResult.url,
-        image_url: originalImageUrl // Ensure the final result has the correct image
+        image_url: originalImageUrl
       };
       console.log('Final material result:', finalResult);
       
@@ -157,9 +152,7 @@ export function useMaterials() {
 
       if (error) throw error
 
-      // Immediately refresh the materials list
-      await fetchMaterials()
-      console.log('Materials list refreshed after update')
+      console.log('Material updated successfully, materials will update via real-time subscription')
       
       toast({
         title: "Success",
@@ -180,6 +173,8 @@ export function useMaterials() {
   const deleteMaterial = async (id: string) => {
     setLoading(true)
     try {
+      console.log('Attempting to delete material with id:', id)
+      
       const { error } = await supabase
         .from('materials')
         .delete()
@@ -187,9 +182,7 @@ export function useMaterials() {
 
       if (error) throw error
 
-      // Immediately refresh the materials list
-      await fetchMaterials()
-      console.log('Materials list refreshed after deletion')
+      console.log('Material deleted successfully, materials will update via real-time subscription')
       
       toast({
         title: "Success",
@@ -271,14 +264,12 @@ export function useMaterials() {
         .update({ 
           qr_code: qrData,
           qr_image_url: uploadResult.url,
-          image_url: currentMaterial?.image_url, // Preserve original material image
+          image_url: currentMaterial?.image_url,
           updated_at: new Date().toISOString()
         })
         .eq('id', materialId)
       
-      // Immediately refresh the materials list
-      await fetchMaterials()
-      console.log('Materials list refreshed after QR regeneration')
+      console.log('QR code regenerated successfully, materials will update via real-time subscription')
       
       toast({
         title: "Success",
@@ -297,7 +288,42 @@ export function useMaterials() {
   }
 
   useEffect(() => {
+    console.log('Setting up materials hook with real-time subscription')
+    
+    // Initial fetch
     fetchMaterials()
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('materials-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'materials'
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload.eventType, payload)
+          
+          if (payload.eventType === 'INSERT') {
+            console.log('Material inserted via real-time:', payload.new)
+            setMaterials(prev => [payload.new as Material, ...prev])
+          } else if (payload.eventType === 'DELETE') {
+            console.log('Material deleted via real-time:', payload.old)
+            setMaterials(prev => prev.filter(m => m.id !== payload.old.id))
+          } else if (payload.eventType === 'UPDATE') {
+            console.log('Material updated via real-time:', payload.new)
+            setMaterials(prev => prev.map(m => m.id === payload.new.id ? payload.new as Material : m))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      console.log('Cleaning up materials subscription')
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   return {
