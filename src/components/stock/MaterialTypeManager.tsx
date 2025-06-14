@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useMaterialTypes } from '@/hooks/useMaterialTypes'
-import { Plus, Trash2, Loader2 } from 'lucide-react'
+import { useAICarbonLookup } from '@/hooks/useAICarbonLookup'
+import { Plus, Trash2, Loader2, Sparkles } from 'lucide-react'
 
 interface MaterialTypeManagerProps {
   selectedCategory: string
@@ -23,12 +24,14 @@ export function MaterialTypeManager({
   onSpecificTypeChange,
   onTypeSelected 
 }: MaterialTypeManagerProps) {
-  const { materialTypes, loading, addMaterialType, deleteMaterialType, addCategory } = useMaterialTypes()
+  const { materialTypes, loading, addMaterialType, deleteMaterialType } = useMaterialTypes()
+  const { lookupCarbonData, loading: aiLoading } = useAICarbonLookup()
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [newCategory, setNewCategory] = useState('')
   const [newSpecificType, setNewSpecificType] = useState('')
   const [newDensity, setNewDensity] = useState(500)
   const [newCarbonFactor, setNewCarbonFactor] = useState(2.0)
+  const [useAILookup, setUseAILookup] = useState(false)
 
   console.log('MaterialTypeManager props:', { selectedCategory, selectedSpecificType })
   console.log('Available material types:', materialTypes)
@@ -65,6 +68,20 @@ export function MaterialTypeManager({
     }
   }
 
+  const handleAILookup = async () => {
+    if (!newCategory || !newSpecificType) return
+
+    try {
+      const aiData = await lookupCarbonData(newCategory, newSpecificType)
+      if (aiData) {
+        setNewCarbonFactor(aiData.carbonFactor)
+        setNewDensity(aiData.density)
+      }
+    } catch (error) {
+      console.error('AI lookup failed:', error)
+    }
+  }
+
   const handleAddMaterialType = async () => {
     if (!newCategory || !newSpecificType) return
 
@@ -72,7 +89,10 @@ export function MaterialTypeManager({
       category: newCategory,
       specific_type: newSpecificType,
       density: newDensity,
-      carbon_factor: newCarbonFactor
+      carbon_factor: newCarbonFactor,
+      ai_sourced: useAILookup,
+      confidence_score: useAILookup ? 0.8 : null,
+      data_source: useAILookup ? 'AI lookup' : 'Manual entry'
     })
 
     if (result) {
@@ -81,6 +101,7 @@ export function MaterialTypeManager({
       setNewSpecificType('')
       setNewDensity(500)
       setNewCarbonFactor(2.0)
+      setUseAILookup(false)
     }
   }
 
@@ -117,6 +138,23 @@ export function MaterialTypeManager({
                       placeholder="e.g., Oak, Steel Grade 304"
                     />
                   </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      onClick={handleAILookup}
+                      disabled={aiLoading || !newCategory || !newSpecificType}
+                    >
+                      {aiLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      AI Lookup
+                    </Button>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Density (kg/m³)</Label>
@@ -168,7 +206,12 @@ export function MaterialTypeManager({
               {specificTypes.map(type => (
                 <SelectItem key={type.id} value={type.specific_type}>
                   <div className="flex items-center justify-between w-full">
-                    <span>{type.specific_type}</span>
+                    <span className="flex items-center gap-2">
+                      {type.specific_type}
+                      {type.ai_sourced && (
+                        <Sparkles className="h-3 w-3 text-purple-500" />
+                      )}
+                    </span>
                     <Button
                       type="button"
                       variant="ghost"

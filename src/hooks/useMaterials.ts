@@ -77,7 +77,23 @@ export function useMaterials() {
         simpleQRCode = `QR${tempId.slice(-6).toUpperCase()}`;
       }
 
-      // Step 2: Prepare material data for insertion
+      // Step 2: Calculate carbon footprint properly
+      let totalCarbonFootprint = 0;
+      const carbonFactor = materialData.carbon_footprint || 0;
+      const quantity = Number(materialData.quantity);
+      const unitCount = materialData.unit_count || 1;
+
+      // For volume-based units, carbon is per cubic unit
+      // For count-based units, carbon is per piece/unit
+      if (['m³', 'cm³', 'mm³'].includes(materialData.unit)) {
+        // Volume-based: carbon factor should be applied to the final volume
+        totalCarbonFootprint = carbonFactor * quantity;
+      } else {
+        // Count-based: carbon factor is per unit, multiply by total units
+        totalCarbonFootprint = carbonFactor * quantity;
+      }
+
+      // Step 3: Prepare material data for insertion
       const completeData = {
         id: tempId,
         name: materialData.name,
@@ -86,8 +102,9 @@ export function useMaterials() {
         origin: materialData.origin || null,
         quantity: Number(materialData.quantity),
         unit: materialData.unit,
+        unit_count: materialData.unit_count || 1,
         cost_per_unit: materialData.cost_per_unit ? Number(materialData.cost_per_unit) : null,
-        carbon_footprint: Number(materialData.carbon_footprint || 0),
+        carbon_footprint: totalCarbonFootprint,
         carbon_source: materialData.carbon_source || null,
         description: materialData.description || null,
         dimensions: materialData.dimensions || null,
@@ -95,14 +112,18 @@ export function useMaterials() {
         width: materialData.width ? Number(materialData.width) : null,
         thickness: materialData.thickness ? Number(materialData.thickness) : null,
         dimension_unit: materialData.dimension_unit || 'mm',
+        density: materialData.density ? Number(materialData.density) : null,
         image_url: materialData.image_url || null,
         qr_code: qrData,
         qr_image_url: qrImageUrl,
+        ai_carbon_confidence: materialData.ai_carbon_confidence || null,
+        ai_carbon_source: materialData.ai_carbon_source || null,
+        ai_carbon_updated_at: materialData.ai_carbon_updated_at || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
       
-      console.log('Inserting material with data:', completeData);
+      console.log('Inserting material with complete data:', completeData);
       
       const { data: newMaterial, error: insertError } = await supabase
         .from('materials')
@@ -117,7 +138,7 @@ export function useMaterials() {
       
       console.log('Material created successfully:', newMaterial);
       
-      // Show success message
+      // Show success message with preserved units
       const costText = materialData.cost_per_unit ? ` at $${materialData.cost_per_unit}/${materialData.unit}` : '';
       
       toast({
