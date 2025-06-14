@@ -112,37 +112,6 @@ interface AppSidebarProps {
 export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   const { toast } = useToast();
 
-  const handleQuickAction = (action: string) => {
-    switch (action) {
-      case "Add Stock":
-        setActiveView("stock");
-        toast({
-          title: "Navigation",
-          description: "Switched to Stock Overview to add materials",
-        });
-        break;
-      case "Upload BOM":
-        setActiveView("bom");
-        toast({
-          title: "Navigation", 
-          description: "Switched to BOM & Carbon section",
-        });
-        break;
-      case "Generate Passport":
-        setActiveView("passport");
-        toast({
-          title: "Navigation",
-          description: "Switched to Material Passport section",
-        });
-        break;
-      default:
-        toast({
-          title: "Feature",
-          description: `${action} functionality coming soon!`,
-        });
-    }
-  };
-
   const handleNavigation = (url: string) => {
     setActiveView(url);
     toast({
@@ -231,40 +200,6 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                 </AccordionItem>
               ))}
             </Accordion>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup className="mt-6">
-          <SidebarGroupContent>
-            <div className="space-y-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start border-slate-200/40 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:text-emerald-700 rounded-xl px-4 py-2 font-medium transition-all duration-200"
-                onClick={() => handleQuickAction("Add Stock")}
-              >
-                <Plus className="h-4 w-4 mr-3" />
-                Add Stock
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start border-slate-200/40 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:text-emerald-700 rounded-xl px-4 py-2 font-medium transition-all duration-200"
-                onClick={() => handleQuickAction("Upload BOM")}
-              >
-                <Upload className="h-4 w-4 mr-3" />
-                Upload BOM
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start border-slate-200/40 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:text-emerald-700 rounded-xl px-4 py-2 font-medium transition-all duration-200"
-                onClick={() => handleQuickAction("Generate Passport")}
-              >
-                <QrCode className="h-4 w-4 mr-3" />
-                Generate Passport
-              </Button>
-            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
