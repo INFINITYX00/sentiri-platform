@@ -24,7 +24,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -154,23 +153,20 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
 
   return (
     <Sidebar className="border-r border-slate-200/20">
-      <SidebarHeader className="p-8 border-b border-slate-200/20">
+      <SidebarHeader className="p-4 border-b border-slate-200/20">
         <div className="flex items-center justify-center">
           <img 
             src="/lovable-uploads/3acb41e9-62fb-4c55-ba24-9bada4c245de.png" 
             alt="Sentiri Logo" 
-            className="h-24 w-auto max-w-full"
+            className="h-16 w-auto max-w-full"
           />
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="p-6">
+      <SidebarContent className="p-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-4">
-            Main Navigation
-          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-2">
+            <SidebarMenu className="space-y-1">
               {mainMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
@@ -187,12 +183,9 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup className="mt-6">
-          <SidebarGroupLabel className="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-4">
-            Workspaces
-          </SidebarGroupLabel>
+        <SidebarGroup className="mt-4">
           <SidebarGroupContent>
-            <Accordion type="single" collapsible className="w-full space-y-2">
+            <Accordion type="single" collapsible className="w-full space-y-1">
               {workspaceMenuItems.map((workspace) => (
                 <AccordionItem key={workspace.title} value={workspace.title.toLowerCase().replace(/\s+/g, '-')} className="border-none">
                   {workspace.items.length > 0 ? (
@@ -241,16 +234,13 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup className="mt-8">
-          <SidebarGroupLabel className="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-4">
-            Quick Actions
-          </SidebarGroupLabel>
+        <SidebarGroup className="mt-6">
           <SidebarGroupContent>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start border-slate-200/40 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:text-emerald-700 rounded-xl px-4 py-3 font-medium transition-all duration-200"
+                className="w-full justify-start border-slate-200/40 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:text-emerald-700 rounded-xl px-4 py-2 font-medium transition-all duration-200"
                 onClick={() => handleQuickAction("Add Stock")}
               >
                 <Plus className="h-4 w-4 mr-3" />
@@ -259,7 +249,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start border-slate-200/40 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:text-emerald-700 rounded-xl px-4 py-3 font-medium transition-all duration-200"
+                className="w-full justify-start border-slate-200/40 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:text-emerald-700 rounded-xl px-4 py-2 font-medium transition-all duration-200"
                 onClick={() => handleQuickAction("Upload BOM")}
               >
                 <Upload className="h-4 w-4 mr-3" />
@@ -268,7 +258,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start border-slate-200/40 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:text-emerald-700 rounded-xl px-4 py-3 font-medium transition-all duration-200"
+                className="w-full justify-start border-slate-200/40 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:text-emerald-700 rounded-xl px-4 py-2 font-medium transition-all duration-200"
                 onClick={() => handleQuickAction("Generate Passport")}
               >
                 <QrCode className="h-4 w-4 mr-3" />
@@ -279,7 +269,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-6 border-t border-slate-200/20">
+      <SidebarFooter className="p-4 border-t border-slate-200/20">
         <div className="text-center space-y-2">
           <p className="text-xs text-slate-500 font-medium">Reduce • Reuse • Recycle</p>
           <p className="text-xs text-emerald-600 font-semibold">Carbon Neutral by 2030</p>
