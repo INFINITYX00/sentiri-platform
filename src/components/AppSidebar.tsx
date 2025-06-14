@@ -13,7 +13,11 @@ import {
   FolderOpen,
   Truck,
   Recycle,
-  ChevronDown
+  ChevronDown,
+  Calculator,
+  Zap,
+  Users,
+  Box
 } from "lucide-react";
 import {
   Sidebar,
@@ -42,82 +46,48 @@ const mainMenuItems = [
     url: "dashboard",
     icon: Home,
   },
+];
+
+const workspaceMenuItems = [
   {
     title: "Stock Overview",
     url: "stock",
     icon: Package,
+    items: []
   },
   {
     title: "Material Passport",
     url: "passport",
     icon: FileText,
+    items: []
   },
   {
     title: "Design Workspace",
     url: "design",
     icon: Layers,
+    items: [
+      { title: "Projects", url: "design", icon: FolderOpen },
+      { title: "Time Tracking", url: "time-logging", icon: Clock },
+      { title: "Manufacturing Stages", url: "manufacturing", icon: Layers },
+      { title: "Labor Calculator", url: "labor", icon: Calculator },
+      { title: "Energy Estimator", url: "energy", icon: Zap },
+      { title: "Transport Emissions", url: "transport", icon: TrendingUp },
+      { title: "Shipping Tracker", url: "shipping", icon: Truck },
+      { title: "Take-back System", url: "takeback", icon: Recycle },
+      { title: "Circular Design", url: "circular", icon: Recycle }
+    ]
   },
   {
     title: "BOM & Carbon",
     url: "bom",
     icon: ShoppingCart,
+    items: []
   },
   {
     title: "AI Insights",
     url: "insights",
     icon: TrendingUp,
-  },
-];
-
-const projectMenuItems = [
-  {
-    title: "Energy Estimator",
-    url: "energy",
-    icon: TrendingUp,
-  },
-  {
-    title: "Labor Calculator",
-    url: "labor",
-    icon: Clock,
-  },
-  {
-    title: "Manufacturing Stages",
-    url: "manufacturing",
-    icon: Layers,
-  },
-];
-
-const timeTrackingItems = [
-  {
-    title: "Time Logging",
-    url: "time-logging",
-    icon: Clock,
-  },
-  {
-    title: "Project Hours",
-    url: "project-hours",
-    icon: FolderOpen,
-  },
-];
-
-const shippingItems = [
-  {
-    title: "Shipping Tracker",
-    url: "shipping",
-    icon: Truck,
-  },
-  {
-    title: "Transport Emissions",
-    url: "transport",
-    icon: TrendingUp,
-  },
-];
-
-const lifecycleItems = [
-  {
-    title: "Takeback System",
-    url: "takeback",
-    icon: Recycle,
+    items: []
   },
 ];
 
@@ -175,7 +145,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           <img 
             src="/lovable-uploads/3acb41e9-62fb-4c55-ba24-9bada4c245de.png" 
             alt="Sentiri Logo" 
-            className="h-16 w-auto max-w-full"
+            className="h-20 w-auto max-w-full"
           />
         </div>
       </SidebarHeader>
@@ -205,101 +175,54 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
 
         <SidebarGroup className="mt-6">
           <SidebarGroupLabel className="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-4">
-            Modules
+            Workspaces
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <Accordion type="single" collapsible className="w-full space-y-2">
-              <AccordionItem value="projects" className="border-none">
-                <AccordionTrigger className="hover:bg-emerald-50/80 rounded-xl px-4 py-3 hover:no-underline font-medium">
-                  <div className="flex items-center space-x-3">
-                    <FolderOpen className="h-5 w-5" />
-                    <span>Projects</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-2 pb-0">
-                  <div className="ml-6 space-y-1">
-                    {projectMenuItems.map((item) => (
-                      <button
-                        key={item.title}
-                        onClick={() => handleNavigation(item.url)}
-                        className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 rounded-lg transition-all duration-200"
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </button>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="time-tracking" className="border-none">
-                <AccordionTrigger className="hover:bg-emerald-50/80 rounded-xl px-4 py-3 hover:no-underline font-medium">
-                  <div className="flex items-center space-x-3">
-                    <Clock className="h-5 w-5" />
-                    <span>Time Tracking</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-2 pb-0">
-                  <div className="ml-6 space-y-1">
-                    {timeTrackingItems.map((item) => (
-                      <button
-                        key={item.title}
-                        onClick={() => handleNavigation(item.url)}
-                        className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 rounded-lg transition-all duration-200"
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </button>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="shipping" className="border-none">
-                <AccordionTrigger className="hover:bg-emerald-50/80 rounded-xl px-4 py-3 hover:no-underline font-medium">
-                  <div className="flex items-center space-x-3">
-                    <Truck className="h-5 w-5" />
-                    <span>Shipping & Transport</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-2 pb-0">
-                  <div className="ml-6 space-y-1">
-                    {shippingItems.map((item) => (
-                      <button
-                        key={item.title}
-                        onClick={() => handleNavigation(item.url)}
-                        className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 rounded-lg transition-all duration-200"
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </button>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="lifecycle" className="border-none">
-                <AccordionTrigger className="hover:bg-emerald-50/80 rounded-xl px-4 py-3 hover:no-underline font-medium">
-                  <div className="flex items-center space-x-3">
-                    <Recycle className="h-5 w-5" />
-                    <span>Lifecycle</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-2 pb-0">
-                  <div className="ml-6 space-y-1">
-                    {lifecycleItems.map((item) => (
-                      <button
-                        key={item.title}
-                        onClick={() => handleNavigation(item.url)}
-                        className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700 rounded-lg transition-all duration-200"
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </button>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
+              {workspaceMenuItems.map((workspace) => (
+                <AccordionItem key={workspace.title} value={workspace.title.toLowerCase().replace(/\s+/g, '-')} className="border-none">
+                  {workspace.items.length > 0 ? (
+                    <>
+                      <AccordionTrigger className="hover:bg-emerald-50/80 rounded-xl px-4 py-3 hover:no-underline font-medium">
+                        <div className="flex items-center space-x-3">
+                          <workspace.icon className="h-5 w-5" />
+                          <span>{workspace.title}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-2 pb-0">
+                        <div className="ml-6 space-y-1">
+                          {workspace.items.map((item) => (
+                            <button
+                              key={item.title}
+                              onClick={() => handleNavigation(item.url)}
+                              className={`flex items-center space-x-3 w-full px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
+                                activeView === item.url 
+                                  ? 'bg-emerald-100/80 text-emerald-700 font-medium' 
+                                  : 'text-slate-600 hover:bg-emerald-50/80 hover:text-emerald-700'
+                              }`}
+                            >
+                              <item.icon className="h-4 w-4" />
+                              <span>{item.title}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setActiveView(workspace.url)}
+                      className={`flex items-center space-x-3 w-full px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
+                        activeView === workspace.url 
+                          ? 'bg-emerald-50/80 text-emerald-700 font-semibold' 
+                          : 'hover:bg-emerald-50/80 hover:text-emerald-700'
+                      }`}
+                    >
+                      <workspace.icon className="h-5 w-5" />
+                      <span>{workspace.title}</span>
+                    </button>
+                  )}
+                </AccordionItem>
+              ))}
             </Accordion>
           </SidebarGroupContent>
         </SidebarGroup>
