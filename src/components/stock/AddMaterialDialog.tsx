@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -9,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { useMaterials } from '@/hooks/useMaterials'
 import { useAICarbonLookup } from '@/hooks/useAICarbonLookup'
-import { Sparkles, Upload, QrCode, Loader2 } from 'lucide-react'
+import { MaterialImageUpload } from './MaterialImageUpload'
+import { MaterialTypeManager } from './MaterialTypeManager'
+import { Sparkles, QrCode, Loader2 } from 'lucide-react'
 
 interface AddMaterialDialogProps {
   open: boolean
@@ -37,13 +38,9 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
     length: 0,
     width: 0,
     thickness: 0,
-    dimension_unit: 'mm'
+    dimension_unit: 'mm',
+    image_url: ''
   })
-
-  const materialTypes = [
-    'wood', 'metal', 'plastic', 'fabric', 'glass', 
-    'ceramic', 'composite', 'concrete', 'stone', 'other'
-  ]
 
   const units = [
     'kg', 'g', 'tons', 'm', 'cm', 'mm', 'm²', 'cm²', 
@@ -97,7 +94,8 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
       length: 0,
       width: 0,
       thickness: 0,
-      dimension_unit: 'mm'
+      dimension_unit: 'mm',
+      image_url: ''
     })
   }
 
@@ -137,7 +135,8 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
         length: formData.length || undefined,
         width: formData.width || undefined,
         thickness: formData.thickness || undefined,
-        dimension_unit: formData.dimension_unit || undefined
+        dimension_unit: formData.dimension_unit || undefined,
+        image_url: formData.image_url || undefined
       })
 
       toast({
@@ -158,6 +157,21 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
     }
   }
 
+  const handleImageUpload = (url: string) => {
+    setFormData(prev => ({ ...prev, image_url: url }))
+  }
+
+  const handleImageRemove = () => {
+    setFormData(prev => ({ ...prev, image_url: '' }))
+  }
+
+  const handleTypeSelected = (carbonFactor: number, density: number) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      carbon_footprint: carbonFactor
+    }))
+  }
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -169,6 +183,13 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Material Image */}
+          <MaterialImageUpload
+            imageUrl={formData.image_url}
+            onImageUpload={handleImageUpload}
+            onImageRemove={handleImageRemove}
+          />
+
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground">Basic Information</h3>
@@ -186,34 +207,6 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
               </div>
               
               <div>
-                <Label htmlFor="type">Material Type *</Label>
-                <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {materialTypes.map(type => (
-                      <SelectItem key={type} value={type}>
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="specific_material">Specific Material</Label>
-                <Input
-                  id="specific_material"
-                  value={formData.specific_material}
-                  onChange={(e) => setFormData(prev => ({ ...prev, specific_material: e.target.value }))}
-                  placeholder="e.g., White Oak, Steel Grade 304"
-                />
-              </div>
-              
-              <div>
                 <Label htmlFor="origin">Origin/Source</Label>
                 <Input
                   id="origin"
@@ -223,6 +216,15 @@ export function AddMaterialDialog({ open, onClose }: AddMaterialDialogProps) {
                 />
               </div>
             </div>
+
+            {/* Material Type Manager */}
+            <MaterialTypeManager
+              selectedCategory={formData.type}
+              selectedSpecificType={formData.specific_material}
+              onCategoryChange={(category) => setFormData(prev => ({ ...prev, type: category }))}
+              onSpecificTypeChange={(specificType) => setFormData(prev => ({ ...prev, specific_material: specificType }))}
+              onTypeSelected={handleTypeSelected}
+            />
 
             <div>
               <Label htmlFor="description">Description</Label>
