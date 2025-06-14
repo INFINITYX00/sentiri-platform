@@ -23,6 +23,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
   {
@@ -57,18 +58,45 @@ const menuItems = [
   },
 ];
 
-const quickActions = [
-  { title: "Add Stock", icon: Plus },
-  { title: "Upload BOM", icon: Upload },
-  { title: "Generate Passport", icon: QrCode },
-];
-
 interface AppSidebarProps {
   activeView: string;
   setActiveView: (view: string) => void;
 }
 
 export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
+  const { toast } = useToast();
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case "Add Stock":
+        setActiveView("stock");
+        toast({
+          title: "Navigation",
+          description: "Switched to Stock Overview to add materials",
+        });
+        break;
+      case "Upload BOM":
+        setActiveView("bom");
+        toast({
+          title: "Navigation", 
+          description: "Switched to BOM & Carbon section",
+        });
+        break;
+      case "Generate Passport":
+        setActiveView("passport");
+        toast({
+          title: "Navigation",
+          description: "Switched to Material Passport section",
+        });
+        break;
+      default:
+        toast({
+          title: "Feature",
+          description: `${action} functionality coming soon!`,
+        });
+    }
+  };
+
   return (
     <Sidebar className="border-r border-border/50">
       <SidebarHeader className="p-6">
@@ -112,17 +140,33 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <div className="space-y-2">
-              {quickActions.map((action) => (
-                <Button
-                  key={action.title}
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start border-border/50 hover:bg-accent/10 hover:border-accent/30"
-                >
-                  <action.icon className="h-4 w-4 mr-2" />
-                  {action.title}
-                </Button>
-              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start border-border/50 hover:bg-accent/10 hover:border-accent/30"
+                onClick={() => handleQuickAction("Add Stock")}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Stock
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start border-border/50 hover:bg-accent/10 hover:border-accent/30"
+                onClick={() => handleQuickAction("Upload BOM")}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload BOM
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start border-border/50 hover:bg-accent/10 hover:border-accent/30"
+                onClick={() => handleQuickAction("Generate Passport")}
+              >
+                <QrCode className="h-4 w-4 mr-2" />
+                Generate Passport
+              </Button>
             </div>
           </SidebarGroupContent>
         </SidebarGroup>

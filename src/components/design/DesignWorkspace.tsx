@@ -14,10 +14,33 @@ import { TransportEmissions } from "@/components/carbon/TransportEmissions";
 import { ShippingTracker } from "@/components/shipping/ShippingTracker";
 import { TakebackSystem } from "@/components/lifecycle/TakebackSystem";
 import { CircularDesign } from "@/components/design/CircularDesign";
+import { useToast } from "@/hooks/use-toast";
 
 export function DesignWorkspace() {
   const [timeEntries, setTimeEntries] = useState<any[]>([]);
   const [stages, setStages] = useState<any[]>([]);
+  const { toast } = useToast();
+
+  const handleNewProject = () => {
+    toast({
+      title: "New Project",
+      description: "New project creation functionality coming soon!",
+    });
+  };
+
+  const handleViewDetails = (projectName: string) => {
+    toast({
+      title: "Project Details",
+      description: `Opening details for ${projectName}`,
+    });
+  };
+
+  const handleUpdateMaterials = (projectName: string) => {
+    toast({
+      title: "Update Materials",
+      description: `Opening material update for ${projectName}`,
+    });
+  };
 
   const projects = [
     {
@@ -97,7 +120,7 @@ export function DesignWorkspace() {
           <h1 className="text-3xl font-bold">Design Workspace</h1>
           <p className="text-muted-foreground mt-1">Track your sustainable design projects and material allocation</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90">
+        <Button className="bg-primary hover:bg-primary/90" onClick={handleNewProject}>
           <Plus className="h-4 w-4 mr-2" />
           New Project
         </Button>
@@ -255,10 +278,20 @@ export function DesignWorkspace() {
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-2">
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => handleViewDetails(project.name)}
+                    >
                       View Details
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => handleUpdateMaterials(project.name)}
+                    >
                       Update Materials
                     </Button>
                   </div>

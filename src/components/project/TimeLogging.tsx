@@ -1,11 +1,11 @@
 
-import { useState } from 'react';
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Clock, Play, Users, Calculator } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Clock, Plus, User } from "lucide-react";
 import { useTimeEntries } from "@/hooks/useTimeEntries";
 
 interface TimeLoggingProps {
@@ -15,28 +15,19 @@ interface TimeLoggingProps {
 
 export function TimeLogging({ projectId, onTimeUpdate }: TimeLoggingProps) {
   const { timeEntries, loading, addTimeEntry } = useTimeEntries(projectId);
-
+  
   const [newEntry, setNewEntry] = useState({
     stage: "",
     task: "",
     duration: "",
     worker: "",
-    hourly_rate: "40"
+    hourly_rate: "25"
   });
 
-  const stages = [
-    { value: "design", label: "Design", color: "bg-blue-500" },
-    { value: "machining", label: "Machining", color: "bg-orange-500" },
-    { value: "assembly", label: "Assembly", color: "bg-green-500" },
-    { value: "finishing", label: "Finishing", color: "bg-purple-500" }
-  ];
-
-  const workers = [
-    "Sarah Chen", "Mike Rodriguez", "Anna Thompson", "David Wilson", "Emma Davis"
-  ];
-
-  const handleAddTimeEntry = async () => {
-    if (!newEntry.stage || !newEntry.task || !newEntry.duration || !newEntry.worker) return;
+  const handleAddEntry = async () => {
+    if (!newEntry.stage || !newEntry.task || !newEntry.duration || !newEntry.worker) {
+      return;
+    }
 
     const duration = parseFloat(newEntry.duration);
     const hourlyRate = parseFloat(newEntry.hourly_rate);
@@ -61,21 +52,17 @@ export function TimeLogging({ projectId, onTimeUpdate }: TimeLoggingProps) {
         task: "",
         duration: "",
         worker: "",
-        hourly_rate: "40"
+        hourly_rate: "25"
       });
-
+      
       if (onTimeUpdate) {
         onTimeUpdate(timeEntries);
       }
     }
   };
 
-  const totalCost = timeEntries.reduce((sum, entry) => sum + entry.cost, 0);
   const totalHours = timeEntries.reduce((sum, entry) => sum + entry.duration, 0);
-
-  const getStageColor = (stage: string) => {
-    return stages.find(s => s.value === stage)?.color || "bg-gray-500";
-  };
+  const totalCost = timeEntries.reduce((sum, entry) => sum + entry.cost, 0);
 
   if (loading) {
     return <div>Loading time entries...</div>;
@@ -101,10 +88,10 @@ export function TimeLogging({ projectId, onTimeUpdate }: TimeLoggingProps) {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Labor Cost</p>
-                <p className="text-2xl font-bold">${totalCost.toFixed(0)}</p>
+                <p className="text-sm text-muted-foreground">Total Cost</p>
+                <p className="text-2xl font-bold">${totalCost.toFixed(2)}</p>
               </div>
-              <Calculator className="h-6 w-6 text-green-400" />
+              <div className="text-primary">$</div>
             </div>
           </CardContent>
         </Card>
@@ -113,20 +100,20 @@ export function TimeLogging({ projectId, onTimeUpdate }: TimeLoggingProps) {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Avg Rate</p>
-                <p className="text-2xl font-bold">${totalHours > 0 ? (totalCost / totalHours).toFixed(0) : 0}/hr</p>
+                <p className="text-sm text-muted-foreground">Entries</p>
+                <p className="text-2xl font-bold">{timeEntries.length}</p>
               </div>
-              <Users className="h-6 w-6 text-blue-400" />
+              <User className="h-6 w-6 text-blue-400" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Add New Time Entry */}
+      {/* Add Time Entry */}
       <Card className="sentiri-card">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Play className="h-5 w-5 text-primary" />
+            <Plus className="h-5 w-5 text-primary" />
             <span>Log Time Entry</span>
           </CardTitle>
         </CardHeader>
@@ -134,14 +121,15 @@ export function TimeLogging({ projectId, onTimeUpdate }: TimeLoggingProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Select value={newEntry.stage} onValueChange={(value) => setNewEntry({...newEntry, stage: value})}>
               <SelectTrigger>
-                <SelectValue placeholder="Select stage" />
+                <SelectValue placeholder="Stage" />
               </SelectTrigger>
               <SelectContent>
-                {stages.map(stage => (
-                  <SelectItem key={stage.value} value={stage.value}>
-                    {stage.label}
-                  </SelectItem>
-                ))}
+                <SelectItem value="design">Design</SelectItem>
+                <SelectItem value="preparation">Preparation</SelectItem>
+                <SelectItem value="cutting">Cutting</SelectItem>
+                <SelectItem value="assembly">Assembly</SelectItem>
+                <SelectItem value="finishing">Finishing</SelectItem>
+                <SelectItem value="quality-check">Quality Check</SelectItem>
               </SelectContent>
             </Select>
 
@@ -153,59 +141,56 @@ export function TimeLogging({ projectId, onTimeUpdate }: TimeLoggingProps) {
 
             <Input
               type="number"
-              step="0.5"
               placeholder="Hours"
               value={newEntry.duration}
               onChange={(e) => setNewEntry({...newEntry, duration: e.target.value})}
             />
 
-            <Select value={newEntry.worker} onValueChange={(value) => setNewEntry({...newEntry, worker: value})}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select worker" />
-              </SelectTrigger>
-              <SelectContent>
-                {workers.map(worker => (
-                  <SelectItem key={worker} value={worker}>
-                    {worker}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              placeholder="Worker name"
+              value={newEntry.worker}
+              onChange={(e) => setNewEntry({...newEntry, worker: e.target.value})}
+            />
 
-            <Button onClick={handleAddTimeEntry} className="bg-primary hover:bg-primary/90">
+            <Button onClick={handleAddEntry} className="bg-primary hover:bg-primary/90">
               Add Entry
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Time Entries List */}
+      {/* Time Entries Table */}
       <Card className="sentiri-card">
         <CardHeader>
           <CardTitle>Time Entries</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {timeEntries.map((entry) => (
-              <div key={entry.id} className="p-4 bg-muted/20 rounded-lg border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Badge className={`${getStageColor(entry.stage)} text-white`}>
-                      {stages.find(s => s.value === entry.stage)?.label}
-                    </Badge>
-                    <div>
-                      <p className="font-medium">{entry.task}</p>
-                      <p className="text-sm text-muted-foreground">{entry.worker}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">{entry.duration}h × ${entry.hourly_rate}/hr</p>
-                    <p className="text-sm text-primary font-semibold">${entry.cost.toFixed(2)}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Stage</TableHead>
+                <TableHead>Task</TableHead>
+                <TableHead>Worker</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Rate</TableHead>
+                <TableHead>Cost</TableHead>
+                <TableHead>Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {timeEntries.map((entry) => (
+                <TableRow key={entry.id}>
+                  <TableCell className="capitalize">{entry.stage}</TableCell>
+                  <TableCell>{entry.task}</TableCell>
+                  <TableCell>{entry.worker}</TableCell>
+                  <TableCell>{entry.duration}h</TableCell>
+                  <TableCell>${entry.hourly_rate}/h</TableCell>
+                  <TableCell>${entry.cost.toFixed(2)}</TableCell>
+                  <TableCell>{new Date(entry.timestamp).toLocaleDateString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

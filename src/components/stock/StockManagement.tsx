@@ -8,11 +8,13 @@ import { Search, Filter, Plus, Package } from "lucide-react";
 import { StockGrid } from "./StockGrid";
 import { AddMaterialDialog } from "./AddMaterialDialog";
 import { useMaterials } from '@/hooks/useMaterials';
+import { useToast } from '@/hooks/use-toast';
 
 export function StockManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const { toast } = useToast();
   
   const { materials, loading } = useMaterials();
 
@@ -30,6 +32,13 @@ export function StockManagement() {
       totalValue: `$${totalValue.toLocaleString()}`
     };
   });
+
+  const handleFilterClick = () => {
+    toast({
+      title: "Filters",
+      description: "Advanced filtering options coming soon!",
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -79,7 +88,7 @@ export function StockManagement() {
               />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleFilterClick}>
                 <Filter className="h-4 w-4 mr-2" />
                 Filters
               </Button>
