@@ -34,7 +34,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     <Sidebar className="border-r border-slate-200/20">
       <AppSidebarHeader />
 
-      <SidebarContent className="p-4 overflow-y-auto">
+      <SidebarContent className="p-4">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
@@ -50,7 +50,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup className="mt-2">
+        <SidebarGroup>
           <SidebarGroupContent>
             <Accordion type="single" collapsible className="w-full space-y-1">
               {workspaceMenuItems.map((workspace) => (
