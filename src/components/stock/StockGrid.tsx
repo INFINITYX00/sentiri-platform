@@ -1,9 +1,9 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QrCode, Eye, Package } from "lucide-react";
+import { QrCode, Eye, Package, Download } from "lucide-react";
 import { Material } from "@/lib/supabase";
+import { useMaterials } from "@/hooks/useMaterials";
 
 interface StockGridProps {
   materials: Material[];
@@ -12,6 +12,8 @@ interface StockGridProps {
 }
 
 export function StockGrid({ materials, searchQuery, selectedType }: StockGridProps) {
+  const { generateQRCodeForMaterial } = useMaterials();
+
   const filteredItems = materials.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (item.origin || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -27,6 +29,10 @@ export function StockGrid({ materials, searchQuery, selectedType }: StockGridPro
       </div>
     );
   }
+
+  const handleQRCodeDownload = (materialId: string) => {
+    generateQRCodeForMaterial(materialId);
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -94,8 +100,13 @@ export function StockGrid({ materials, searchQuery, selectedType }: StockGridPro
                   <Eye className="h-4 w-4 mr-1" />
                   View
                 </Button>
-                <Button size="sm" variant="outline" className="flex-1">
-                  <QrCode className="h-4 w-4 mr-1" />
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => handleQRCodeDownload(item.id)}
+                >
+                  <Download className="h-4 w-4 mr-1" />
                   QR Code
                 </Button>
               </div>

@@ -3,34 +3,98 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { QrCode, Camera, Type } from "lucide-react";
+import { QrCode, Camera, Type, Search } from "lucide-react";
 import { useState } from "react";
+import { parseQRCode } from "@/utils/qrGenerator";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 
 interface QRScannerProps {
   isOpen: boolean;
   onClose: () => void;
+  onMaterialFound?: (material: any) => void;
 }
 
-export function QRScanner({ isOpen, onClose }: QRScannerProps) {
+export function QRScanner({ isOpen, onClose, onMaterialFound }: QRScannerProps) {
   const [manualCode, setManualCode] = useState('');
   const [scanMode, setScanMode] = useState<'camera' | 'manual'>('camera');
+  const [searching, setSearching] = useState(false);
+  const { toast } = useToast();
+
+  const searchMaterial = async (qrCode: string) => {
+    setSearching(true);
+    try {
+      // First try to parse as structured QR data
+      const parsed = parseQRCode(qrCode);
+      let material = null;
+
+      if (parsed && parsed.type === 'material') {
+        // Search by material ID
+        const { data, error } = await supabase
+          .from('materials')
+          .select('*')
+          .eq('id', parsed.id)
+          .single();
+        
+        if (!error && data) {
+          material = data;
+        }
+      }
+
+      // If not found by ID, search by QR code string
+      if (!material) {
+        const { data, error } = await supabase
+          .from('materials')
+          .select('*')
+          .eq('qr_code', qrCode)
+          .single();
+        
+        if (!error && data) {
+          material = data;
+        }
+      }
+
+      if (material) {
+        toast({
+          title: "Material Found!",
+          description: `Found: ${material.name} (${material.type})`,
+        });
+        
+        if (onMaterialFound) {
+          onMaterialFound(material);
+        }
+        
+        onClose();
+      } else {
+        toast({
+          title: "Material Not Found",
+          description: `No material found for QR code: ${qrCode}`,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error searching material:', error);
+      toast({
+        title: "Search Error",
+        description: "Failed to search for material",
+        variant: "destructive"
+      });
+    } finally {
+      setSearching(false);
+    }
+  };
 
   const handleScan = () => {
-    // Simulate QR code scanning
+    // Simulate QR code scanning - in real implementation this would use camera
     const mockCodes = ['QR001', 'QR002', 'QR003'];
     const randomCode = mockCodes[Math.floor(Math.random() * mockCodes.length)];
-    console.log('Scanned QR code:', randomCode);
-    
-    // Simulate finding material passport
-    alert(`Found material passport for code: ${randomCode}`);
-    onClose();
+    console.log('Simulated scan result:', randomCode);
+    searchMaterial(randomCode);
   };
 
   const handleManualEntry = () => {
-    if (manualCode) {
-      console.log('Manual QR code entry:', manualCode);
-      alert(`Looking up material passport for code: ${manualCode}`);
-      onClose();
+    if (manualCode.trim()) {
+      searchMaterial(manualCode.trim());
     }
   };
 
@@ -51,6 +115,7 @@ export function QRScanner({ isOpen, onClose }: QRScannerProps) {
               variant={scanMode === 'camera' ? 'default' : 'outline'}
               onClick={() => setScanMode('camera')}
               className="flex-1"
+              disabled={searching}
             >
               <Camera className="h-4 w-4 mr-2" />
               Camera Scan
@@ -59,6 +124,7 @@ export function QRScanner({ isOpen, onClose }: QRScannerProps) {
               variant={scanMode === 'manual' ? 'default' : 'outline'}
               onClick={() => setScanMode('manual')}
               className="flex-1"
+              disabled={searching}
             >
               <Type className="h-4 w-4 mr-2" />
               Manual Entry
@@ -70,7 +136,7 @@ export function QRScanner({ isOpen, onClose }: QRScannerProps) {
               {/* Camera View Simulation */}
               <div className="aspect-square bg-muted/20 rounded-lg border-2 border-dashed border-border flex items-center justify-center">
                 <div className="text-center">
-                  <Camera className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+                  <Camera className={`h-12 w-12 mx-auto mb-3 text-muted-foreground ${searching ? 'animate-pulse' : ''}`} />
                   <p className="text-sm text-muted-foreground">
                     Position QR code within the frame
                   </p>
@@ -82,9 +148,17 @@ export function QRScanner({ isOpen, onClose }: QRScannerProps) {
               
               <Button 
                 onClick={handleScan} 
+                disabled={searching}
                 className="w-full bg-primary hover:bg-primary/90"
               >
-                Simulate Scan
+                {searching ? (
+                  <>
+                    <Search className="h-4 w-4 mr-2 animate-spin" />
+                    Searching...
+                  </>
+                ) : (
+                  'Simulate Scan'
+                )}
               </Button>
             </div>
           ) : (
@@ -95,8 +169,14 @@ export function QRScanner({ isOpen, onClose }: QRScannerProps) {
                   id="qr-code"
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value)}
-                  placeholder="e.g., QR001, QR002, QR003..."
+                  placeholder="e.g., QR001, material:uuid, or QR code text..."
                   className="bg-background/50"
+                  disabled={searching}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && manualCode.trim()) {
+                      handleManualEntry();
+                    }
+                  }}
                 />
                 <p className="text-xs text-muted-foreground">
                   Enter the QR code printed on the material label
@@ -105,22 +185,30 @@ export function QRScanner({ isOpen, onClose }: QRScannerProps) {
               
               <Button 
                 onClick={handleManualEntry} 
-                disabled={!manualCode}
+                disabled={!manualCode.trim() || searching}
                 className="w-full bg-primary hover:bg-primary/90"
               >
-                Look Up Material
+                {searching ? (
+                  <>
+                    <Search className="h-4 w-4 mr-2 animate-spin" />
+                    Searching...
+                  </>
+                ) : (
+                  'Look Up Material'
+                )}
               </Button>
             </div>
           )}
 
           {/* Recent Scans */}
           <div className="space-y-2">
-            <h4 className="font-medium text-sm">Recent Scans</h4>
+            <h4 className="font-medium text-sm">Quick Access</h4>
             <div className="space-y-1">
               {['QR001 - Reclaimed Oak', 'QR002 - Aluminum Composite', 'QR003 - Hemp Fiber'].map((item, index) => (
                 <button
                   key={index}
-                  className="w-full text-left p-2 text-sm bg-muted/20 rounded border hover:bg-muted/30 transition-colors"
+                  className="w-full text-left p-2 text-sm bg-muted/20 rounded border hover:bg-muted/30 transition-colors disabled:opacity-50"
+                  disabled={searching}
                   onClick={() => {
                     const code = item.split(' - ')[0];
                     setManualCode(code);

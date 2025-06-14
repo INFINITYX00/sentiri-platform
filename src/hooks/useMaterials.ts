@@ -1,7 +1,8 @@
-
 import { useState, useEffect } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
+import { generateQRCode } from '@/utils/qrGenerator'
+import { uploadFile } from '@/utils/fileUpload'
 
 export function useMaterials() {
   const [materials, setMaterials] = useState<Material[]>([])
@@ -33,32 +34,61 @@ export function useMaterials() {
   const addMaterial = async (materialData: Omit<Material, 'id' | 'created_at' | 'updated_at' | 'qr_code'>) => {
     setLoading(true)
     try {
-      // Generate QR code
-      const qrCode = `QR${Date.now().toString().slice(-6)}`
-      
-      // Simulate AI dimension detection
-      const dimensions = simulateAIDimensions()
-      
-      const { data, error } = await supabase
+      // First insert the material to get the ID
+      const { data: newMaterial, error: insertError } = await supabase
         .from('materials')
         .insert([{
           ...materialData,
-          qr_code: qrCode,
-          dimensions,
+          qr_code: `TEMP_${Date.now()}`, // Temporary QR code
+          dimensions: simulateAIDimensions(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }])
         .select()
+        .single()
 
-      if (error) throw error
+      if (insertError) throw insertError
+
+      // Generate meaningful QR code data
+      const qrData = `material:${newMaterial.id}`
+      
+      // Generate QR code image
+      const qrCodeDataURL = await generateQRCode(qrData)
+      
+      // Convert data URL to blob for upload
+      const response = await fetch(qrCodeDataURL)
+      const blob = await response.blob()
+      const qrFile = new File([blob], `qr-${newMaterial.id}.png`, { type: 'image/png' })
+      
+      // Upload QR code image to storage
+      const uploadResult = await uploadFile(qrFile, 'material-images', 'qr-codes')
+      
+      let finalQRCode = `QR${newMaterial.id.slice(-6).toUpperCase()}`
+      
+      if (uploadResult.error) {
+        console.warn('QR code image upload failed:', uploadResult.error)
+        toast({
+          title: "Warning",
+          description: "QR code generated but image upload failed. Material added successfully.",
+        })
+      } else {
+        // Update material with QR code image URL
+        await supabase
+          .from('materials')
+          .update({ 
+            qr_code: finalQRCode,
+            image_url: materialData.image_url || uploadResult.url // Use QR as fallback image if no image provided
+          })
+          .eq('id', newMaterial.id)
+      }
 
       await fetchMaterials()
       toast({
         title: "Success",
-        description: `Material "${materialData.name}" added successfully`,
+        description: `Material "${materialData.name}" added with QR code ${finalQRCode}`,
       })
 
-      return data[0]
+      return { ...newMaterial, qr_code: finalQRCode }
     } catch (error) {
       console.error('Error adding material:', error)
       toast({
@@ -120,6 +150,39 @@ export function useMaterials() {
     }
   }
 
+  const generateQRCodeForMaterial = async (materialId: string) => {
+    try {
+      const qrData = `material:${materialId}`
+      const qrCodeDataURL = await generateQRCode(qrData)
+      
+      // Convert to downloadable blob
+      const response = await fetch(qrCodeDataURL)
+      const blob = await response.blob()
+      
+      // Create download link
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `material-qr-${materialId}.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      
+      toast({
+        title: "Success",
+        description: "QR code downloaded successfully",
+      })
+    } catch (error) {
+      console.error('Error generating QR code:', error)
+      toast({
+        title: "Error",
+        description: "Failed to generate QR code",
+        variant: "destructive"
+      })
+    }
+  }
+
   useEffect(() => {
     fetchMaterials()
   }, [])
@@ -130,7 +193,8 @@ export function useMaterials() {
     addMaterial,
     updateMaterial,
     deleteMaterial,
-    refreshMaterials: fetchMaterials
+    refreshMaterials: fetchMaterials,
+    generateQRCodeForMaterial
   }
 }
 
