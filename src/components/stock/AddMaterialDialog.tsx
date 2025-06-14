@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, Camera } from "lucide-react";
 import { useMaterials } from '@/hooks/useMaterials';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface AddMaterialDialogProps {
@@ -43,24 +43,34 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
+    if (!isSupabaseConfigured() || !supabase) {
+      console.log('Supabase not configured, skipping image upload');
+      return null;
+    }
+
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random()}.${fileExt}`;
     const filePath = `materials/${fileName}`;
 
-    const { error } = await supabase.storage
-      .from('material-images')
-      .upload(filePath, file);
+    try {
+      const { error } = await supabase.storage
+        .from('material-images')
+        .upload(filePath, file);
 
-    if (error) {
-      console.error('Upload error:', error);
+      if (error) {
+        console.error('Upload error:', error);
+        return null;
+      }
+
+      const { data } = supabase.storage
+        .from('material-images')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Image upload failed:', error);
       return null;
     }
-
-    const { data } = supabase.storage
-      .from('material-images')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,7 +80,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
     try {
       let imageUrl = null;
       
-      if (formData.image) {
+      if (formData.image && isSupabaseConfigured()) {
         imageUrl = await uploadImage(formData.image);
         if (!imageUrl) {
           toast({
@@ -137,6 +147,14 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
           </DialogTitle>
         </DialogHeader>
         
+        {!isSupabaseConfigured() && (
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
+            <p className="text-sm text-yellow-600 dark:text-yellow-400">
+              Demo Mode: Connect to Supabase for full functionality including image uploads and data persistence.
+            </p>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Image Upload */}
           <div className="space-y-2">
@@ -148,14 +166,15 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                 accept="image/*"
                 onChange={handleImageUpload}
                 className="hidden"
+                disabled={!isSupabaseConfigured()}
               />
-              <label htmlFor="image" className="cursor-pointer">
+              <label htmlFor="image" className={`cursor-pointer ${!isSupabaseConfigured() ? 'opacity-50' : ''}`}>
                 <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
                   {formData.image ? formData.image.name : "Click to upload or drag and drop"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  AI will auto-detect dimensions from your photo
+                  {isSupabaseConfigured() ? "AI will auto-detect dimensions from your photo" : "Connect Supabase to enable image uploads"}
                 </p>
               </label>
             </div>
