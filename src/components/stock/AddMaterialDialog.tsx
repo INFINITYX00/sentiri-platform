@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,8 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   const { lookupCarbonData, loading: aiLoading } = useAICarbonLookup();
   const { toast } = useToast();
 
+  const memoizedGetMaterialTypeBySpecific = useMemo(() => getMaterialTypeBySpecific, [materialTypes]);
+
   useEffect(() => {
     const length = parseFloat(formData.length) || 0;
     const width = parseFloat(formData.width) || 0;
@@ -95,7 +97,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
       } else if (aiCarbonData?.density) {
         density = aiCarbonData.density;
       } else {
-        const materialType = getMaterialTypeBySpecific(effectiveMaterial);
+        const materialType = memoizedGetMaterialTypeBySpecific(effectiveMaterial);
         density = materialType?.density || 500; // Default to wood density if nothing else
       }
       
@@ -108,7 +110,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
       } else if (aiCarbonData?.carbonFactor) {
         carbonFactorPerKg = aiCarbonData.carbonFactor;
       } else {
-        const materialType = getMaterialTypeBySpecific(effectiveMaterial);
+        const materialType = memoizedGetMaterialTypeBySpecific(effectiveMaterial);
         carbonFactorPerKg = materialType?.carbon_factor || 2.0;
       }
       
@@ -123,7 +125,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
     } else {
       setCalculatedMetrics({ volume: 0, quantity: 0, weight: 0, carbonFootprint: 0 });
     }
-  }, [formData.length, formData.width, formData.thickness, formData.dimension_unit, formData.unit_count, formData.specific_material, formData.custom_specific_material, formData.use_custom_material, formData.density, formData.carbon_factor, formData.custom_density, formData.custom_carbon, aiCarbonData, getMaterialTypeBySpecific]);
+  }, [formData.length, formData.width, formData.thickness, formData.dimension_unit, formData.unit_count, formData.specific_material, formData.custom_specific_material, formData.use_custom_material, formData.density, formData.carbon_factor, formData.custom_density, formData.custom_carbon, aiCarbonData, memoizedGetMaterialTypeBySpecific]);
 
   const handleAICarbonLookup = async () => {
     if (!formData.type) {
@@ -207,7 +209,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
     }
 
     // Check if this material type already exists
-    const existingMaterialType = getMaterialTypeBySpecific(newMaterialTypeName.trim());
+    const existingMaterialType = memoizedGetMaterialTypeBySpecific(newMaterialTypeName.trim());
     if (existingMaterialType) {
       toast({
         title: "Already Exists",
@@ -281,7 +283,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
       } else if (aiCarbonData?.density) {
         finalDensity = aiCarbonData.density;
       } else {
-        const materialType = getMaterialTypeBySpecific(effectiveMaterial);
+        const materialType = memoizedGetMaterialTypeBySpecific(effectiveMaterial);
         finalDensity = materialType?.density || 500;
       }
 
@@ -363,7 +365,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
     }
 
     // Check if this material type already exists
-    const existingMaterialType = getMaterialTypeBySpecific(effectiveMaterial);
+    const existingMaterialType = memoizedGetMaterialTypeBySpecific(effectiveMaterial);
     if (existingMaterialType) {
       toast({
         title: "Already Exists",
@@ -734,7 +736,6 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
 
             {/* Right Column */}
             <div className="space-y-4">
-              {/* Dimensions & Quantity */}
               <div className="space-y-4 p-4 border rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <Calculator className="h-4 w-4" />
@@ -809,7 +810,6 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                 </div>
               </div>
 
-              {/* AI Carbon Lookup */}
               <div className="space-y-2 p-4 border rounded-lg">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium flex items-center gap-2">
@@ -892,7 +892,6 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                 </div>
               </div>
 
-              {/* Calculated Results */}
               <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
                 <Label className="text-sm font-medium">Calculated Metrics</Label>
                 <div className="space-y-1 text-sm">
@@ -914,7 +913,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                         } else if (aiCarbonData?.density) {
                           return `${aiCarbonData.density} kg/m³ (AI)`;
                         } else {
-                          return `${getMaterialTypeBySpecific(effectiveMaterial)?.density || 500} kg/m³ (default)`;
+                          return `${memoizedGetMaterialTypeBySpecific(effectiveMaterial)?.density || 500} kg/m³ (default)`;
                         }
                       })()}
                     </span>
