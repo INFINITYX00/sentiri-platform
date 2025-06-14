@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -48,7 +47,8 @@ export function useMaterials() {
         .insert([{
           ...materialData,
           qr_code: `TEMP_${Date.now()}`,
-          dimensions: simulateAIDimensions(),
+          // Use custom dimensions if provided, otherwise generate simulated ones
+          dimensions: materialData.dimensions || simulateAIDimensions(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }])

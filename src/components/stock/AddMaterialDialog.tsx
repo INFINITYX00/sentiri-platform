@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Camera } from "lucide-react";
+import { Upload, Camera, Plus, Minus } from "lucide-react";
 import { useMaterials } from '@/hooks/useMaterials';
 import { uploadFile } from '@/utils/fileUpload';
 import { useToast } from '@/hooks/use-toast';
@@ -21,11 +22,25 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
     type: '',
     quantity: '',
     unit: '',
+    dimensions: '',
     origin: '',
     description: '',
     image: null as File | null
   });
   const [uploading, setUploading] = useState(false);
+  const [customType, setCustomType] = useState('');
+  const [customUnit, setCustomUnit] = useState('');
+  const [showCustomType, setShowCustomType] = useState(false);
+  const [showCustomUnit, setShowCustomUnit] = useState(false);
+  
+  // Default options that can be extended
+  const [materialTypes, setMaterialTypes] = useState([
+    'wood', 'metal', 'composite', 'textile', 'bio-material', 'plastic', 'glass', 'ceramic', 'fabric'
+  ]);
+  
+  const [unitTypes, setUnitTypes] = useState([
+    'boards', 'sheets', 'rolls', 'tubes', 'kg', 'm', 'm²', 'm³', 'pieces', 'liters'
+  ]);
   
   const { addMaterial } = useMaterials();
   const { toast } = useToast();
@@ -36,9 +51,57 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
       metal: 8.2,
       composite: 3.1,
       textile: 2.3,
-      'bio-material': 0.1
+      'bio-material': 0.1,
+      plastic: 2.8,
+      glass: 1.2,
+      ceramic: 1.8,
+      fabric: 2.1
     };
-    return (carbonFactors[type] || 2.0) * quantity;
+    return (carbonFactors[type.toLowerCase()] || 2.0) * quantity;
+  };
+
+  const handleAddCustomType = () => {
+    if (customType.trim() && !materialTypes.includes(customType.trim().toLowerCase())) {
+      const newType = customType.trim().toLowerCase();
+      setMaterialTypes(prev => [...prev, newType]);
+      setFormData(prev => ({ ...prev, type: newType }));
+      setCustomType('');
+      setShowCustomType(false);
+      
+      toast({
+        title: "Success",
+        description: `Added new material type: ${newType}`,
+      });
+    }
+  };
+
+  const handleAddCustomUnit = () => {
+    if (customUnit.trim() && !unitTypes.includes(customUnit.trim())) {
+      const newUnit = customUnit.trim();
+      setUnitTypes(prev => [...prev, newUnit]);
+      setFormData(prev => ({ ...prev, unit: newUnit }));
+      setCustomUnit('');
+      setShowCustomUnit(false);
+      
+      toast({
+        title: "Success",
+        description: `Added new unit: ${newUnit}`,
+      });
+    }
+  };
+
+  const handleRemoveType = (typeToRemove: string) => {
+    setMaterialTypes(prev => prev.filter(type => type !== typeToRemove));
+    if (formData.type === typeToRemove) {
+      setFormData(prev => ({ ...prev, type: '' }));
+    }
+  };
+
+  const handleRemoveUnit = (unitToRemove: string) => {
+    setUnitTypes(prev => prev.filter(unit => unit !== unitToRemove));
+    if (formData.unit === unitToRemove) {
+      setFormData(prev => ({ ...prev, unit: '' }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,6 +144,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
         type: formData.type,
         quantity,
         unit: formData.unit,
+        dimensions: formData.dimensions,
         origin: formData.origin,
         description: formData.description,
         image_url: imageUrl,
@@ -92,6 +156,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
         type: formData.type,
         quantity,
         unit: formData.unit,
+        dimensions: formData.dimensions,
         origin: formData.origin,
         description: formData.description,
         image_url: imageUrl,
@@ -108,6 +173,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
           type: '',
           quantity: '',
           unit: '',
+          dimensions: '',
           origin: '',
           description: '',
           image: null
@@ -161,7 +227,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] sentiri-card border">
+      <DialogContent className="sm:max-w-[700px] sentiri-card border max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Camera className="h-5 w-5 text-primary" />
@@ -194,7 +260,6 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
             </div>
           </div>
 
-          {/* ... keep existing code (form fields) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Material Name */}
             <div className="space-y-2">
@@ -212,22 +277,66 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
             {/* Material Type */}
             <div className="space-y-2">
               <Label htmlFor="type">Material Type</Label>
-              <Select 
-                value={formData.type} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
-                disabled={uploading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="wood">Wood</SelectItem>
-                  <SelectItem value="metal">Metal</SelectItem>
-                  <SelectItem value="composite">Composite</SelectItem>
-                  <SelectItem value="textile">Textile</SelectItem>
-                  <SelectItem value="bio-material">Bio-material</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select 
+                  value={formData.type} 
+                  onValueChange={(value) => {
+                    if (value === 'custom') {
+                      setShowCustomType(true);
+                    } else {
+                      setFormData(prev => ({ ...prev, type: value }));
+                    }
+                  }}
+                  disabled={uploading}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select or add type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {materialTypes.map((type) => (
+                      <SelectItem key={type} value={type} className="flex items-center justify-between">
+                        <span className="flex-1">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 ml-2 hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRemoveType(type);
+                          }}
+                        >
+                          <Minus className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">+ Add Custom Type</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {showCustomType && (
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    placeholder="Enter custom type"
+                    value={customType}
+                    onChange={(e) => setCustomType(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button type="button" size="sm" onClick={handleAddCustomType}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowCustomType(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Quantity */}
@@ -236,6 +345,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
               <Input
                 id="quantity"
                 type="number"
+                step="0.01"
                 value={formData.quantity}
                 onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
                 placeholder="0"
@@ -247,25 +357,82 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
             {/* Unit */}
             <div className="space-y-2">
               <Label htmlFor="unit">Unit</Label>
-              <Select 
-                value={formData.unit} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, unit: value }))}
-                disabled={uploading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="boards">Boards</SelectItem>
-                  <SelectItem value="sheets">Sheets</SelectItem>
-                  <SelectItem value="rolls">Rolls</SelectItem>
-                  <SelectItem value="tubes">Tubes</SelectItem>
-                  <SelectItem value="kg">Kilograms</SelectItem>
-                  <SelectItem value="m">Meters</SelectItem>
-                  <SelectItem value="m²">Square Meters</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select 
+                  value={formData.unit} 
+                  onValueChange={(value) => {
+                    if (value === 'custom') {
+                      setShowCustomUnit(true);
+                    } else {
+                      setFormData(prev => ({ ...prev, unit: value }));
+                    }
+                  }}
+                  disabled={uploading}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select or add unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unitTypes.map((unit) => (
+                      <SelectItem key={unit} value={unit} className="flex items-center justify-between">
+                        <span className="flex-1">{unit}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 ml-2 hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRemoveUnit(unit);
+                          }}
+                        >
+                          <Minus className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">+ Add Custom Unit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {showCustomUnit && (
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    placeholder="Enter custom unit"
+                    value={customUnit}
+                    onChange={(e) => setCustomUnit(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button type="button" size="sm" onClick={handleAddCustomUnit}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowCustomUnit(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* Custom Dimensions */}
+          <div className="space-y-2">
+            <Label htmlFor="dimensions">Dimensions</Label>
+            <Input
+              id="dimensions"
+              value={formData.dimensions}
+              onChange={(e) => setFormData(prev => ({ ...prev, dimensions: e.target.value }))}
+              placeholder="e.g., 2000x200x25mm or 1.2m x 0.8m x 3mm"
+              disabled={uploading}
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter custom dimensions (length x width x thickness with units)
+            </p>
           </div>
 
           {/* Origin */}
