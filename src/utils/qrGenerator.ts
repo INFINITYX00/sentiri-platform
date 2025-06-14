@@ -63,3 +63,28 @@ export function createPassportQRData(passportId: string): string {
 export function generateSimpleQRCode(materialId: string): string {
   return `QR${materialId.slice(-6).toUpperCase()}`;
 }
+
+// New function: Generate complete QR package for material
+export async function generateCompleteQRPackage(materialId: string): Promise<{
+  qrData: string;
+  qrCodeDataURL: string;
+  simpleCode: string;
+}> {
+  console.log('Generating complete QR package for material:', materialId);
+  
+  const qrData = createMaterialQRData(materialId);
+  const simpleCode = generateSimpleQRCode(materialId);
+  
+  console.log('QR data:', qrData);
+  console.log('Simple code:', simpleCode);
+  
+  const qrCodeDataURL = await generateQRCode(qrData);
+  
+  console.log('QR code generated successfully');
+  
+  return {
+    qrData,
+    qrCodeDataURL,
+    simpleCode
+  };
+}

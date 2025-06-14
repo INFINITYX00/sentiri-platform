@@ -6,7 +6,7 @@ import { QrCode, Download, RefreshCw, Copy, ExternalLink } from "lucide-react";
 import { Material } from "@/lib/supabase";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { generateQRCode, createMaterialQRData, generateSimpleQRCode } from "@/utils/qrGenerator";
+import { generateCompleteQRPackage, generateSimpleQRCode } from "@/utils/qrGenerator";
 
 interface QRCodeViewerProps {
   material: Material | null;
@@ -27,17 +27,17 @@ export function QRCodeViewer({ material, isOpen, onClose, onRegenerate }: QRCode
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      const qrCodeDataURL = await generateQRCode(qrUrl);
+      const qrPackage = await generateCompleteQRPackage(material.id);
       
       // Convert to downloadable blob
-      const response = await fetch(qrCodeDataURL)
+      const response = await fetch(qrPackage.qrCodeDataURL)
       const blob = await response.blob()
       
       // Create download link
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `${material.name}-qr-${simpleQRCode}.png`
+      link.download = `${material.name}-qr-${qrPackage.simpleCode}.png`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
