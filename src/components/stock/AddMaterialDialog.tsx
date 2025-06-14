@@ -5,19 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Camera, Calculator, Plus, Sparkles, AlertCircle } from "lucide-react";
+import { Upload, Camera, Calculator, Plus, Sparkles, AlertCircle, Trash2 } from "lucide-react";
 import { useMaterials } from '@/hooks/useMaterials';
 import { useMaterialTypes } from '@/hooks/useMaterialTypes';
 import { useAICarbonLookup } from '@/hooks/useAICarbonLookup';
 import { uploadFile } from '@/utils/fileUpload';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
 
 interface AddMaterialDialogProps {
   open: boolean;
@@ -59,7 +53,6 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   const { lookupCarbonData, loading: aiLoading } = useAICarbonLookup();
   const { toast } = useToast();
 
-  // Calculate metrics when dimensions, unit count, or material data changes
   useEffect(() => {
     const length = parseFloat(formData.length) || 0;
     const width = parseFloat(formData.width) || 0;
@@ -460,21 +453,25 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                         </SelectTrigger>
                         <SelectContent>
                           {getTypesByCategory(formData.type).map((materialType) => (
-                            <ContextMenu key={materialType.id}>
-                              <ContextMenuTrigger asChild>
-                                <SelectItem value={materialType.specific_type}>
-                                  {materialType.specific_type}
-                                </SelectItem>
-                              </ContextMenuTrigger>
-                              <ContextMenuContent>
-                                <ContextMenuItem
-                                  onClick={() => handleDeleteMaterialType(materialType)}
-                                  className="text-destructive focus:text-destructive"
-                                >
-                                  Delete "{materialType.specific_type}"
-                                </ContextMenuItem>
-                              </ContextMenuContent>
-                            </ContextMenu>
+                            <div key={materialType.id} className="flex items-center group">
+                              <SelectItem value={materialType.specific_type} className="flex-1">
+                                {materialType.specific_type}
+                              </SelectItem>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 ml-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDeleteMaterialType(materialType);
+                                }}
+                                title={`Delete "${materialType.specific_type}"`}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           ))}
                         </SelectContent>
                       </Select>
