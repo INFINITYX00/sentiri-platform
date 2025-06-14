@@ -14,60 +14,68 @@ export function StockManagement() {
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Material Stock</h1>
-          <p className="text-muted-foreground">Manage your material inventory and track carbon footprints</p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Section */}
+      <div className="px-8 py-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Material Stock</h1>
+            <p className="text-muted-foreground">Manage your material inventory and track carbon footprints</p>
+          </div>
+          <Button onClick={() => setShowAddDialog(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Material
+          </Button>
         </div>
-        <Button onClick={() => setShowAddDialog(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Material
-        </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search materials..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="wood">Wood</SelectItem>
-                <SelectItem value="metal">Metal</SelectItem>
-                <SelectItem value="plastic">Plastic</SelectItem>
-                <SelectItem value="fabric">Fabric</SelectItem>
-                <SelectItem value="glass">Glass</SelectItem>
-                <SelectItem value="ceramic">Ceramic</SelectItem>
-                <SelectItem value="composite">Composite</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Main Content with proper spacing */}
+      <div className="px-8 py-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <Card className="bg-white/90 backdrop-blur-sm border border-emerald-100">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                Filters
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search materials..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={selectedType} onValueChange={setSelectedType}>
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue placeholder="Filter by type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="wood">Wood</SelectItem>
+                    <SelectItem value="metal">Metal</SelectItem>
+                    <SelectItem value="plastic">Plastic</SelectItem>
+                    <SelectItem value="fabric">Fabric</SelectItem>
+                    <SelectItem value="glass">Glass</SelectItem>
+                    <SelectItem value="ceramic">Ceramic</SelectItem>
+                    <SelectItem value="composite">Composite</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
 
-      <StockGrid 
-        searchQuery={searchQuery} 
-        selectedType={selectedType} 
-      />
+          <StockGrid 
+            searchQuery={searchQuery} 
+            selectedType={selectedType} 
+          />
+        </div>
+      </div>
 
       <AddMaterialDialog 
         open={showAddDialog} 
