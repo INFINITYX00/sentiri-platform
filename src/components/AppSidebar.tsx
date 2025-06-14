@@ -1,4 +1,3 @@
-
 import { 
   Home, 
   Package, 
@@ -98,16 +97,14 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar className="border-r border-slate-200/60 sidebar-gradient">
-      <SidebarHeader className="p-8 border-b border-slate-200/60">
+    <Sidebar className="border-r border-slate-200/20">
+      <SidebarHeader className="p-8 border-b border-slate-200/20">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-xl">S</span>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gradient">Sentiri</h1>
-            <p className="text-xs text-slate-500 font-medium">Sustainable Manufacturing</p>
-          </div>
+          <img 
+            src="/lovable-uploads/3acb41e9-62fb-4c55-ba24-9bada4c245de.png" 
+            alt="Sentiri Logo" 
+            className="h-12 w-auto"
+          />
         </div>
       </SidebarHeader>
 
@@ -123,7 +120,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                   <SidebarMenuButton 
                     onClick={() => setActiveView(item.url)}
                     isActive={activeView === item.url}
-                    className="hover:bg-emerald-50 data-[active=true]:bg-emerald-50 data-[active=true]:text-emerald-700 data-[active=true]:font-semibold rounded-xl px-4 py-3 transition-all duration-200"
+                    className="hover:bg-emerald-50/80 data-[active=true]:bg-emerald-50/80 data-[active=true]:text-emerald-700 data-[active=true]:font-semibold rounded-xl px-4 py-3 transition-all duration-200"
                   >
                     <item.icon className="h-5 w-5" />
                     <span className="font-medium">{item.title}</span>
@@ -143,7 +140,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start border-slate-200/60 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 rounded-xl px-4 py-3 font-medium transition-all duration-200"
+                className="w-full justify-start border-slate-200/40 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:text-emerald-700 rounded-xl px-4 py-3 font-medium transition-all duration-200"
                 onClick={() => handleQuickAction("Add Stock")}
               >
                 <Plus className="h-4 w-4 mr-3" />
@@ -152,7 +149,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start border-slate-200/60 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 rounded-xl px-4 py-3 font-medium transition-all duration-200"
+                className="w-full justify-start border-slate-200/40 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:text-emerald-700 rounded-xl px-4 py-3 font-medium transition-all duration-200"
                 onClick={() => handleQuickAction("Upload BOM")}
               >
                 <Upload className="h-4 w-4 mr-3" />
@@ -161,7 +158,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start border-slate-200/60 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 rounded-xl px-4 py-3 font-medium transition-all duration-200"
+                className="w-full justify-start border-slate-200/40 hover:bg-emerald-50/80 hover:border-emerald-200/60 hover:text-emerald-700 rounded-xl px-4 py-3 font-medium transition-all duration-200"
                 onClick={() => handleQuickAction("Generate Passport")}
               >
                 <QrCode className="h-4 w-4 mr-3" />
@@ -172,7 +169,7 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-6 border-t border-slate-200/60">
+      <SidebarFooter className="p-6 border-t border-slate-200/20">
         <div className="text-center space-y-2">
           <p className="text-xs text-slate-500 font-medium">Reduce • Reuse • Recycle</p>
           <p className="text-xs text-emerald-600 font-semibold">Carbon Neutral by 2030</p>
