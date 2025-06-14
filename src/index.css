@@ -93,6 +93,22 @@
     @apply px-8 pb-8;
   }
 
+  .page-container {
+    @apply p-6 space-y-6;
+  }
+
+  .page-title {
+    @apply text-3xl font-bold text-gray-900 mb-6;
+  }
+
+  .section-container {
+    @apply bg-white rounded-xl border border-slate-200/60 shadow-sm p-6;
+  }
+
+  .form-container {
+    @apply bg-white rounded-xl border border-slate-200/60 shadow-sm p-6 space-y-6;
+  }
+
   .sidebar-gradient {
     background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   }
