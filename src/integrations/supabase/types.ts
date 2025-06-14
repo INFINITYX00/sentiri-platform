@@ -270,6 +270,7 @@ export type Database = {
           ai_carbon_source: string | null
           ai_carbon_updated_at: string | null
           carbon_footprint: number
+          carbon_source: string | null
           cost_per_unit: number | null
           created_at: string | null
           density: number | null
@@ -299,6 +300,7 @@ export type Database = {
           ai_carbon_source?: string | null
           ai_carbon_updated_at?: string | null
           carbon_footprint?: number
+          carbon_source?: string | null
           cost_per_unit?: number | null
           created_at?: string | null
           density?: number | null
@@ -328,6 +330,7 @@ export type Database = {
           ai_carbon_source?: string | null
           ai_carbon_updated_at?: string | null
           carbon_footprint?: number
+          carbon_source?: string | null
           cost_per_unit?: number | null
           created_at?: string | null
           density?: number | null
