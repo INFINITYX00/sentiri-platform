@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +36,7 @@ interface LaborCalculatorProps {
   timeEntries: any[];
 }
 
-export function LaborCalculator({ projectId, timeEntries }: LaborCalculatorProps) {
+export function LaborCalculator({ projectId, timeEntries = [] }: LaborCalculatorProps) {
   const [workers] = useState<Worker[]>([
     {
       id: "1",
@@ -90,9 +89,9 @@ export function LaborCalculator({ projectId, timeEntries }: LaborCalculatorProps
     { date: "2024-01-19", worker: "Emma Davis", hours: 8, stage: "finishing", overtime: false }
   ]);
 
-  // Calculate costs from time entries
-  const totalLaborCost = timeEntries.reduce((sum, entry) => sum + (entry.cost || 0), 0);
-  const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
+  // Calculate costs from time entries - add safety check
+  const totalLaborCost = Array.isArray(timeEntries) ? timeEntries.reduce((sum, entry) => sum + (entry.cost || 0), 0) : 0;
+  const totalHours = Array.isArray(timeEntries) ? timeEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0) : 0;
   const averageRate = totalHours > 0 ? totalLaborCost / totalHours : 0;
 
   // Calculate planned costs

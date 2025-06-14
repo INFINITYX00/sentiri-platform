@@ -19,6 +19,8 @@ import { CircularDesign } from "@/components/design/CircularDesign";
 
 const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');
+  const [timeEntries, setTimeEntries] = useState<any[]>([]);
+  const [stages, setStages] = useState<any[]>([]);
 
   const renderActiveView = () => {
     switch (activeView) {
@@ -31,13 +33,13 @@ const Index = () => {
       case 'design':
         return <DesignWorkspace />;
       case 'time-logging':
-        return <TimeLogging />;
+        return <TimeLogging projectId="main-project" onTimeUpdate={setTimeEntries} />;
       case 'manufacturing':
-        return <ManufacturingStages />;
+        return <ManufacturingStages projectId="main-project" onStageUpdate={setStages} />;
       case 'labor':
-        return <LaborCalculator />;
+        return <LaborCalculator projectId="main-project" timeEntries={timeEntries} />;
       case 'energy':
-        return <EnergyEstimator />;
+        return <EnergyEstimator projectId="main-project" />;
       case 'bom':
         return <BOMManager />;
       case 'transport':
