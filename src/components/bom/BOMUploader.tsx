@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Plus, Trash2, FileText } from "lucide-react";
+import { uploadFile } from '@/utils/fileUpload';
+import { parseCSVFile, parseExcelFile } from '@/utils/csvParser';
+import { useToast } from '@/hooks/use-toast';
 
 interface BOMItem {
   id: string;
@@ -27,6 +30,8 @@ export function BOMUploader() {
       cost: 320
     }
   ]);
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
 
   const addBOMItem = () => {
     const newItem: BOMItem = {
@@ -50,23 +55,64 @@ export function BOMUploader() {
     ));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      console.log('Uploading BOM file:', file.name);
-      // Simulate CSV parsing
-      const mockBOMData = [
-        { material: 'Bamboo Plywood', quantity: 6, unit: 'sheets', supplier: 'EcoBuild Materials', cost: 180 },
-        { material: 'Hemp Fiber', quantity: 2, unit: 'rolls', supplier: 'Natural Composites Ltd', cost: 45 },
-        { material: 'Bio-resin', quantity: 1.5, unit: 'L', supplier: 'Green Chemistry Co.', cost: 75 }
-      ];
+    if (!file) return;
+
+    setUploading(true);
+    
+    try {
+      toast({
+        title: "Processing File",
+        description: `Uploading and parsing ${file.name}...`,
+      });
+
+      // Upload file to storage
+      const uploadResult = await uploadFile(file, 'bom-files', 'uploads');
       
-      const newItems = mockBOMData.map((item, index) => ({
+      if (uploadResult.error) {
+        throw new Error(uploadResult.error);
+      }
+
+      // Parse the file content
+      let parsedData;
+      if (file.name.endsWith('.csv')) {
+        parsedData = await parseCSVFile(file);
+      } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        parsedData = await parseExcelFile(file);
+      } else {
+        throw new Error('Unsupported file format. Please use CSV or Excel files.');
+      }
+
+      // Convert parsed data to BOM items
+      const newItems = parsedData.map((item, index) => ({
         id: (Date.now() + index).toString(),
-        ...item
+        material: item.material,
+        quantity: item.quantity,
+        unit: item.unit,
+        supplier: item.supplier,
+        cost: item.cost
       }));
-      
+
       setBomItems([...bomItems, ...newItems]);
+      
+      toast({
+        title: "Success",
+        description: `Successfully imported ${newItems.length} items from ${file.name}`,
+      });
+
+      // Clear the input
+      e.target.value = '';
+      
+    } catch (error) {
+      console.error('File upload/parsing error:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to process file",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -86,18 +132,27 @@ export function BOMUploader() {
               onChange={handleFileUpload}
               className="hidden"
               id="bom-upload"
+              disabled={uploading}
             />
             <label htmlFor="bom-upload" className="cursor-pointer">
-              <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">Upload BOM File</h3>
+              <Upload className={`h-12 w-12 mx-auto mb-4 text-muted-foreground ${uploading ? 'animate-pulse' : ''}`} />
+              <h3 className="text-lg font-semibold mb-2">
+                {uploading ? 'Processing File...' : 'Upload BOM File'}
+              </h3>
               <p className="text-muted-foreground mb-4">
-                Drag and drop your CSV or Excel file here, or click to browse
+                {uploading 
+                  ? 'Please wait while we process your file'
+                  : 'Drag and drop your CSV or Excel file here, or click to browse'
+                }
               </p>
-              <Button variant="outline">
+              <Button variant="outline" disabled={uploading}>
                 <FileText className="h-4 w-4 mr-2" />
-                Choose File
+                {uploading ? 'Processing...' : 'Choose File'}
               </Button>
             </label>
+            <p className="text-xs text-muted-foreground mt-2">
+              Expected format: Material, Quantity, Unit, Supplier, Cost
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -107,7 +162,7 @@ export function BOMUploader() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Bill of Materials</span>
-            <Button onClick={addBOMItem} size="sm" variant="outline">
+            <Button onClick={addBOMItem} size="sm" variant="outline" disabled={uploading}>
               <Plus className="h-4 w-4 mr-2" />
               Add Item
             </Button>
@@ -180,6 +235,7 @@ export function BOMUploader() {
                   size="sm"
                   onClick={() => removeBOMItem(item.id)}
                   className="w-full"
+                  disabled={uploading}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -198,13 +254,13 @@ export function BOMUploader() {
           </div>
           
           <div className="flex gap-3 pt-4">
-            <Button className="flex-1 bg-primary hover:bg-primary/90">
+            <Button className="flex-1 bg-primary hover:bg-primary/90" disabled={uploading}>
               Calculate Carbon Footprint
             </Button>
-            <Button variant="outline" className="flex-1">
+            <Button variant="outline" className="flex-1" disabled={uploading}>
               Save BOM
             </Button>
-            <Button variant="outline" className="flex-1">
+            <Button variant="outline" className="flex-1" disabled={uploading}>
               Export PDF
             </Button>
           </div>

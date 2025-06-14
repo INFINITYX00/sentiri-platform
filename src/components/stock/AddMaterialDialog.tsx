@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, Camera } from "lucide-react";
 import { useMaterials } from '@/hooks/useMaterials';
-import { supabase } from '@/lib/supabase';
+import { uploadFile } from '@/utils/fileUpload';
 import { useToast } from '@/hooks/use-toast';
 
 interface AddMaterialDialogProps {
@@ -42,32 +42,6 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
     return (carbonFactors[type] || 2.0) * quantity;
   };
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `materials/${fileName}`;
-
-    try {
-      const { error } = await supabase.storage
-        .from('material-images')
-        .upload(filePath, file);
-
-      if (error) {
-        console.error('Upload error:', error);
-        return null;
-      }
-
-      const { data } = supabase.storage
-        .from('material-images')
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
-    } catch (error) {
-      console.error('Image upload failed:', error);
-      return null;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploading(true);
@@ -76,13 +50,21 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
       let imageUrl = null;
       
       if (formData.image) {
-        imageUrl = await uploadImage(formData.image);
-        if (!imageUrl) {
+        toast({
+          title: "Uploading",
+          description: "Uploading material image...",
+        });
+
+        const uploadResult = await uploadFile(formData.image, 'material-images', 'materials');
+        
+        if (uploadResult.error) {
           toast({
             title: "Warning",
-            description: "Image upload failed, but material will be added without image",
+            description: `Image upload failed: ${uploadResult.error}. Material will be added without image.`,
             variant: "destructive"
           });
+        } else {
+          imageUrl = uploadResult.url;
         }
       }
 
@@ -112,6 +94,11 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
           description: '',
           image: null
         });
+        
+        toast({
+          title: "Success",
+          description: "Material added successfully with QR code generated!",
+        });
       }
     } catch (error) {
       console.error('Error adding material:', error);
@@ -128,6 +115,26 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "Image file size must be less than 5MB",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Error",
+          description: "Please select a valid image file",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       setFormData(prev => ({ ...prev, image: file }));
     }
   };
@@ -153,14 +160,15 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                 accept="image/*"
                 onChange={handleImageUpload}
                 className="hidden"
+                disabled={uploading}
               />
               <label htmlFor="image" className="cursor-pointer">
-                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <Upload className={`h-8 w-8 mx-auto mb-2 text-muted-foreground ${uploading ? 'animate-pulse' : ''}`} />
                 <p className="text-sm text-muted-foreground">
                   {formData.image ? formData.image.name : "Click to upload or drag and drop"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  AI will auto-detect dimensions from your photo
+                  Max 5MB • JPG, PNG, WebP, GIF
                 </p>
               </label>
             </div>
@@ -176,13 +184,18 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., Reclaimed Oak Boards"
                 required
+                disabled={uploading}
               />
             </div>
 
             {/* Material Type */}
             <div className="space-y-2">
               <Label htmlFor="type">Material Type</Label>
-              <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}>
+              <Select 
+                value={formData.type} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
+                disabled={uploading}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
@@ -206,13 +219,18 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
                 onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
                 placeholder="0"
                 required
+                disabled={uploading}
               />
             </div>
 
             {/* Unit */}
             <div className="space-y-2">
               <Label htmlFor="unit">Unit</Label>
-              <Select value={formData.unit} onValueChange={(value) => setFormData(prev => ({ ...prev, unit: value }))}>
+              <Select 
+                value={formData.unit} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, unit: value }))}
+                disabled={uploading}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select unit" />
                 </SelectTrigger>
@@ -237,6 +255,7 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
               value={formData.origin}
               onChange={(e) => setFormData(prev => ({ ...prev, origin: e.target.value }))}
               placeholder="e.g., Local Demolition, Certified Forest"
+              disabled={uploading}
             />
           </div>
 
@@ -249,11 +268,17 @@ export function AddMaterialDialog({ open, onOpenChange }: AddMaterialDialogProps
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Additional notes about the material..."
               rows={3}
+              disabled={uploading}
             />
           </div>
 
           <div className="flex justify-end space-x-3">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              disabled={uploading}
+            >
               Cancel
             </Button>
             <Button 
