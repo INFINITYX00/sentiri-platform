@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -20,6 +21,7 @@ export function useMaterials() {
 
       if (error) throw error
       console.log('Materials fetched:', data?.length || 0, 'materials')
+      console.log('Fetched materials:', data)
       setMaterials(data || [])
     } catch (error) {
       console.error('Error fetching materials:', error)
@@ -36,7 +38,12 @@ export function useMaterials() {
   const addMaterial = async (materialData: Omit<Material, 'id' | 'created_at' | 'updated_at' | 'qr_code' | 'qr_image_url'>) => {
     setLoading(true)
     try {
-      console.log('Starting material creation with simplified data:', materialData);
+      console.log('Starting material creation with data:', materialData);
+      
+      // Validate required fields
+      if (!materialData.name || !materialData.type || !materialData.quantity || !materialData.unit) {
+        throw new Error('Missing required fields: name, type, quantity, or unit');
+      }
       
       // Step 1: Generate QR package first
       const tempId = crypto.randomUUID();
@@ -71,17 +78,31 @@ export function useMaterials() {
         simpleQRCode = `QR${tempId.slice(-6).toUpperCase()}`;
       }
 
-      // Step 2: Insert complete material with simplified data structure
+      // Step 2: Prepare material data for insertion
       const completeData = {
-        ...materialData,
         id: tempId,
+        name: materialData.name,
+        type: materialData.type,
+        specific_material: materialData.specific_material || null,
+        origin: materialData.origin || null,
+        quantity: Number(materialData.quantity),
+        unit: materialData.unit,
+        cost_per_unit: materialData.cost_per_unit ? Number(materialData.cost_per_unit) : null,
+        carbon_footprint: Number(materialData.carbon_footprint || 0),
+        description: materialData.description || null,
+        dimensions: materialData.dimensions || null,
+        length: materialData.length ? Number(materialData.length) : null,
+        width: materialData.width ? Number(materialData.width) : null,
+        thickness: materialData.thickness ? Number(materialData.thickness) : null,
+        dimension_unit: materialData.dimension_unit || 'mm',
+        image_url: materialData.image_url || null,
         qr_code: qrData,
         qr_image_url: qrImageUrl,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
       
-      console.log('Inserting complete material data:', completeData);
+      console.log('Inserting material with data:', completeData);
       
       const { data: newMaterial, error: insertError } = await supabase
         .from('materials')
@@ -89,25 +110,31 @@ export function useMaterials() {
         .select()
         .single()
 
-      if (insertError) throw insertError
-      console.log('Material creation completed successfully with ID:', newMaterial.id);
+      if (insertError) {
+        console.error('Insert error details:', insertError);
+        throw insertError;
+      }
+      
+      console.log('Material created successfully:', newMaterial);
       
       // Show success message
       const costText = materialData.cost_per_unit ? ` at $${materialData.cost_per_unit}/${materialData.unit}` : '';
       
       toast({
         title: "Success",
-        description: `Material "${materialData.name}" (${materialData.quantity} ${materialData.unit}) added with QR code ${simpleQRCode}${costText}`,
+        description: `Material "${materialData.name}" (${materialData.quantity} ${materialData.unit}) added successfully${costText}`,
       });
 
-      // Real-time subscription will handle UI update automatically
+      // Force refresh materials list to ensure it shows up
+      await fetchMaterials();
+      
       return newMaterial;
       
     } catch (error) {
       console.error('Error adding material:', error)
       toast({
         title: "Error",
-        description: "Failed to add material",
+        description: `Failed to add material: ${error.message}`,
         variant: "destructive"
       })
       return null
@@ -260,7 +287,7 @@ export function useMaterials() {
   }
 
   useEffect(() => {
-    console.log('Setting up materials hook with fixed real-time subscription')
+    console.log('Setting up materials hook with real-time subscription')
     
     // Initial fetch
     fetchMaterials()
@@ -294,10 +321,12 @@ export function useMaterials() {
               // Check for duplicates
               const exists = prev.some(m => m.id === payload.new.id)
               if (exists) {
-                console.log('Material already exists, skipping')
+                console.log('Material already exists, skipping duplicate')
                 return prev
               }
-              return [payload.new as Material, ...prev]
+              const updated = [payload.new as Material, ...prev]
+              console.log('Updated materials list length:', updated.length)
+              return updated
             } 
             
             if (payload.eventType === 'UPDATE') {

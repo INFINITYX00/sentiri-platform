@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,13 +30,20 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
 
+  console.log('StockGrid rendering with materials:', materials.length, materials);
+  console.log('Search query:', searchQuery, 'Selected type:', selectedType);
+
   const filteredItems = materials.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (item.origin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (item.specific_material || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = selectedType === 'all' || item.type === selectedType;
-    return matchesSearch && matchesType;
+    const result = matchesSearch && matchesType;
+    console.log(`Item ${item.name}: matchesSearch=${matchesSearch}, matchesType=${matchesType}, result=${result}`);
+    return result;
   });
+
+  console.log('Filtered items count:', filteredItems.length);
 
   if (loading) {
     return (
@@ -52,7 +58,17 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
     return (
       <div className="text-center py-12">
         <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <p className="text-muted-foreground">No materials found matching your criteria</p>
+        <p className="text-muted-foreground">
+          {materials.length === 0 
+            ? "No materials found. Add your first material to get started!" 
+            : "No materials found matching your criteria"
+          }
+        </p>
+        {materials.length === 0 && (
+          <p className="text-sm text-muted-foreground mt-2">
+            Click the "Add Material" button above to create your first material.
+          </p>
+        )}
       </div>
     );
   }
@@ -92,7 +108,7 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" key={materials.length}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" key={`materials-${materials.length}-${Date.now()}`}>
         {filteredItems.map((item) => (
           <Card key={`${item.id}-${item.updated_at}`} className="sentiri-card hover:border-accent/30 transition-all duration-200 group">
             <div className="relative">
