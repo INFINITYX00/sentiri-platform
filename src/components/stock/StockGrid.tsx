@@ -34,16 +34,24 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   console.log('Search query:', searchQuery, 'Selected type:', selectedType);
 
   const filteredItems = materials.filter(item => {
+    console.log('Filtering item:', item.name, 'Type:', item.type);
+    
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (item.origin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (item.specific_material || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedType === 'all' || item.type === selectedType;
+    
+    // Fix type matching - make it case insensitive and handle underscore variations
+    const itemType = item.type.toLowerCase().replace(/_/g, ' ');
+    const selectedTypeNormalized = selectedType.toLowerCase().replace(/_/g, ' ');
+    const matchesType = selectedType === 'all' || itemType === selectedTypeNormalized || item.type.toLowerCase() === selectedType.toLowerCase();
+    
+    console.log(`Item ${item.name}: type="${item.type}", normalized="${itemType}", selected="${selectedType}", matchesSearch=${matchesSearch}, matchesType=${matchesType}`);
+    
     const result = matchesSearch && matchesType;
-    console.log(`Item ${item.name}: matchesSearch=${matchesSearch}, matchesType=${matchesType}, result=${result}`);
     return result;
   });
 
-  console.log('Filtered items count:', filteredItems.length);
+  console.log('Filtered items:', filteredItems.length, filteredItems.map(item => ({ name: item.name, type: item.type })));
 
   if (loading) {
     return (
@@ -61,12 +69,17 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
         <p className="text-muted-foreground">
           {materials.length === 0 
             ? "No materials found. Add your first material to get started!" 
-            : "No materials found matching your criteria"
+            : `No materials found matching your criteria. Total materials: ${materials.length}`
           }
         </p>
         {materials.length === 0 && (
           <p className="text-sm text-muted-foreground mt-2">
             Click the "Add Material" button above to create your first material.
+          </p>
+        )}
+        {materials.length > 0 && (
+          <p className="text-sm text-muted-foreground mt-2">
+            Try adjusting your search or filter criteria.
           </p>
         )}
       </div>

@@ -57,6 +57,7 @@ export function StockManagement() {
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="wood">Wood</SelectItem>
+                    <SelectItem value="reclaimed_wood">Reclaimed Wood</SelectItem>
                     <SelectItem value="metal">Metal</SelectItem>
                     <SelectItem value="plastic">Plastic</SelectItem>
                     <SelectItem value="fabric">Fabric</SelectItem>
