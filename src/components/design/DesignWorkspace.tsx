@@ -1,11 +1,19 @@
-
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Layers, Package, Clock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Layers, Package, Clock, Users, Zap, Calculator } from "lucide-react";
+import { TimeLogging } from "@/components/project/TimeLogging";
+import { ManufacturingStages } from "@/components/project/ManufacturingStages";
+import { LaborCalculator } from "@/components/project/LaborCalculator";
+import { EnergyEstimator } from "@/components/project/EnergyEstimator";
 
 export function DesignWorkspace() {
+  const [timeEntries, setTimeEntries] = useState<any[]>([]);
+  const [stages, setStages] = useState<any[]>([]);
+
   const projects = [
     {
       id: 1,
@@ -139,102 +147,139 @@ export function DesignWorkspace() {
         </Card>
       </div>
 
-      {/* Projects Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {projects.map((project) => (
-          <Card key={project.id} className="sentiri-card hover:border-accent/30 transition-all duration-200">
-            <div className="relative">
-              <img 
-                src={project.image} 
-                alt={project.name}
-                className="w-full h-40 object-cover rounded-t-xl"
-              />
-              <div className="absolute top-3 right-3">
-                <Badge 
-                  variant={getStatusVariant(project.status)}
-                  className={project.status === 'Assembly' ? 'bg-primary' : ''}
-                >
-                  {project.status}
-                </Badge>
-              </div>
-            </div>
-            
-            <CardContent className="p-6 space-y-4">
-              <div>
-                <h3 className="text-xl font-semibold">{project.name}</h3>
-                <p className="text-sm text-muted-foreground">{project.timeline}</p>
-              </div>
+      {/* Enhanced Project Management */}
+      <Tabs defaultValue="projects" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="time">Time Tracking</TabsTrigger>
+          <TabsTrigger value="manufacturing">Manufacturing</TabsTrigger>
+          <TabsTrigger value="labor">Labor & Costs</TabsTrigger>
+          <TabsTrigger value="energy">Energy</TabsTrigger>
+        </TabsList>
 
-              {/* Progress */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Progress</span>
-                  <span>{project.completion}%</span>
-                </div>
-                <Progress value={project.completion} className="h-2" />
-              </div>
-
-              {/* Materials */}
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm">Allocated Materials</h4>
-                <div className="space-y-1">
-                  {project.materials.map((material, index) => (
-                    <div key={index} className="flex justify-between text-sm">
-                      <span className={material.needed ? 'text-orange-400' : 'text-muted-foreground'}>
-                        {material.name}
-                      </span>
-                      <span className={material.needed ? 'text-orange-400 font-medium' : ''}>
-                        {material.needed ? `Need ${material.needed}` : `${material.allocated} ${material.unit}`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Carbon Budget */}
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm">Carbon Budget</h4>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Used</span>
-                  <span className="text-primary font-medium">
-                    {project.carbonBudget.used} / {project.carbonBudget.allocated} {project.carbonBudget.unit}
-                  </span>
-                </div>
-                <Progress 
-                  value={(project.carbonBudget.used / project.carbonBudget.allocated) * 100} 
-                  className="h-2"
-                />
-              </div>
-
-              {/* Offcuts */}
-              {project.offcuts.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm text-primary">Available Offcuts</h4>
-                  <div className="space-y-1">
-                    {project.offcuts.map((offcut, index) => (
-                      <div key={index} className="text-xs bg-primary/5 p-2 rounded border border-primary/20">
-                        <span className="font-medium">{offcut.material}</span>
-                        <br />
-                        <span className="text-muted-foreground">{offcut.quantity} • {offcut.dimension}</span>
-                      </div>
-                    ))}
+        <TabsContent value="projects" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {projects.map((project) => (
+              <Card key={project.id} className="sentiri-card hover:border-accent/30 transition-all duration-200">
+                <div className="relative">
+                  <img 
+                    src={project.image} 
+                    alt={project.name}
+                    className="w-full h-40 object-cover rounded-t-xl"
+                  />
+                  <div className="absolute top-3 right-3">
+                    <Badge 
+                      variant={getStatusVariant(project.status)}
+                      className={project.status === 'Assembly' ? 'bg-primary' : ''}
+                    >
+                      {project.status}
+                    </Badge>
                   </div>
                 </div>
-              )}
+                
+                <CardContent className="p-6 space-y-4">
+                  <div>
+                    <h3 className="text-xl font-semibold">{project.name}</h3>
+                    <p className="text-sm text-muted-foreground">{project.timeline}</p>
+                  </div>
 
-              {/* Actions */}
-              <div className="flex gap-2 pt-2">
-                <Button size="sm" variant="outline" className="flex-1">
-                  View Details
-                </Button>
-                <Button size="sm" variant="outline" className="flex-1">
-                  Update Materials
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                  {/* Progress */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Progress</span>
+                      <span>{project.completion}%</span>
+                    </div>
+                    <Progress value={project.completion} className="h-2" />
+                  </div>
+
+                  {/* Materials */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">Allocated Materials</h4>
+                    <div className="space-y-1">
+                      {project.materials.map((material, index) => (
+                        <div key={index} className="flex justify-between text-sm">
+                          <span className={material.needed ? 'text-orange-400' : 'text-muted-foreground'}>
+                            {material.name}
+                          </span>
+                          <span className={material.needed ? 'text-orange-400 font-medium' : ''}>
+                            {material.needed ? `Need ${material.needed}` : `${material.allocated} ${material.unit}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Carbon Budget */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">Carbon Budget</h4>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Used</span>
+                      <span className="text-primary font-medium">
+                        {project.carbonBudget.used} / {project.carbonBudget.allocated} {project.carbonBudget.unit}
+                      </span>
+                    </div>
+                    <Progress 
+                      value={(project.carbonBudget.used / project.carbonBudget.allocated) * 100} 
+                      className="h-2"
+                    />
+                  </div>
+
+                  {/* Offcuts */}
+                  {project.offcuts.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm text-primary">Available Offcuts</h4>
+                      <div className="space-y-1">
+                        {project.offcuts.map((offcut, index) => (
+                          <div key={index} className="text-xs bg-primary/5 p-2 rounded border border-primary/20">
+                            <span className="font-medium">{offcut.material}</span>
+                            <br />
+                            <span className="text-muted-foreground">{offcut.quantity} • {offcut.dimension}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-2">
+                    <Button size="sm" variant="outline" className="flex-1">
+                      View Details
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1">
+                      Update Materials
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="time">
+          <TimeLogging 
+            projectId="current-project" 
+            onTimeUpdate={setTimeEntries}
+          />
+        </TabsContent>
+
+        <TabsContent value="manufacturing">
+          <ManufacturingStages 
+            projectId="current-project"
+            onStageUpdate={setStages}
+          />
+        </TabsContent>
+
+        <TabsContent value="labor">
+          <LaborCalculator 
+            projectId="current-project"
+            timeEntries={timeEntries}
+          />
+        </TabsContent>
+
+        <TabsContent value="energy">
+          <EnergyEstimator projectId="current-project" />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
