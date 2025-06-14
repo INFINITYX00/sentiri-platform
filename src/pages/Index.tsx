@@ -62,7 +62,7 @@ const Index = () => {
       <div className="min-h-screen flex w-full app-background">
         <AppSidebar activeView={activeView} setActiveView={setActiveView} />
         <main className="flex-1 overflow-auto">
-          <div className="min-h-full">
+          <div className="min-h-full p-6">
             {renderActiveView()}
           </div>
         </main>
