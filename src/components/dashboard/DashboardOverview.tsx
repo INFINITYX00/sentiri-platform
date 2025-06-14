@@ -11,8 +11,8 @@ export function DashboardOverview() {
       value: "147",
       change: "+12%",
       icon: Package,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
       changeColor: "text-red-500"
     },
     {
@@ -29,8 +29,8 @@ export function DashboardOverview() {
       value: "1,240 kWh",
       change: "-5%",
       icon: Zap,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50",
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
       changeColor: "text-emerald-600"
     },
     {
@@ -38,8 +38,8 @@ export function DashboardOverview() {
       value: "34%",
       change: "+15%",
       icon: TrendingDown,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
       changeColor: "text-red-500"
     }
   ];
@@ -57,22 +57,22 @@ export function DashboardOverview() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50">
       {/* Header Section */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6">
+      <div className="bg-white/80 backdrop-blur-sm border-b border-emerald-100 px-8 py-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold text-gray-900">Overview</h1>
-            <p className="text-sm text-gray-500">Welcome back to your sustainable manufacturing hub</p>
+            <h1 className="text-3xl font-bold text-emerald-900">Overview</h1>
+            <p className="text-emerald-600">Welcome back to your sustainable manufacturing hub</p>
           </div>
           <div className="flex items-center space-x-3">
-            <select className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white">
+            <select className="text-sm border border-emerald-200 rounded-lg px-3 py-2 bg-white/90 text-emerald-700 focus:ring-2 focus:ring-emerald-200">
               <option>Today</option>
               <option>Week</option>
               <option>Month</option>
               <option>Year</option>
             </select>
-            <Badge variant="outline" className="border-lime-200 text-lime-700 bg-lime-50 px-4 py-2 text-sm font-medium">
+            <Badge variant="outline" className="border-emerald-300 text-emerald-700 bg-emerald-50/80 px-4 py-2 text-sm font-medium">
               18 Jun, 2024 — 18 July, 2024
             </Badge>
           </div>
@@ -84,12 +84,12 @@ export function DashboardOverview() {
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {metrics.map((metric) => (
-            <Card key={metric.title} className="bg-white border border-gray-200 hover:shadow-sm transition-shadow">
+            <Card key={metric.title} className="bg-white/90 backdrop-blur-sm border border-emerald-100 hover:shadow-lg hover:shadow-emerald-100/50 transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-3">
-                    <p className="text-sm font-medium text-gray-600">{metric.title}</p>
-                    <p className="text-3xl font-bold text-gray-900">{metric.value}</p>
+                    <p className="text-sm font-medium text-emerald-600">{metric.title}</p>
+                    <p className="text-3xl font-bold text-emerald-900">{metric.value}</p>
                     <p className={`text-sm font-medium ${metric.changeColor}`}>
                       {metric.change} from last month
                     </p>
@@ -106,11 +106,11 @@ export function DashboardOverview() {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Projects */}
-          <Card className="bg-white border border-gray-200">
+          <Card className="bg-white/90 backdrop-blur-sm border border-emerald-100 shadow-lg">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold text-gray-900">Active Projects</CardTitle>
-                <button className="text-gray-400 hover:text-gray-600">
+                <CardTitle className="text-lg font-semibold text-emerald-900">Active Projects</CardTitle>
+                <button className="text-emerald-500 hover:text-emerald-700 transition-colors">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
@@ -119,13 +119,13 @@ export function DashboardOverview() {
             </CardHeader>
             <CardContent className="space-y-4">
               {recentProjects.map((project, index) => (
-                <div key={index} className="space-y-3 p-4 bg-gray-50 rounded-lg">
+                <div key={index} className="space-y-3 p-4 bg-emerald-50/70 rounded-lg border border-emerald-100">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-gray-900">{project.name}</h4>
+                    <h4 className="font-medium text-emerald-900">{project.name}</h4>
                     <Badge 
                       variant={project.status === 'In Progress' ? 'default' : 'secondary'}
                       className={project.status === 'In Progress' 
-                        ? 'bg-lime-100 text-lime-800 hover:bg-lime-100 border-lime-200' 
+                        ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200' 
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-100 border-gray-200'
                       }
                     >
@@ -134,32 +134,32 @@ export function DashboardOverview() {
                   </div>
                   <div className="flex items-center space-x-3">
                     <Progress value={project.completion} className="flex-1 h-2" />
-                    <span className="text-sm font-medium text-gray-700 min-w-[3rem]">{project.completion}%</span>
+                    <span className="text-sm font-medium text-emerald-700 min-w-[3rem]">{project.completion}%</span>
                   </div>
-                  <p className="text-xs text-gray-500">{project.materials} materials allocated</p>
+                  <p className="text-xs text-emerald-600">{project.materials} materials allocated</p>
                 </div>
               ))}
             </CardContent>
           </Card>
 
           {/* Low Stock Alert */}
-          <Card className="bg-white border border-gray-200">
+          <Card className="bg-white/90 backdrop-blur-sm border border-emerald-100 shadow-lg">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold text-gray-900">Low Stock Alerts</CardTitle>
-                <button className="text-gray-400 hover:text-gray-600">
+                <CardTitle className="text-lg font-semibold text-emerald-900">Low Stock Alerts</CardTitle>
+                <button className="text-emerald-500 hover:text-emerald-700 transition-colors">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {lowStockItems.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-100">
+                <div key={index} className="flex items-center justify-between p-4 bg-orange-50/80 rounded-lg border border-orange-200">
                   <div className="space-y-1">
-                    <h4 className="font-medium text-gray-900">{item.name}</h4>
-                    <p className="text-sm text-gray-600">
+                    <h4 className="font-medium text-emerald-900">{item.name}</h4>
+                    <p className="text-sm text-emerald-600">
                       {item.quantity} {item.unit} remaining
                     </p>
                   </div>
@@ -173,23 +173,23 @@ export function DashboardOverview() {
         </div>
 
         {/* Quick Actions */}
-        <Card className="bg-white border border-gray-200">
+        <Card className="bg-white/90 backdrop-blur-sm border border-emerald-100 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">Quick Actions</CardTitle>
+            <CardTitle className="text-lg font-semibold text-emerald-900">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="p-6 bg-lime-50 rounded-lg border border-lime-100 hover:bg-lime-100 hover:shadow-sm transition-all cursor-pointer group">
-                <h4 className="font-medium text-lime-800 mb-2 group-hover:text-lime-900">Add New Material</h4>
-                <p className="text-sm text-lime-600">Upload photos and create material passport</p>
+              <div className="p-6 bg-emerald-50/80 rounded-lg border border-emerald-200 hover:bg-emerald-100/80 hover:shadow-md transition-all cursor-pointer group">
+                <h4 className="font-medium text-emerald-800 mb-2 group-hover:text-emerald-900">Add New Material</h4>
+                <p className="text-sm text-emerald-600">Upload photos and create material passport</p>
               </div>
-              <div className="p-6 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 hover:shadow-sm transition-all cursor-pointer group">
-                <h4 className="font-medium text-blue-800 mb-2 group-hover:text-blue-900">Upload BOM</h4>
-                <p className="text-sm text-blue-600">Calculate carbon footprint for new project</p>
+              <div className="p-6 bg-emerald-50/80 rounded-lg border border-emerald-200 hover:bg-emerald-100/80 hover:shadow-md transition-all cursor-pointer group">
+                <h4 className="font-medium text-emerald-800 mb-2 group-hover:text-emerald-900">Upload BOM</h4>
+                <p className="text-sm text-emerald-600">Calculate carbon footprint for new project</p>
               </div>
-              <div className="p-6 bg-purple-50 rounded-lg border border-purple-100 hover:bg-purple-100 hover:shadow-sm transition-all cursor-pointer group">
-                <h4 className="font-medium text-purple-800 mb-2 group-hover:text-purple-900">Generate Report</h4>
-                <p className="text-sm text-purple-600">Export sustainability metrics and insights</p>
+              <div className="p-6 bg-emerald-50/80 rounded-lg border border-emerald-200 hover:bg-emerald-100/80 hover:shadow-md transition-all cursor-pointer group">
+                <h4 className="font-medium text-emerald-800 mb-2 group-hover:text-emerald-900">Generate Report</h4>
+                <p className="text-sm text-emerald-600">Export sustainability metrics and insights</p>
               </div>
             </div>
           </CardContent>
