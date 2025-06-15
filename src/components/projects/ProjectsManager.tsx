@@ -75,12 +75,12 @@ export function ProjectsManager() {
   }
 
   return (
-    <div className="page-container">
+    <div className="min-h-screen bg-gray-50">
       {/* Header Section */}
-      <div className="page-header">
+      <div className="px-8 py-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="page-title">Projects</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Projects</h1>
             <p className="text-muted-foreground">Manage manufacturing projects and track progress</p>
           </div>
           <Button onClick={() => setShowCreateForm(!showCreateForm)} className="gap-2">
@@ -90,7 +90,7 @@ export function ProjectsManager() {
         </div>
       </div>
 
-      <div className="content-section space-y-6">
+      <div className="px-8 py-4 space-y-6">
         {/* Create Project Form */}
         {showCreateForm && (
           <Card>
