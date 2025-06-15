@@ -34,11 +34,14 @@ export function StockAlertsWidget({ stockAlerts }: StockAlertsWidgetProps) {
                 </div>
                 <div className="text-right">
                   <Badge variant="destructive" className="text-xs">
-                    {item.quantity} {item.unit}
+                    {item.quantity} {item.unit} available
                   </Badge>
                 </div>
               </div>
             ))}
+            <div className="text-xs text-muted-foreground px-2">
+              Showing materials with &lt; 10 available units (after allocations)
+            </div>
             <Button 
               variant="ghost" 
               size="sm" 
@@ -52,6 +55,7 @@ export function StockAlertsWidget({ stockAlerts }: StockAlertsWidgetProps) {
           <div className="text-center text-muted-foreground py-4">
             <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm">All stock levels healthy</p>
+            <p className="text-xs mt-1">No materials below 10 available units</p>
           </div>
         )}
       </div>

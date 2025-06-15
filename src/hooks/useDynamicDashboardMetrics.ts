@@ -4,6 +4,25 @@ import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 
 interface DashboardMetrics {
+  totalStockItems: number
+  totalCarbonFootprint: number
+  lowStockCount: number
+  aiEnhancedCount: number
+  lowStockItems: Array<{
+    name: string
+    quantity: number
+    unit: string
+    threshold: number
+  }>
+  recentMaterials: Material[]
+  materialTypeDistribution: Record<string, number>
+  carbonFootprintChange: string
+  stockItemsChange: string
+  wasteReduced: number
+  energyUsage: number
+}
+
+interface DashboardMetrics {
   totalProjects: number
   activeProjects: number
   completedProjects: number
@@ -89,6 +108,7 @@ export function useDynamicDashboardMetrics() {
       const [
         { data: projects, error: projectsError },
         { data: materials, error: materialsError },
+        { data: projectMaterials, error: projectMaterialsError },
         { data: energyRecords, error: energyError },
         { data: timeEntries, error: timeError },
         { data: passports, error: passportsError },
@@ -96,6 +116,10 @@ export function useDynamicDashboardMetrics() {
       ] = await Promise.all([
         supabase.from('projects').select('*').eq('deleted', false),
         supabase.from('materials').select('*'),
+        supabase.from('projects_materials').select(`
+          *,
+          project:projects!inner(deleted)
+        `).eq('project.deleted', false),
         supabase.from('energy_records').select('*'),
         supabase.from('time_entries').select('*').order('created_at', { ascending: false }).limit(15),
         supabase.from('product_passports').select('*').order('production_date', { ascending: false }).limit(5),
@@ -104,6 +128,7 @@ export function useDynamicDashboardMetrics() {
 
       if (projectsError) throw projectsError
       if (materialsError) throw materialsError
+      if (projectMaterialsError) throw projectMaterialsError
       if (energyError) throw energyError
       if (timeError) throw timeError
       if (passportsError) throw passportsError
@@ -112,7 +137,23 @@ export function useDynamicDashboardMetrics() {
       console.log('📊 Dashboard: Fetched data', {
         projects: projects?.length || 0,
         materials: materials?.length || 0,
+        projectMaterials: projectMaterials?.length || 0,
         energyRecords: energyRecords?.length || 0
+      })
+
+      // Calculate allocations by material
+      const materialAllocations = new Map<string, number>()
+      
+      projectMaterials?.forEach(pm => {
+        const materialId = pm.material_id
+        const allocated = Math.max(0, pm.quantity_required - pm.quantity_consumed)
+        const currentAllocation = materialAllocations.get(materialId) || 0
+        materialAllocations.set(materialId, currentAllocation + allocated)
+      })
+
+      console.log('📦 Dashboard: Material allocations calculated', {
+        materialsWithAllocations: materialAllocations.size,
+        totalAllocations: Array.from(materialAllocations.values()).reduce((sum, val) => sum + val, 0)
       })
 
       // Calculate project metrics (already filtered to exclude deleted projects)
@@ -133,9 +174,36 @@ export function useDynamicDashboardMetrics() {
         totalCarbonSaved
       })
 
-      // Calculate material metrics
+      // Calculate material metrics with available units
       const totalMaterials = materials?.length || 0
-      const lowStockMaterials = materials?.filter(m => m.quantity < 10).length || 0
+      
+      // Calculate available units for each material and identify low stock
+      const materialsWithAvailableUnits = materials?.map(material => {
+        const totalUnits = material.quantity || 0
+        const allocatedUnits = materialAllocations.get(material.id) || 0
+        const availableUnits = Math.max(0, totalUnits - allocatedUnits)
+        
+        return {
+          ...material,
+          availableUnits,
+          allocatedUnits,
+          totalUnits
+        }
+      }) || []
+
+      // Filter for low stock based on available units (< 10)
+      const lowStockMaterials = materialsWithAvailableUnits.filter(m => m.availableUnits < 10).length
+
+      console.log('📦 Dashboard: Material stock analysis', {
+        totalMaterials,
+        lowStockMaterials,
+        exampleMaterial: materialsWithAvailableUnits[0] ? {
+          name: materialsWithAvailableUnits[0].name,
+          total: materialsWithAvailableUnits[0].totalUnits,
+          allocated: materialsWithAvailableUnits[0].allocatedUnits,
+          available: materialsWithAvailableUnits[0].availableUnits
+        } : 'No materials'
+      })
 
       // Calculate energy consumption
       const energyConsumed = energyRecords?.reduce((sum, e) => sum + (e.energy_consumed || 0), 0) || 0
@@ -196,16 +264,22 @@ export function useDynamicDashboardMetrics() {
           start_date: p.start_date || p.created_at
         })) || []
 
-      // Stock alerts (low inventory items)
-      const stockAlerts = materials?.filter(m => m.quantity < 10)
+      // Stock alerts (materials with available units < 10)
+      const stockAlerts = materialsWithAvailableUnits
+        .filter(m => m.availableUnits < 10)
         .slice(0, 5)
         .map(m => ({
           id: m.id,
           name: m.name,
-          quantity: m.quantity,
+          quantity: m.availableUnits, // Show available units instead of total
           unit: m.unit,
           type: m.type
-        })) || []
+        }))
+
+      console.log('🚨 Dashboard: Stock alerts generated', {
+        alertCount: stockAlerts.length,
+        alerts: stockAlerts.map(a => ({ name: a.name, available: a.quantity, unit: a.unit }))
+      })
 
       // Recent passports
       const recentPassports = passports?.map(p => ({
@@ -296,7 +370,8 @@ export function useDynamicDashboardMetrics() {
         totalProjects,
         activeProjects,
         completedProjects,
-        totalCarbonSaved: totalCarbonSaved.toFixed(1)
+        totalCarbonSaved: totalCarbonSaved.toFixed(1),
+        stockAlertsCount: stockAlerts.length
       })
 
     } catch (error) {
