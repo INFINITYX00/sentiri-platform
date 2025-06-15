@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,19 +11,8 @@ export function StockManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Add a periodic refresh mechanism as fallback
-  useEffect(() => {
-    const interval = setInterval(() => {
-      console.log('🔄 Periodic refresh trigger in StockManagement');
-      setRefreshKey(prev => prev + 1);
-    }, 30000); // Refresh every 30 seconds as fallback
-
-    return () => clearInterval(interval);
-  }, []);
-
-  console.log('🏢 StockManagement rendering with refreshKey:', refreshKey);
+  console.log('🏢 StockManagement rendering');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -83,9 +72,8 @@ export function StockManagement() {
             </div>
           </div>
 
-          {/* Stock Grid with refreshKey to force re-render */}
+          {/* Stock Grid */}
           <StockGrid 
-            key={refreshKey}
             searchQuery={searchQuery} 
             selectedType={selectedType} 
           />

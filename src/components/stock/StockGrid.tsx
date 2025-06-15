@@ -34,7 +34,7 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   const [materialToEdit, setMaterialToEdit] = useState<Material | null>(null);
   const [forceRefreshKey, setForceRefreshKey] = useState(Date.now());
 
-  // Debug: Log materials received by StockGrid with more detail
+  // Debug: Log materials received by StockGrid
   console.log('🎯 StockGrid received materials from hook:', materials.length, materials.map(m => ({ 
     id: m.id, 
     name: m.name, 
@@ -42,22 +42,11 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
     __freshRef: (m as any).__freshRef
   })));
 
-  // Force re-render when materials change - more aggressive approach
+  // Force re-render when materials change
   useEffect(() => {
-    console.log('📊 StockGrid materials changed, forcing aggressive re-render. Count:', materials.length)
+    console.log('📊 StockGrid materials changed, forcing re-render. Count:', materials.length)
     setForceRefreshKey(Date.now());
   }, [materials])
-
-  // Additional effect to catch any missed updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const currentTime = Date.now();
-      console.log('🔄 Periodic force refresh check at:', currentTime);
-      setForceRefreshKey(currentTime);
-    }, 5000); // Check every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Direct filtering without useMemo to ensure fresh data on every render
   const filteredItems = materials.filter(item => {
