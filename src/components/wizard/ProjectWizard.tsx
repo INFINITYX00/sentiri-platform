@@ -113,6 +113,7 @@ export function ProjectWizard() {
         description: 'Design your Bill of Materials',
         icon: FileText,
         status: project && (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed') ? 'completed' : 
+               project && currentStep === 1 ? 'current' :
                project ? 'current' : 'upcoming',
         allowAccess: !!project
       },
@@ -121,7 +122,8 @@ export function ProjectWizard() {
         title: 'Production Planning',
         description: 'Plan manufacturing stages',
         icon: Workflow,
-        status: project?.status === 'design' ? 'current' :
+        status: project?.status === 'design' && currentStep === 2 ? 'current' :
+               project?.status === 'design' ? 'current' :
                (project?.status === 'in_progress' || project?.status === 'completed') ? 'completed' : 'upcoming',
         allowAccess: project && (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed')
       },
