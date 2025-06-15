@@ -3,7 +3,7 @@ import { QRCodeViewer } from "@/components/qr/QRCodeViewer";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useStockAllocations } from "@/hooks/useStockAllocations";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Package, Loader2 } from "lucide-react";
 import { MaterialStockCard } from "./MaterialStockCard";
 import { AddMaterialDialog } from "./AddMaterialDialog";
@@ -42,20 +42,24 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
     setRenderKey(prev => prev + 1);
   }, [materials])
 
-  // Memoize filtered items to ensure fresh references
-  const filteredItems = useMemo(() => {
-    return materials.filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           (item.origin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           (item.specific_material || '').toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const itemType = item.type.toLowerCase().replace(/_/g, ' ');
-      const selectedTypeNormalized = selectedType.toLowerCase().replace(/_/g, ' ');
-      const matchesType = selectedType === 'all' || itemType === selectedTypeNormalized || item.type.toLowerCase() === selectedType.toLowerCase();
-      
-      return matchesSearch && matchesType;
-    }).map(item => ({ ...item })); // Force new object references
-  }, [materials, searchQuery, selectedType]);
+  // Direct filtering without useMemo to ensure fresh data on every render
+  const filteredItems = materials.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (item.origin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (item.specific_material || '').toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const itemType = item.type.toLowerCase().replace(/_/g, ' ');
+    const selectedTypeNormalized = selectedType.toLowerCase().replace(/_/g, ' ');
+    const matchesType = selectedType === 'all' || itemType === selectedTypeNormalized || item.type.toLowerCase() === selectedType.toLowerCase();
+    
+    return matchesSearch && matchesType;
+  });
+
+  console.log('🔍 Filtered items:', filteredItems.length, filteredItems.map(item => ({ 
+    id: item.id, 
+    name: item.name, 
+    updated_at: item.updated_at 
+  })));
 
   if (loading) {
     return (
