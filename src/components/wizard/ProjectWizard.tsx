@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -114,18 +113,16 @@ export function ProjectWizard() {
 
   const steps = getProjectSteps()
 
-  // Check if a product passport exists for the current project
   useEffect(() => {
     if (selectedProject && productPassports.length > 0) {
       const existingPassport = productPassports.find(p => p.project_id === selectedProject)
       if (existingPassport && !generatedPassportId) {
         setGeneratedPassportId(existingPassport.id)
-        setCurrentStep(5) // Move to product passport step
+        setCurrentStep(5)
       }
     }
   }, [selectedProject, productPassports, generatedPassportId])
 
-  // Fetch manufacturing stages when project is selected
   useEffect(() => {
     if (selectedProject) {
       fetchStages(selectedProject)
@@ -138,23 +135,36 @@ export function ProjectWizard() {
     
     try {
       // Force refresh projects to ensure latest data
+      console.log('ProjectWizard: Refreshing projects list...')
       await refreshProjects()
       
-      // Small delay to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Add a small delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 200))
       
-      const project = projects.find(p => p.id === projectId)
+      // Retry mechanism - check for project with retries
+      let project = projects.find(p => p.id === projectId)
+      let retryCount = 0
+      const maxRetries = 3
+      
+      while (!project && retryCount < maxRetries) {
+        console.log(`ProjectWizard: Project not found, retrying... (${retryCount + 1}/${maxRetries})`)
+        await new Promise(resolve => setTimeout(resolve, 300))
+        await refreshProjects()
+        project = projects.find(p => p.id === projectId)
+        retryCount++
+      }
+      
       if (!project) {
-        console.error('Project not found:', projectId)
+        console.error('ProjectWizard: Project not found after retries:', projectId)
         toast({
           title: "Error",
-          description: "Project not found. Please try again.",
+          description: "Project not found. Please try refreshing the page and selecting the project again.",
           variant: "destructive"
         })
         return
       }
 
-      console.log('ProjectWizard: Project selected:', project.name, 'Status:', project.status)
+      console.log('ProjectWizard: Project found successfully:', project.name, 'Status:', project.status)
       setSelectedProject(projectId)
       
       // Check if product passport already exists
@@ -162,10 +172,11 @@ export function ProjectWizard() {
       if (existingPassport) {
         setGeneratedPassportId(existingPassport.id)
         setCurrentStep(5) // Product passport step
+        console.log('ProjectWizard: Found existing passport, moving to step 5')
         return
       }
 
-      // Stay on current step - let user manually navigate
+      // No automatic step progression - user controls navigation
       console.log('ProjectWizard: Project selected successfully, staying on current step')
       
       toast({
@@ -173,7 +184,7 @@ export function ProjectWizard() {
         description: `${project.name} is now active in the wizard`,
       })
     } catch (error) {
-      console.error('Error selecting project:', error)
+      console.error('ProjectWizard: Error selecting project:', error)
       toast({
         title: "Error",
         description: "Failed to select project. Please try again.",
@@ -196,17 +207,16 @@ export function ProjectWizard() {
 
   const handleProductionStart = async () => {
     if (selectedProject) {
-      setCurrentStep(3) // Move to manufacturing
+      setCurrentStep(3)
     }
   }
 
   const handleManufacturingComplete = async () => {
     if (selectedProject) {
-      // Check if all stages are actually completed
       const allStagesCompleted = stages.every(stage => stage.status === 'completed' && stage.progress === 100)
       if (allStagesCompleted) {
         await updateProject(selectedProject, { status: 'completed', progress: 100 })
-        setCurrentStep(4) // Move to quality control
+        setCurrentStep(4)
         toast({
           title: "Manufacturing Complete",
           description: "All manufacturing stages have been completed successfully!"
@@ -223,14 +233,11 @@ export function ProjectWizard() {
 
     setIsGeneratingPassport(true)
     try {
-      // Gather project materials for passport specifications
       const projectMaterials = project.allocated_materials || []
       const materialsData = projectMaterials.map(materialId => {
-        // This would ideally fetch the actual material data
         return { id: materialId, name: 'Material', type: 'Unknown', quantity: 1, unit: 'unit', carbon_footprint: 0 }
       })
 
-      // Gather manufacturing stages data
       const manufacturingStages = stages.map(stage => ({
         name: stage.name,
         estimated_hours: stage.estimated_hours,
@@ -239,7 +246,6 @@ export function ProjectWizard() {
         completed_date: stage.completed_date
       }))
 
-      // Generate product passport with enhanced data
       const passport = await generateProductPassport(
         selectedProject,
         project.name,
@@ -258,14 +264,12 @@ export function ProjectWizard() {
       )
 
       if (passport) {
-        // Update the passport with image if provided
         if (productImageUrl) {
-          // This would typically update the passport record with the image URL
           console.log('Product image URL:', productImageUrl)
         }
 
         setGeneratedPassportId(passport.id)
-        setCurrentStep(5) // Move to product passport step
+        setCurrentStep(5)
         toast({
           title: "Success",
           description: "Product passport generated successfully!"
@@ -325,13 +329,11 @@ export function ProjectWizard() {
     
     if (!nextStep) return false
     
-    // Allow advancement if the next step is accessible
     return nextStep.allowAccess
   }
 
   const currentPassport = generatedPassportId ? productPassports.find(p => p.id === generatedPassportId) : null
 
-  // Show detailed passport view if requested
   if (showPassportDetail && currentPassport) {
     return (
       <ProductPassportDetailView 
@@ -419,7 +421,6 @@ export function ProjectWizard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Section */}
       <div className="px-8 py-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
@@ -446,7 +447,6 @@ export function ProjectWizard() {
             )}
           </div>
 
-          {/* Progress Steps */}
           <Card className="mb-6">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -514,7 +514,6 @@ export function ProjectWizard() {
             </CardContent>
           </Card>
 
-          {/* Current Step Content */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
