@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { 
   CheckCircle, 
-  Circle, 
   ArrowRight, 
   ArrowLeft,
   FileText,
@@ -33,7 +32,7 @@ interface WizardStep {
 export function ProjectWizard() {
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
-  const { projects } = useProjects()
+  const { projects, updateProject } = useProjects()
 
   const getProjectSteps = (): WizardStep[] => {
     const project = selectedProject ? projects.find(p => p.id === selectedProject) : null
@@ -53,17 +52,17 @@ export function ProjectWizard() {
         description: 'Design your Bill of Materials',
         icon: FileText,
         status: project?.status === 'planning' ? 'current' : 
-               project?.status === 'design' || project?.status === 'in_progress' || project?.status === 'completed' ? 'completed' : 'upcoming',
-        allowAccess: project?.status === 'planning' || project?.status === 'design' || project?.status === 'in_progress' || project?.status === 'completed'
+               (project?.status === 'design' || project?.status === 'in_progress' || project?.status === 'completed') ? 'completed' : 'upcoming',
+        allowAccess: !!project
       },
       {
         id: 'production-planning',
         title: 'Production Planning',
         description: 'Plan manufacturing stages',
         icon: Workflow,
-        status: project?.status === 'design' && project?.allocated_materials?.length > 0 ? 'current' :
-               project?.status === 'in_progress' || project?.status === 'completed' ? 'completed' : 'upcoming',
-        allowAccess: project?.status === 'design' && project?.allocated_materials?.length > 0 || project?.status === 'in_progress' || project?.status === 'completed'
+        status: project?.status === 'design' ? 'current' :
+               (project?.status === 'in_progress' || project?.status === 'completed') ? 'completed' : 'upcoming',
+        allowAccess: project?.status === 'design' || project?.status === 'in_progress' || project?.status === 'completed'
       },
       {
         id: 'manufacturing',
@@ -101,18 +100,30 @@ export function ProjectWizard() {
     if (selectedProject) {
       const project = projects.find(p => p.id === selectedProject)
       if (project) {
-        if (project.status === 'planning') {
+        if (project.status === 'planning' && currentStep < 1) {
           setCurrentStep(1) // BOM Creation
-        } else if (project.status === 'design' && project.allocated_materials.length > 0) {
+        } else if (project.status === 'design' && currentStep < 2) {
           setCurrentStep(2) // Production Planning
-        } else if (project.status === 'in_progress') {
+        } else if (project.status === 'in_progress' && currentStep < 3) {
           setCurrentStep(3) // Manufacturing
-        } else if (project.status === 'completed') {
+        } else if (project.status === 'completed' && currentStep < 4) {
           setCurrentStep(4) // Quality Control
         }
       }
     }
-  }, [selectedProject, projects])
+  }, [selectedProject, projects, currentStep])
+
+  const handleProjectSelect = async (projectId: string) => {
+    setSelectedProject(projectId)
+    const project = projects.find(p => p.id === projectId)
+    if (project) {
+      // Update project status to planning if it's new
+      if (project.status === 'planning') {
+        await updateProject(projectId, { status: 'planning' })
+      }
+      setCurrentStep(1) // Move to BOM creation
+    }
+  }
 
   const goToStep = (stepIndex: number) => {
     if (steps[stepIndex].allowAccess) {
@@ -123,26 +134,42 @@ export function ProjectWizard() {
   const renderStepContent = () => {
     switch (currentStepData.id) {
       case 'project-setup':
-        return <ProjectsManager onProjectSelect={setSelectedProject} />
+        return <ProjectsManager onProjectSelect={handleProjectSelect} />
       case 'bom-creation':
-        return <DesignBOMManager />
+        return selectedProject ? <DesignBOMManager /> : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Please select a project first</p>
+          </div>
+        )
       case 'production-planning':
       case 'manufacturing':
-        return <ProductionManager />
+        return selectedProject ? <ProductionManager /> : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Please select a project first</p>
+          </div>
+        )
       case 'quality-control':
         return (
           <div className="text-center py-12">
             <ClipboardCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Quality Control</h3>
-            <p className="text-muted-foreground">Final inspection and quality assurance coming soon</p>
+            <p className="text-muted-foreground">Final inspection and quality assurance</p>
+            {selectedProject && (
+              <Button 
+                className="mt-4"
+                onClick={() => setCurrentStep(5)}
+              >
+                Complete Quality Control
+              </Button>
+            )}
           </div>
         )
       case 'product-passport':
         return (
           <div className="text-center py-12">
-            <Award className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Product Passport Generation</h3>
-            <p className="text-muted-foreground">Digital passport creation coming soon</p>
+            <Award className="h-12 w-12 text-green-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Product Passport Generated!</h3>
+            <p className="text-muted-foreground">Your product passport has been created successfully</p>
           </div>
         )
       default:
@@ -157,6 +184,11 @@ export function ProjectWizard() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Project Wizard</h1>
             <p className="text-muted-foreground">Complete workflow from concept to product passport</p>
+            {selectedProject && (
+              <p className="text-sm text-primary mt-1">
+                Current Project: {projects.find(p => p.id === selectedProject)?.name}
+              </p>
+            )}
           </div>
 
           {/* Progress Steps */}

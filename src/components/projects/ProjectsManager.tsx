@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -7,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Package, Calendar, DollarSign, Leaf, CheckCircle } from "lucide-react"
+import { Plus, Package, Calendar, DollarSign, Leaf, CheckCircle, Settings, Wrench } from "lucide-react"
 import { useProjects } from '@/hooks/useProjects'
 import { ProjectMaterialsDialog } from './ProjectMaterialsDialog'
 import { ProductionDialog } from './ProductionDialog'
@@ -18,6 +17,9 @@ interface ProjectsManagerProps {
 
 export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [materialDialogOpen, setMaterialDialogOpen] = useState(false)
+  const [productionDialogOpen, setProductionDialogOpen] = useState(false)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
@@ -49,6 +51,16 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
         onProjectSelect(created.id)
       }
     }
+  }
+
+  const openMaterialsDialog = (projectId: string) => {
+    setSelectedProjectId(projectId)
+    setMaterialDialogOpen(true)
+  }
+
+  const openProductionDialog = (projectId: string) => {
+    setSelectedProjectId(projectId)
+    setProductionDialogOpen(true)
   }
 
   const getStatusColor = (status: string) => {
@@ -222,8 +234,20 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
                           Select
                         </Button>
                       )}
-                      <ProjectMaterialsDialog projectId={project.id} />
-                      <ProductionDialog project={project} />
+                      <Button 
+                        variant="outline"
+                        onClick={() => openMaterialsDialog(project.id)}
+                      >
+                        <Wrench className="h-4 w-4 mr-2" />
+                        Materials
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => openProductionDialog(project.id)}
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Production
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -232,6 +256,22 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
           })
         )}
       </div>
+
+      {/* Dialogs */}
+      {selectedProjectId && (
+        <>
+          <ProjectMaterialsDialog 
+            projectId={selectedProjectId}
+            open={materialDialogOpen}
+            onClose={() => setMaterialDialogOpen(false)}
+          />
+          <ProductionDialog 
+            projectId={selectedProjectId}
+            open={productionDialogOpen}
+            onClose={() => setProductionDialogOpen(false)}
+          />
+        </>
+      )}
     </div>
   )
 }
