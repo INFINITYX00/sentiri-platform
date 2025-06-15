@@ -23,7 +23,7 @@ export const workspaceMenuItems: WorkspaceMenuItem[] = [
     items: []
   },
   {
-    title: "Material Passport",
+    title: "Product Passports",
     url: "passport",
     icon: FileText,
     items: []
