@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -141,14 +142,20 @@ export function ProjectWizard() {
       // Add a small delay to ensure state is updated
       await new Promise(resolve => setTimeout(resolve, 200))
       
-      // Retry mechanism - check for project with retries
+      // Check current projects state and log for debugging
+      console.log('ProjectWizard: Current projects in state:', projects.map(p => ({ id: p.id, name: p.name })))
+      
+      // Try to find the project with additional debugging
       let project = projects.find(p => p.id === projectId)
       let retryCount = 0
-      const maxRetries = 3
+      const maxRetries = 5 // Increased retries
       
       while (!project && retryCount < maxRetries) {
         console.log(`ProjectWizard: Project not found, retrying... (${retryCount + 1}/${maxRetries})`)
-        await new Promise(resolve => setTimeout(resolve, 300))
+        console.log(`ProjectWizard: Looking for project ID: ${projectId}`)
+        console.log(`ProjectWizard: Available project IDs: ${projects.map(p => p.id).join(', ')}`)
+        
+        await new Promise(resolve => setTimeout(resolve, 500)) // Increased delay
         await refreshProjects()
         project = projects.find(p => p.id === projectId)
         retryCount++
@@ -156,12 +163,22 @@ export function ProjectWizard() {
       
       if (!project) {
         console.error('ProjectWizard: Project not found after retries:', projectId)
-        toast({
-          title: "Error",
-          description: "Project not found. Please try refreshing the page and selecting the project again.",
-          variant: "destructive"
-        })
-        return
+        console.error('ProjectWizard: Available projects:', projects)
+        
+        // Try one final refresh with longer delay
+        console.log('ProjectWizard: Attempting final refresh...')
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        await refreshProjects()
+        project = projects.find(p => p.id === projectId)
+        
+        if (!project) {
+          toast({
+            title: "Error",
+            description: "Project not found. The project may have been created but not yet synchronized. Please try refreshing the page.",
+            variant: "destructive"
+          })
+          return
+        }
       }
 
       console.log('ProjectWizard: Project found successfully:', project.name, 'Status:', project.status)
