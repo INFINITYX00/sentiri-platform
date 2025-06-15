@@ -28,15 +28,19 @@ export function useMaterials() {
     // Initial fetch
     fetchMaterials()
 
-    // Clean up existing channel
+    // Clean up existing channel first
     if (channelRef.current) {
       console.log('Cleaning up existing channel before creating new one')
-      supabase.removeChannel(channelRef.current)
+      try {
+        supabase.removeChannel(channelRef.current)
+      } catch (error) {
+        console.log('Error removing existing channel:', error)
+      }
       channelRef.current = null
     }
     
-    // Create channel with a simpler name
-    const channelName = `materials-realtime`
+    // Create a unique channel name to avoid conflicts
+    const channelName = `materials-realtime-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     console.log('Creating new real-time channel:', channelName)
     
     // Set up real-time subscription
@@ -87,44 +91,51 @@ export function useMaterials() {
           })
         }
       )
-      .subscribe((status, err) => {
-        console.log('Real-time subscription status changed to:', status)
-        if (err) {
-          console.error('Real-time subscription error:', err)
-        }
-        if (status === 'SUBSCRIBED') {
-          console.log('Real-time subscription is now active for materials')
-        }
-        if (status === 'CLOSED') {
-          console.log('Real-time subscription was closed')
-        }
-        if (status === 'CHANNEL_ERROR') {
-          console.error('Channel error occurred, attempting to reconnect...')
-          setTimeout(() => {
-            console.log('Reconnecting and fetching materials...')
-            fetchMaterials()
-          }, 2000)
-        }
-        if (status === 'TIMED_OUT') {
-          console.error('Subscription timed out, attempting to reconnect...')
-          setTimeout(() => {
-            console.log('Reconnecting after timeout...')
-            fetchMaterials()
-          }, 1000)
-        }
-      })
 
+    // Store the channel reference immediately
     channelRef.current = channel
+
+    // Subscribe to the channel
+    channel.subscribe((status, err) => {
+      console.log('Real-time subscription status changed to:', status)
+      if (err) {
+        console.error('Real-time subscription error:', err)
+      }
+      if (status === 'SUBSCRIBED') {
+        console.log('Real-time subscription is now active for materials')
+      }
+      if (status === 'CLOSED') {
+        console.log('Real-time subscription was closed')
+      }
+      if (status === 'CHANNEL_ERROR') {
+        console.error('Channel error occurred, attempting to reconnect...')
+        setTimeout(() => {
+          console.log('Reconnecting and fetching materials...')
+          fetchMaterials()
+        }, 2000)
+      }
+      if (status === 'TIMED_OUT') {
+        console.error('Subscription timed out, attempting to reconnect...')
+        setTimeout(() => {
+          console.log('Reconnecting after timeout...')
+          fetchMaterials()
+        }, 1000)
+      }
+    })
 
     return () => {
       console.log('Cleaning up materials subscription on unmount')
       if (channelRef.current) {
         console.log('Removing channel:', channelRef.current)
-        supabase.removeChannel(channelRef.current)
+        try {
+          supabase.removeChannel(channelRef.current)
+        } catch (error) {
+          console.log('Error during cleanup:', error)
+        }
         channelRef.current = null
       }
     }
-  }, []) // Empty dependency array - only run on mount/unmount
+  }, []) // Keep empty dependency array to run only once
 
   return {
     materials,
