@@ -24,8 +24,19 @@ export function useMaterialsCore() {
       }
       console.log('Materials fetched successfully:', data?.length || 0, 'materials')
       
-      // Force completely new object references to ensure React detects changes
-      const freshMaterials = data ? data.map(material => ({ ...material })) : []
+      // Force completely new object references with fresh timestamps
+      const freshTimestamp = Date.now()
+      const freshMaterials = data ? data.map(material => ({
+        ...material,
+        __freshRef: freshTimestamp
+      })) : []
+      
+      console.log('✅ fetchMaterials: Applied fresh refs to all materials:', freshMaterials.map(m => ({
+        id: m.id,
+        name: m.name,
+        __freshRef: (m as any).__freshRef
+      })))
+      
       setMaterials(freshMaterials)
     } catch (error) {
       console.error('Error fetching materials:', error)

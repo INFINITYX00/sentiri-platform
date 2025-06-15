@@ -65,6 +65,7 @@ export function useMaterials() {
         },
         (payload: any) => {
           console.log('Real-time update received:', payload.eventType, payload)
+          const freshTimestamp = Date.now()
           
           if (payload.eventType === 'INSERT') {
             console.log('Adding new material via real-time:', payload.new)
@@ -74,36 +75,73 @@ export function useMaterials() {
                 console.log('Material already exists, skipping duplicate')
                 return prev
               }
-              // Force completely new array with new object references
-              const newMaterial = { ...payload.new, __freshRef: Date.now() } as Material
-              const newMaterials = [newMaterial, ...prev.map(m => ({ ...m, __freshRef: Date.now() }))]
-              console.log('Updated materials list length after insert:', newMaterials.length)
-              console.log('New materials array:', newMaterials.map(m => ({ id: m.id, name: m.name, updated_at: m.updated_at })))
-              return newMaterials
+              // Create completely new material with fresh ref
+              const newMaterial = {
+                ...payload.new,
+                __freshRef: freshTimestamp
+              } as Material & { __freshRef: number }
+              
+              // Create completely new array with fresh refs for all materials
+              const updatedMaterials = [
+                newMaterial,
+                ...prev.map(m => ({
+                  ...m,
+                  __freshRef: freshTimestamp
+                }))
+              ]
+              
+              console.log('✅ INSERT: Updated materials list length:', updatedMaterials.length)
+              console.log('✅ INSERT: Fresh refs applied:', updatedMaterials.map(m => ({ 
+                id: m.id, 
+                name: m.name, 
+                __freshRef: (m as any).__freshRef 
+              })))
+              return updatedMaterials
             })
           } 
           
           if (payload.eventType === 'UPDATE') {
             console.log('Updating material via real-time:', payload.new)
             setMaterialsRef.current(prev => {
-              // Force completely new object references with fresh timestamps
-              const updatedMaterial = { ...payload.new, __freshRef: Date.now() } as Material
-              const newMaterials = prev.map(m => 
-                m.id === payload.new.id ? updatedMaterial : { ...m, __freshRef: Date.now() }
-              )
-              console.log('Updated materials list after update, count:', newMaterials.length)
-              console.log('Updated materials array:', newMaterials.map(m => ({ id: m.id, name: m.name, updated_at: m.updated_at })))
-              console.log('🔄 FORCING RE-RENDER - Materials state updated with fresh references')
-              return newMaterials
+              // Create completely new array with updated material and fresh refs
+              const updatedMaterials = prev.map(m => {
+                if (m.id === payload.new.id) {
+                  return {
+                    ...payload.new,
+                    __freshRef: freshTimestamp
+                  } as Material & { __freshRef: number }
+                } else {
+                  return {
+                    ...m,
+                    __freshRef: freshTimestamp
+                  }
+                }
+              })
+              
+              console.log('✅ UPDATE: Materials updated, count:', updatedMaterials.length)
+              console.log('✅ UPDATE: Fresh refs applied:', updatedMaterials.map(m => ({ 
+                id: m.id, 
+                name: m.name, 
+                updated_at: m.updated_at,
+                __freshRef: (m as any).__freshRef 
+              })))
+              console.log('🚀 FORCING REACT RE-RENDER - All objects have new references')
+              return updatedMaterials
             })
           }
           
           if (payload.eventType === 'DELETE') {
             console.log('Removing material via real-time:', payload.old)
             setMaterialsRef.current(prev => {
-              const newMaterials = prev.filter(m => m.id !== payload.old.id).map(m => ({ ...m, __freshRef: Date.now() }))
-              console.log('Updated materials list length after delete:', newMaterials.length)
-              return newMaterials
+              const updatedMaterials = prev
+                .filter(m => m.id !== payload.old.id)
+                .map(m => ({
+                  ...m,
+                  __freshRef: freshTimestamp
+                }))
+              
+              console.log('✅ DELETE: Updated materials list length:', updatedMaterials.length)
+              return updatedMaterials
             })
           }
         }
@@ -119,10 +157,10 @@ export function useMaterials() {
         console.error('Real-time subscription error:', err)
       }
       if (status === 'SUBSCRIBED') {
-        console.log('Real-time subscription is now active for materials')
+        console.log('✅ Real-time subscription is now active for materials')
       }
       if (status === 'CLOSED') {
-        console.log('Real-time subscription was closed')
+        console.log('❌ Real-time subscription was closed')
       }
       if (status === 'CHANNEL_ERROR') {
         console.error('Channel error occurred, attempting to reconnect...')
