@@ -16,23 +16,21 @@ export function StockManagement() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Section */}
-      <div className="px-8 py-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Material Stock</h1>
-            <p className="text-muted-foreground">Manage your material inventory and track carbon footprints</p>
-          </div>
-          <Button onClick={() => setShowAddDialog(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Material
-          </Button>
-        </div>
-      </div>
-
       {/* Main Content Area */}
-      <div className="px-8 py-4">
+      <div className="px-8 py-6">
         <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header Section - Now inside container */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">Material Stock</h1>
+              <p className="text-muted-foreground">Manage your material inventory and track carbon footprints</p>
+            </div>
+            <Button onClick={() => setShowAddDialog(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Material
+            </Button>
+          </div>
+
           {/* Filter Section - Above the cards */}
           <div className="bg-white rounded-lg border shadow-sm p-4">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">

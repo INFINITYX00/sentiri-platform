@@ -31,21 +31,25 @@ export function DashboardOverview() {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="px-8 py-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Dashboard Overview</h2>
-            <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Dashboard Overview</h2>
+              <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
           </div>
         </div>
         <div className="px-8 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-6">
-                  <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                  <div className="h-8 bg-muted rounded w-1/2"></div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-6">
+                    <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                    <div className="h-8 bg-muted rounded w-1/2"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -54,28 +58,26 @@ export function DashboardOverview() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Section */}
-      <div className="px-8 py-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Real-time insights into your manufacturing operations
-              <span className="ml-2 text-xs">
-                Last updated: {new Date(metrics.lastUpdated).toLocaleTimeString()}
-              </span>
-            </p>
-          </div>
-          <Button variant="outline" size="sm" onClick={refreshMetrics}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-        </div>
-      </div>
-
       {/* Main Content Area */}
-      <div className="px-8 py-4">
+      <div className="px-8 py-6">
         <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header Section - Now inside container */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">Dashboard</h1>
+              <p className="text-muted-foreground">
+                Real-time insights into your manufacturing operations
+                <span className="ml-2 text-xs">
+                  Last updated: {new Date(metrics.lastUpdated).toLocaleTimeString()}
+                </span>
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={refreshMetrics}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+
           {/* Key Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="border-l-4 border-l-blue-500 bg-white">

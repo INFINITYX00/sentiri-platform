@@ -81,23 +81,21 @@ export function AIInsights() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Section */}
-      <div className="px-8 py-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">AI Insights</h1>
-            <p className="text-muted-foreground mt-1">Smart recommendations for sustainable manufacturing</p>
-          </div>
-          <Button className="bg-primary hover:bg-primary/90">
-            <Sparkles className="h-4 w-4 mr-2" />
-            Generate Report
-          </Button>
-        </div>
-      </div>
-
       {/* Main Content Area */}
-      <div className="px-8 py-4">
+      <div className="px-8 py-6">
         <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header Section - Now inside container */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">AI Insights</h1>
+              <p className="text-muted-foreground mt-1">Smart recommendations for sustainable manufacturing</p>
+            </div>
+            <Button className="bg-primary hover:bg-primary/90">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Generate Report
+            </Button>
+          </div>
+
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {trends.map((trend) => (
