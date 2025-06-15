@@ -35,8 +35,8 @@ export function useMaterials() {
       channelRef.current = null
     }
     
-    // Create unique channel name
-    const channelName = `materials-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    // Create channel with a simpler name
+    const channelName = `materials-realtime`
     console.log('Creating new real-time channel:', channelName)
     
     // Set up real-time subscription
@@ -53,6 +53,8 @@ export function useMaterials() {
           console.log('Real-time update received:', payload.eventType, payload)
           
           setMaterials(prev => {
+            console.log('Current materials count before update:', prev.length)
+            
             if (payload.eventType === 'INSERT') {
               console.log('Adding new material via real-time:', payload.new)
               const exists = prev.some(m => m.id === payload.new.id)
@@ -61,7 +63,7 @@ export function useMaterials() {
                 return prev
               }
               const updated = [payload.new as Material, ...prev]
-              console.log('Updated materials list length:', updated.length)
+              console.log('Updated materials list length after insert:', updated.length)
               return updated
             } 
             
@@ -70,7 +72,7 @@ export function useMaterials() {
               const updated = prev.map(m => 
                 m.id === payload.new.id ? payload.new as Material : m
               )
-              console.log('Updated materials list after update')
+              console.log('Updated materials list after update, count:', updated.length)
               return updated
             }
             
@@ -86,32 +88,43 @@ export function useMaterials() {
         }
       )
       .subscribe((status, err) => {
-        console.log('Real-time subscription status:', status)
+        console.log('Real-time subscription status changed to:', status)
         if (err) {
           console.error('Real-time subscription error:', err)
         }
         if (status === 'SUBSCRIBED') {
-          console.log('Real-time subscription active for channel:', channelName)
+          console.log('Real-time subscription is now active for materials')
+        }
+        if (status === 'CLOSED') {
+          console.log('Real-time subscription was closed')
         }
         if (status === 'CHANNEL_ERROR') {
-          console.error('Channel error, attempting to reconnect...')
-          // Attempt to reconnect after a delay
+          console.error('Channel error occurred, attempting to reconnect...')
           setTimeout(() => {
+            console.log('Reconnecting and fetching materials...')
             fetchMaterials()
           }, 2000)
+        }
+        if (status === 'TIMED_OUT') {
+          console.error('Subscription timed out, attempting to reconnect...')
+          setTimeout(() => {
+            console.log('Reconnecting after timeout...')
+            fetchMaterials()
+          }, 1000)
         }
       })
 
     channelRef.current = channel
 
     return () => {
-      console.log('Cleaning up materials subscription')
+      console.log('Cleaning up materials subscription on unmount')
       if (channelRef.current) {
+        console.log('Removing channel:', channelRef.current)
         supabase.removeChannel(channelRef.current)
         channelRef.current = null
       }
     }
-  }, [fetchMaterials, setMaterials])
+  }, []) // Empty dependency array - only run on mount/unmount
 
   return {
     materials,

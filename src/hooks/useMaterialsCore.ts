@@ -10,6 +10,7 @@ export function useMaterialsCore() {
   const channelRef = useRef<any>(null)
 
   const fetchMaterials = useCallback(async () => {
+    console.log('fetchMaterials called - starting fetch')
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -17,8 +18,11 @@ export function useMaterialsCore() {
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      console.log('Materials fetched:', data?.length || 0, 'materials')
+      if (error) {
+        console.error('Error in fetchMaterials:', error)
+        throw error
+      }
+      console.log('Materials fetched successfully:', data?.length || 0, 'materials')
       setMaterials(data || [])
     } catch (error) {
       console.error('Error fetching materials:', error)
@@ -29,10 +33,12 @@ export function useMaterialsCore() {
       })
     } finally {
       setLoading(false)
+      console.log('fetchMaterials completed')
     }
   }, [toast])
 
   const updateMaterial = useCallback(async (id: string, updates: Partial<Material>) => {
+    console.log('updateMaterial called for ID:', id, 'with updates:', updates)
     setLoading(true)
     try {
       const { error } = await supabase
@@ -40,9 +46,12 @@ export function useMaterialsCore() {
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', id)
 
-      if (error) throw error
+      if (error) {
+        console.error('Error in updateMaterial:', error)
+        throw error
+      }
 
-      console.log('Material updated successfully, real-time will handle UI update')
+      console.log('Material updated successfully in database, real-time should handle UI update')
       
       toast({
         title: "Success",
@@ -61,18 +70,20 @@ export function useMaterialsCore() {
   }, [toast])
 
   const deleteMaterial = useCallback(async (id: string) => {
+    console.log('deleteMaterial called for ID:', id)
     setLoading(true)
     try {
-      console.log('Deleting material:', id)
-      
       const { error } = await supabase
         .from('materials')
         .delete()
         .eq('id', id)
 
-      if (error) throw error
+      if (error) {
+        console.error('Error in deleteMaterial:', error)
+        throw error
+      }
 
-      console.log('Material deleted, real-time will handle UI update')
+      console.log('Material deleted successfully from database, real-time should handle UI update')
       
       toast({
         title: "Success",
