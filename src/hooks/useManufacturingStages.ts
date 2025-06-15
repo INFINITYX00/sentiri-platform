@@ -66,11 +66,6 @@ export function useManufacturingStages() {
       if (error) throw error
 
       setStages(prev => [...prev, data])
-      toast({
-        title: "Success",
-        description: "Manufacturing stage added successfully",
-      })
-
       return data
     } catch (error) {
       console.error('Error adding manufacturing stage:', error)
@@ -83,7 +78,7 @@ export function useManufacturingStages() {
     }
   }, [toast])
 
-  const updateStage = useCallback(async (id: string, updates: Partial<ManufacturingStage>) => {
+  const updateStage = useCallback(async (id: string, updates: Partial<ManufacturingStage>, showToast: boolean = false) => {
     try {
       const { data, error } = await supabase
         .from('manufacturing_stages')
@@ -95,10 +90,14 @@ export function useManufacturingStages() {
       if (error) throw error
 
       setStages(prev => prev.map(stage => stage.id === id ? data : stage))
-      toast({
-        title: "Success",
-        description: "Manufacturing stage updated successfully",
-      })
+      
+      // Only show toast if explicitly requested (for major milestones)
+      if (showToast) {
+        toast({
+          title: "Success",
+          description: "Stage updated successfully",
+        })
+      }
 
       return data
     } catch (error) {
@@ -113,82 +112,97 @@ export function useManufacturingStages() {
   }, [toast])
 
   const createDefaultStages = useCallback(async (projectId: string) => {
-    const defaultStages = [
-      {
-        project_id: projectId,
-        stage_id: 'planning',
-        name: 'Planning & Design',
-        status: 'pending',
-        progress: 0,
-        estimated_hours: 8,
-        actual_hours: 0,
-        energy_estimate: 2,
-        actual_energy: 0,
-        workers: []
-      },
-      {
-        project_id: projectId,
-        stage_id: 'material_prep',
-        name: 'Material Preparation',
-        status: 'pending',
-        progress: 0,
-        estimated_hours: 4,
-        actual_hours: 0,
-        energy_estimate: 5,
-        actual_energy: 0,
-        workers: []
-      },
-      {
-        project_id: projectId,
-        stage_id: 'manufacturing',
-        name: 'Manufacturing',
-        status: 'pending',
-        progress: 0,
-        estimated_hours: 16,
-        actual_hours: 0,
-        energy_estimate: 20,
-        actual_energy: 0,
-        workers: []
-      },
-      {
-        project_id: projectId,
-        stage_id: 'assembly',
-        name: 'Assembly',
-        status: 'pending',
-        progress: 0,
-        estimated_hours: 8,
-        actual_hours: 0,
-        energy_estimate: 8,
-        actual_energy: 0,
-        workers: []
-      },
-      {
-        project_id: projectId,
-        stage_id: 'quality_control',
-        name: 'Quality Control',
-        status: 'pending',
-        progress: 0,
-        estimated_hours: 4,
-        actual_hours: 0,
-        energy_estimate: 2,
-        actual_energy: 0,
-        workers: []
-      },
-      {
-        project_id: projectId,
-        stage_id: 'finishing',
-        name: 'Finishing',
-        status: 'pending',
-        progress: 0,
-        estimated_hours: 6,
-        actual_hours: 0,
-        energy_estimate: 4,
-        actual_energy: 0,
-        workers: []
-      }
-    ]
-
     try {
+      // First check if stages already exist for this project
+      const { data: existingStages, error: checkError } = await supabase
+        .from('manufacturing_stages')
+        .select('id')
+        .eq('project_id', projectId)
+        .limit(1)
+
+      if (checkError) throw checkError
+
+      // If stages already exist, don't create duplicates
+      if (existingStages && existingStages.length > 0) {
+        console.log('Manufacturing stages already exist for project:', projectId)
+        return existingStages
+      }
+
+      const defaultStages = [
+        {
+          project_id: projectId,
+          stage_id: 'planning',
+          name: 'Planning & Design',
+          status: 'pending',
+          progress: 0,
+          estimated_hours: 8,
+          actual_hours: 0,
+          energy_estimate: 2,
+          actual_energy: 0,
+          workers: []
+        },
+        {
+          project_id: projectId,
+          stage_id: 'material_prep',
+          name: 'Material Preparation',
+          status: 'pending',
+          progress: 0,
+          estimated_hours: 4,
+          actual_hours: 0,
+          energy_estimate: 5,
+          actual_energy: 0,
+          workers: []
+        },
+        {
+          project_id: projectId,
+          stage_id: 'manufacturing',
+          name: 'Manufacturing',
+          status: 'pending',
+          progress: 0,
+          estimated_hours: 16,
+          actual_hours: 0,
+          energy_estimate: 20,
+          actual_energy: 0,
+          workers: []
+        },
+        {
+          project_id: projectId,
+          stage_id: 'assembly',
+          name: 'Assembly',
+          status: 'pending',
+          progress: 0,
+          estimated_hours: 8,
+          actual_hours: 0,
+          energy_estimate: 8,
+          actual_energy: 0,
+          workers: []
+        },
+        {
+          project_id: projectId,
+          stage_id: 'quality_control',
+          name: 'Quality Control',
+          status: 'pending',
+          progress: 0,
+          estimated_hours: 4,
+          actual_hours: 0,
+          energy_estimate: 2,
+          actual_energy: 0,
+          workers: []
+        },
+        {
+          project_id: projectId,
+          stage_id: 'finishing',
+          name: 'Finishing',
+          status: 'pending',
+          progress: 0,
+          estimated_hours: 6,
+          actual_hours: 0,
+          energy_estimate: 4,
+          actual_energy: 0,
+          workers: []
+        }
+      ]
+
       const { data, error } = await supabase
         .from('manufacturing_stages')
         .insert(defaultStages)
@@ -197,12 +211,23 @@ export function useManufacturingStages() {
       if (error) throw error
 
       setStages(prev => [...prev, ...data])
+      
+      toast({
+        title: "Success",
+        description: "Manufacturing stages created successfully",
+      })
+      
       return data
     } catch (error) {
       console.error('Error creating default stages:', error)
+      toast({
+        title: "Error",
+        description: "Failed to create manufacturing stages",
+        variant: "destructive"
+      })
       return null
     }
-  }, [])
+  }, [toast])
 
   return {
     stages,

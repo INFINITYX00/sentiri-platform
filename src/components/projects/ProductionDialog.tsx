@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -68,12 +67,12 @@ export function ProductionDialog({ projectId, open, onClose }: ProductionDialogP
       progress: 10
     })
 
-    // Start the first stage
+    // Start the first stage (don't show toast for this operation)
     if (projectStages.length > 0) {
       await updateStage(projectStages[0].id, {
         status: 'in_progress',
         start_date: new Date().toISOString().split('T')[0]
-      })
+      }, false)
     }
 
     onClose()
@@ -83,11 +82,12 @@ export function ProductionDialog({ projectId, open, onClose }: ProductionDialogP
     const stage = projectStages.find(s => s.id === stageId)
     if (!stage) return
 
+    // Show toast only for stage completion
     await updateStage(stageId, {
       status: 'completed',
       progress: 100,
       completed_date: new Date().toISOString().split('T')[0]
-    })
+    }, true)
 
     // Check if all stages are completed
     const updatedStages = projectStages.map(s => 
@@ -109,7 +109,7 @@ export function ProductionDialog({ projectId, open, onClose }: ProductionDialogP
         await updateStage(nextStage.id, {
           status: 'in_progress',
           start_date: new Date().toISOString().split('T')[0]
-        })
+        }, false)
       }
 
       // Update project progress
@@ -202,10 +202,11 @@ export function ProductionDialog({ projectId, open, onClose }: ProductionDialogP
   }
 
   const updateStageProgress = async (stageId: string, actualHours: number, actualEnergy: number) => {
+    // Don't show toast for progress updates
     await updateStage(stageId, {
       actual_hours: actualHours,
       actual_energy: actualEnergy
-    })
+    }, false)
   }
 
   if (!project) return null

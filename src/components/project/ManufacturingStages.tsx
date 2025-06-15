@@ -130,29 +130,32 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
 
   const handleStartStage = useCallback(async (stage: ManufacturingStage) => {
     console.log('🚀 Starting stage:', stage.name)
+    // Don't show toast for stage start
     await updateStage(stage.id, {
       status: 'in_progress',
       start_date: new Date().toISOString().split('T')[0]
-    });
+    }, false);
   }, [updateStage]);
 
   const handleCompleteStage = useCallback(async (stage: ManufacturingStage) => {
     console.log('✅ Completing stage:', stage.name)
+    // Show toast only for stage completion (major milestone)
     await updateStage(stage.id, {
       status: 'completed',
       progress: 100,
       completed_date: new Date().toISOString().split('T')[0]
-    });
+    }, true);
   }, [updateStage]);
 
   const handleProgressUpdate = useCallback(async (stage: ManufacturingStage, progress: number) => {
     const newProgress = Math.min(100, Math.max(0, progress));
     console.log('📈 Updating stage progress:', stage.name, 'to', newProgress + '%')
     
+    // Don't show toast for progress updates
     await updateStage(stage.id, {
       progress: newProgress,
       status: newProgress === 100 ? 'completed' : 'in_progress'
-    });
+    }, false);
   }, [updateStage]);
 
   const handleEditStage = useCallback((stage: ManufacturingStage) => {
@@ -166,7 +169,8 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
   }, []);
 
   const handleSaveEdit = useCallback(async (stageId: string) => {
-    await updateStage(stageId, editForm);
+    // Don't show toast for detail edits
+    await updateStage(stageId, editForm, false);
     setEditingStage(null);
   }, [updateStage, editForm]);
 
