@@ -33,7 +33,7 @@ export const uploadFile = async (
       console.error('❌ Upload error:', uploadError);
       console.error('Upload error details:', {
         message: uploadError.message,
-        statusCode: uploadError.statusCode
+        error: uploadError
       });
       return {
         url: null,
@@ -58,8 +58,8 @@ export const uploadFile = async (
   } catch (error) {
     console.error('💥 File upload failed with exception:', error);
     console.error('Exception details:', {
-      message: error.message,
-      stack: error.stack
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
     });
     return {
       url: null,
