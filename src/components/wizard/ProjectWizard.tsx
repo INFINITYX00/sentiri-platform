@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -43,21 +42,12 @@ export function ProjectWizard() {
   const [generatedPassportId, setGeneratedPassportId] = useState<string | null>(null)
   const [isGeneratingPassport, setIsGeneratingPassport] = useState(false)
   const [showPassportDetail, setShowPassportDetail] = useState(false)
+  const [isSelectingProject, setIsSelectingProject] = useState(false)
   
-  const { projects, updateProject } = useProjects()
+  const { projects, updateProject, refreshProjects } = useProjects()
   const { generateProductPassport, productPassports } = useProductPassports()
   const { stages, fetchStages } = useManufacturingStages()
   const { toast } = useToast()
-
-  // Debounced toast to prevent flashing messages
-  const [lastToastTime, setLastToastTime] = useState(0)
-  const showToast = useCallback((title: string, description: string, variant?: "default" | "destructive") => {
-    const now = Date.now()
-    if (now - lastToastTime > 2000) { // Prevent toasts within 2 seconds
-      toast({ title, description, variant })
-      setLastToastTime(now)
-    }
-  }, [toast, lastToastTime])
 
   const getProjectSteps = (): WizardStep[] => {
     const project = selectedProject ? projects.find(p => p.id === selectedProject) : null
@@ -142,10 +132,33 @@ export function ProjectWizard() {
   }, [selectedProject, fetchStages])
 
   const handleProjectSelect = async (projectId: string) => {
-    setSelectedProject(projectId)
-    const project = projects.find(p => p.id === projectId)
+    setIsSelectingProject(true)
+    console.log('ProjectWizard: Selecting project:', projectId)
     
-    if (project) {
+    try {
+      // First, refresh the projects list to ensure we have the latest data
+      await refreshProjects()
+      
+      // Small delay to ensure state is fully updated
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Find the project in the refreshed list
+      const updatedProjects = await refreshProjects()
+      const project = updatedProjects?.find(p => p.id === projectId) || projects.find(p => p.id === projectId)
+      
+      if (!project) {
+        console.error('Project not found after refresh:', projectId)
+        toast({
+          title: "Error",
+          description: "Project not found. Please try again.",
+          variant: "destructive"
+        })
+        return
+      }
+
+      console.log('ProjectWizard: Project found:', project.name, 'Status:', project.status)
+      setSelectedProject(projectId)
+      
       // Check if product passport already exists
       const existingPassport = productPassports.find(p => p.project_id === projectId)
       if (existingPassport) {
@@ -168,6 +181,22 @@ export function ProjectWizard() {
       } else if (allStagesCompleted) {
         setCurrentStep(4) // Quality control
       }
+
+      console.log('ProjectWizard: Project selected successfully, moving to step:', currentStep)
+      
+      toast({
+        title: "Project Selected",
+        description: `${project.name} is now active in the wizard`,
+      })
+    } catch (error) {
+      console.error('Error selecting project:', error)
+      toast({
+        title: "Error",
+        description: "Failed to select project. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsSelectingProject(false)
     }
   }
 
@@ -191,7 +220,10 @@ export function ProjectWizard() {
       if (allStagesCompleted) {
         await updateProject(selectedProject, { status: 'completed', progress: 100 })
         setCurrentStep(4) // Move to quality control
-        showToast("Manufacturing Complete", "All manufacturing stages have been completed successfully!")
+        toast({
+          title: "Manufacturing Complete",
+          description: "All manufacturing stages have been completed successfully!"
+        })
       }
     }
   }
@@ -247,11 +279,18 @@ export function ProjectWizard() {
 
         setGeneratedPassportId(passport.id)
         setCurrentStep(5) // Move to product passport step
-        showToast("Success", "Product passport generated successfully!")
+        toast({
+          title: "Success",
+          description: "Product passport generated successfully!"
+        })
       }
     } catch (error) {
       console.error('Error generating product passport:', error)
-      showToast("Error", "Failed to generate product passport", "destructive")
+      toast({
+        title: "Error",
+        description: "Failed to generate product passport",
+        variant: "destructive"
+      })
     } finally {
       setIsGeneratingPassport(false)
     }
@@ -278,7 +317,11 @@ export function ProjectWizard() {
         URL.revokeObjectURL(url)
       } catch (error) {
         console.error('Error downloading QR code:', error)
-        showToast("Error", "Failed to download QR code", "destructive")
+        toast({
+          title: "Error",
+          description: "Failed to download QR code",
+          variant: "destructive"
+        })
       }
     }
   }
@@ -307,7 +350,16 @@ export function ProjectWizard() {
     
     switch (currentStepData.id) {
       case 'project-setup':
-        return <ProjectsManager onProjectSelect={handleProjectSelect} />
+        return (
+          <div>
+            {isSelectingProject && (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-blue-800">Selecting project...</p>
+              </div>
+            )}
+            <ProjectsManager onProjectSelect={handleProjectSelect} />
+          </div>
+        )
       case 'bom-creation':
         return selectedProject ? (
           <DesignBOMManager 

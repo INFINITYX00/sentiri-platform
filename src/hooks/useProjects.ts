@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -54,6 +53,7 @@ export function useProjects() {
       if (error) throw error
       console.log('Projects fetched:', data?.length || 0)
       setProjects(data || [])
+      return data || []
     } catch (error) {
       console.error('Error fetching projects:', error)
       toast({
@@ -61,6 +61,7 @@ export function useProjects() {
         description: "Failed to fetch projects",
         variant: "destructive"
       })
+      return []
     } finally {
       setLoading(false)
     }
@@ -78,7 +79,9 @@ export function useProjects() {
       if (error) throw error
 
       console.log('Project created:', data.id)
-      await fetchProjects()
+      
+      // Immediately update local state
+      setProjects(prev => [data, ...prev])
       
       toast({
         title: "Success",
