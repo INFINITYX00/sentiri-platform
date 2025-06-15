@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,8 @@ import {
   AlertCircle,
   Zap,
   Play,
-  Pause
+  Pause,
+  Plus
 } from "lucide-react";
 import { useManufacturingStages, ManufacturingStage } from '@/hooks/useManufacturingStages';
 import { ManufacturingStagesSkeleton } from '@/components/manufacturing/ManufacturingStagesSkeleton';
@@ -27,8 +27,9 @@ interface ManufacturingStagesProps {
 }
 
 export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingStagesProps) {
-  const { stages, loading, updateStage, fetchStages } = useManufacturingStages();
+  const { stages, loading, updateStage, fetchStages, createDefaultStages } = useManufacturingStages();
   const [editingStage, setEditingStage] = useState<string | null>(null);
+  const [isCreatingStages, setIsCreatingStages] = useState(false);
   const [editForm, setEditForm] = useState({
     actual_hours: 0,
     actual_energy: 0,
@@ -61,6 +62,16 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
       debouncedOnStageUpdate(stages);
     }
   }, [stages, debouncedOnStageUpdate]);
+
+  const handleCreateDefaultStages = async () => {
+    setIsCreatingStages(true);
+    try {
+      await createDefaultStages(projectId);
+      await fetchStages(projectId); // Refresh the stages list
+    } finally {
+      setIsCreatingStages(false);
+    }
+  };
 
   // Memoized calculations to prevent unnecessary re-renders
   const stageMetrics = useMemo(() => {
@@ -156,10 +167,29 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
 
   if (stages.length === 0) {
     return (
-      <div className="text-center py-8">
+      <div className="text-center py-12">
         <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h3 className="text-lg font-semibold mb-2">No Manufacturing Stages</h3>
-        <p className="text-muted-foreground">Manufacturing stages will be created when production starts.</p>
+        <p className="text-muted-foreground mb-6">
+          Create manufacturing stages to start tracking your production process.
+        </p>
+        <Button 
+          onClick={handleCreateDefaultStages}
+          disabled={isCreatingStages}
+          size="lg"
+        >
+          {isCreatingStages ? (
+            <>
+              <Clock className="h-4 w-4 mr-2 animate-spin" />
+              Creating Stages...
+            </>
+          ) : (
+            <>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Manufacturing Stages
+            </>
+          )}
+        </Button>
       </div>
     );
   }

@@ -21,6 +21,7 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
   const [materialDialogOpen, setMaterialDialogOpen] = useState(false)
   const [productionDialogOpen, setProductionDialogOpen] = useState(false)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [isCreatingProject, setIsCreatingProject] = useState(false)
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
@@ -36,21 +37,31 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
   const handleCreateProject = async () => {
     if (!newProject.name.trim()) return
 
-    const created = await addProject(newProject)
-    if (created) {
-      setIsCreateDialogOpen(false)
-      setNewProject({
-        name: '',
-        description: '',
-        status: 'planning',
-        progress: 0,
-        total_cost: 0,
-        total_carbon_footprint: 0,
-        allocated_materials: []
-      })
-      if (onProjectSelect) {
-        onProjectSelect(created.id)
+    setIsCreatingProject(true)
+    try {
+      const created = await addProject(newProject)
+      if (created) {
+        setIsCreateDialogOpen(false)
+        setNewProject({
+          name: '',
+          description: '',
+          status: 'planning',
+          progress: 0,
+          total_cost: 0,
+          total_carbon_footprint: 0,
+          allocated_materials: []
+        })
+        
+        // Force refresh the projects list to ensure the new project is available
+        await refreshProjects()
+        
+        // Now select the project after ensuring it's in the list
+        if (onProjectSelect) {
+          onProjectSelect(created.id)
+        }
       }
+    } finally {
+      setIsCreatingProject(false)
     }
   }
 
@@ -117,9 +128,9 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button disabled={isCreatingProject}>
               <Plus className="h-4 w-4 mr-2" />
-              New Project
+              {isCreatingProject ? "Creating..." : "New Project"}
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -145,8 +156,12 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
                   placeholder="Describe your project"
                 />
               </div>
-              <Button onClick={handleCreateProject} className="w-full">
-                Create Project
+              <Button 
+                onClick={handleCreateProject} 
+                className="w-full"
+                disabled={isCreatingProject || !newProject.name.trim()}
+              >
+                {isCreatingProject ? "Creating Project..." : "Create Project"}
               </Button>
             </div>
           </DialogContent>
