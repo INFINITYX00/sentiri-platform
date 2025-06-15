@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -74,7 +75,7 @@ export function ProjectsManager() {
   }
 
   return (
-    <div className="flex-1 bg-gray-50 p-6 space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <div>
@@ -89,7 +90,7 @@ export function ProjectsManager() {
 
       {/* Create Project Form */}
       {showCreateForm && (
-        <Card className="border-dashed bg-white shadow-sm">
+        <Card className="border-dashed">
           <CardHeader>
             <CardTitle className="text-lg">Create New Project</CardTitle>
           </CardHeader>
@@ -126,7 +127,7 @@ export function ProjectsManager() {
       {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (
-          <Card key={project.id} className="bg-white hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500">
+          <Card key={project.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
@@ -212,7 +213,7 @@ export function ProjectsManager() {
         ))}
 
         {projects.length === 0 && !loading && (
-          <Card className="col-span-full border-dashed bg-white shadow-sm">
+          <Card className="col-span-full border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Package className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
