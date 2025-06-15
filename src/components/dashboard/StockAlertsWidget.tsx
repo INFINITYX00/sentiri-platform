@@ -17,6 +17,10 @@ interface StockAlertsWidgetProps {
 }
 
 export function StockAlertsWidget({ stockAlerts }: StockAlertsWidgetProps) {
+  const handleManageStock = () => {
+    window.location.hash = '#stock';
+  };
+
   return (
     <DashboardWidget title="Stock Alerts" icon={<AlertTriangle className="h-4 w-4" />}>
       <div className="space-y-3">
@@ -35,7 +39,12 @@ export function StockAlertsWidget({ stockAlerts }: StockAlertsWidgetProps) {
                 </div>
               </div>
             ))}
-            <Button variant="ghost" size="sm" className="w-full">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full"
+              onClick={handleManageStock}
+            >
               Manage Stock <ArrowRight className="h-3 w-3 ml-1" />
             </Button>
           </>

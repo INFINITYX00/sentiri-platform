@@ -12,13 +12,16 @@ import {
   DollarSign,
   Zap,
   Recycle,
-  RefreshCw
+  RefreshCw,
+  Users,
+  Activity
 } from "lucide-react";
 import { useDynamicDashboardMetrics } from "@/hooks/useDynamicDashboardMetrics";
 import { ActiveProjectsWidget } from "./ActiveProjectsWidget";
 import { StockAlertsWidget } from "./StockAlertsWidget";
 import { RecentPassportsWidget } from "./RecentPassportsWidget";
 import { QuickActionsWidget } from "./QuickActionsWidget";
+import { ManufacturingStatusWidget } from "./ManufacturingStatusWidget";
 import { DashboardWidget } from "./DashboardWidget";
 
 export function DashboardOverview() {
@@ -98,26 +101,89 @@ export function DashboardOverview() {
 
             <Card className="border-l-4 border-l-orange-500 bg-white">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Materials</CardTitle>
-                <Package className="h-4 w-4 text-orange-500" />
+                <CardTitle className="text-sm font-medium">Production Status</CardTitle>
+                <Activity className="h-4 w-4 text-orange-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{metrics.totalMaterials}</div>
+                <div className="text-2xl font-bold">{metrics.activeStages}</div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics.lowStockMaterials} need restocking
+                  {metrics.workersActive} workers active
                 </p>
               </CardContent>
             </Card>
 
             <Card className="border-l-4 border-l-purple-500 bg-white">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Investment</CardTitle>
-                <DollarSign className="h-4 w-4 text-purple-500" />
+                <CardTitle className="text-sm font-medium">Efficiency</CardTitle>
+                <TrendingUp className="h-4 w-4 text-purple-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${metrics.totalCost.toFixed(0)}</div>
+                <div className="text-2xl font-bold">{metrics.productionEfficiency.toFixed(0)}%</div>
                 <p className="text-xs text-muted-foreground">
-                  Across all projects
+                  Production efficiency
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Secondary Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Materials</p>
+                    <p className="text-xl font-bold">{metrics.totalMaterials}</p>
+                  </div>
+                  <Package className="h-5 w-5 text-blue-400" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {metrics.lowStockMaterials} need restocking
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Investment</p>
+                    <p className="text-xl font-bold">${metrics.totalCost.toFixed(0)}</p>
+                  </div>
+                  <DollarSign className="h-5 w-5 text-green-400" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total project value
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Energy Used</p>
+                    <p className="text-xl font-bold">{metrics.energyConsumed.toFixed(0)}</p>
+                  </div>
+                  <Zap className="h-5 w-5 text-yellow-400" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  kWh consumed
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Waste Reduction</p>
+                    <p className="text-xl font-bold">{metrics.wasteReduction.toFixed(0)}%</p>
+                  </div>
+                  <Recycle className="h-5 w-5 text-primary" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Material efficiency
                 </p>
               </CardContent>
             </Card>
@@ -127,28 +193,7 @@ export function DashboardOverview() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <ActiveProjectsWidget projects={metrics.activeProjectsList} />
-              
-              {/* Production Status */}
-              <DashboardWidget title="Production Status" icon={<TrendingUp className="h-4 w-4" />}>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{metrics.activeProjects}</div>
-                    <p className="text-xs text-muted-foreground">In Progress</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-yellow-600">{metrics.energyConsumed.toFixed(0)}</div>
-                    <p className="text-xs text-muted-foreground">kWh Used</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{metrics.wasteReduction.toFixed(0)}%</div>
-                    <p className="text-xs text-muted-foreground">Efficiency</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">{metrics.averageProjectDuration.toFixed(0)}</div>
-                    <p className="text-xs text-muted-foreground">Avg Days</p>
-                  </div>
-                </div>
-              </DashboardWidget>
+              <ManufacturingStatusWidget stages={metrics.manufacturingStages} />
             </div>
 
             <div className="space-y-6">
@@ -167,11 +212,13 @@ export function DashboardOverview() {
               <div className="space-y-4">
                 {metrics.recentActivity.length > 0 ? (
                   metrics.recentActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-center space-x-3 p-3 rounded-lg bg-muted/30">
+                    <div key={`${activity.type}-${activity.id}`} className="flex items-center space-x-3 p-3 rounded-lg bg-muted/30">
                       <div className="flex-shrink-0">
                         {activity.type === 'project' && <Factory className="h-4 w-4 text-blue-500" />}
                         {activity.type === 'material' && <Package className="h-4 w-4 text-green-500" />}
                         {activity.type === 'production' && <TrendingUp className="h-4 w-4 text-orange-500" />}
+                        {activity.type === 'stage' && <Activity className="h-4 w-4 text-purple-500" />}
+                        {activity.type === 'passport' && <Leaf className="h-4 w-4 text-primary" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-900">{activity.description}</p>

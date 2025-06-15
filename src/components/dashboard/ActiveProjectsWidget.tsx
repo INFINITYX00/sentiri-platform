@@ -31,6 +31,10 @@ export function ActiveProjectsWidget({ projects }: ActiveProjectsWidgetProps) {
     }
   }
 
+  const handleViewAllProjects = () => {
+    window.location.hash = '#projects';
+  };
+
   return (
     <DashboardWidget title="Active Projects" icon={<Factory className="h-4 w-4" />}>
       <div className="space-y-3">
@@ -51,7 +55,12 @@ export function ActiveProjectsWidget({ projects }: ActiveProjectsWidgetProps) {
                 </div>
               </div>
             ))}
-            <Button variant="ghost" size="sm" className="w-full">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full"
+              onClick={handleViewAllProjects}
+            >
               View All Projects <ArrowRight className="h-3 w-3 ml-1" />
             </Button>
           </>
