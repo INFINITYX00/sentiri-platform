@@ -32,20 +32,32 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [materialToEdit, setMaterialToEdit] = useState<Material | null>(null);
-  const [renderTimestamp, setRenderTimestamp] = useState(Date.now());
+  const [forceRefreshKey, setForceRefreshKey] = useState(Date.now());
 
-  // Debug: Log materials received by StockGrid
+  // Debug: Log materials received by StockGrid with more detail
   console.log('🎯 StockGrid received materials from hook:', materials.length, materials.map(m => ({ 
     id: m.id, 
     name: m.name, 
-    updated_at: m.updated_at 
+    updated_at: m.updated_at,
+    __freshRef: (m as any).__freshRef
   })));
 
-  // Force re-render when materials change with a timestamp-based approach
+  // Force re-render when materials change - more aggressive approach
   useEffect(() => {
-    console.log('📊 StockGrid materials changed, forcing re-render. Count:', materials.length)
-    setRenderTimestamp(Date.now());
+    console.log('📊 StockGrid materials changed, forcing aggressive re-render. Count:', materials.length)
+    setForceRefreshKey(Date.now());
   }, [materials])
+
+  // Additional effect to catch any missed updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentTime = Date.now();
+      console.log('🔄 Periodic force refresh check at:', currentTime);
+      setForceRefreshKey(currentTime);
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Direct filtering without useMemo to ensure fresh data on every render
   const filteredItems = materials.filter(item => {
@@ -63,7 +75,8 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   console.log('🔍 Filtered items after direct filter:', filteredItems.length, filteredItems.map(item => ({ 
     id: item.id, 
     name: item.name, 
-    updated_at: item.updated_at 
+    updated_at: item.updated_at,
+    __freshRef: (item as any).__freshRef
   })));
 
   if (loading) {
@@ -128,18 +141,19 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
 
   return (
     <>
-      <div key={`grid-${renderTimestamp}`} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div key={`grid-${forceRefreshKey}`} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredItems.map((item, index) => {
           const allocation = allocations.find(a => a.material_id === item.id);
           
-          // Use timestamp-based key to guarantee uniqueness and force re-render
-          const cardKey = `${item.id}-${item.updated_at}-${renderTimestamp}-${index}`;
+          // Use multiple factors for unique key generation to force re-render
+          const cardKey = `${item.id}-${item.updated_at}-${forceRefreshKey}-${index}-${(item as any).__freshRef || 'no-ref'}`;
           console.log(`🔍 Rendering card ${index + 1}/${filteredItems.length}:`, { 
             id: item.id, 
             name: item.name, 
             updated_at: item.updated_at,
             key: cardKey,
-            renderTimestamp
+            forceRefreshKey,
+            __freshRef: (item as any).__freshRef
           });
           
           return (

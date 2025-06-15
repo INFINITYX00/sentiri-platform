@@ -23,7 +23,10 @@ export function useMaterialsCore() {
         throw error
       }
       console.log('Materials fetched successfully:', data?.length || 0, 'materials')
-      setMaterials(data || [])
+      
+      // Force completely new object references to ensure React detects changes
+      const freshMaterials = data ? data.map(material => ({ ...material })) : []
+      setMaterials(freshMaterials)
     } catch (error) {
       console.error('Error fetching materials:', error)
       toast({

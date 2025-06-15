@@ -75,8 +75,8 @@ export function useMaterials() {
                 return prev
               }
               // Force completely new array with new object references
-              const newMaterial = JSON.parse(JSON.stringify(payload.new)) as Material
-              const newMaterials = [newMaterial, ...prev.map(m => ({ ...m }))]
+              const newMaterial = { ...payload.new, __freshRef: Date.now() } as Material
+              const newMaterials = [newMaterial, ...prev.map(m => ({ ...m, __freshRef: Date.now() }))]
               console.log('Updated materials list length after insert:', newMaterials.length)
               console.log('New materials array:', newMaterials.map(m => ({ id: m.id, name: m.name, updated_at: m.updated_at })))
               return newMaterials
@@ -86,14 +86,14 @@ export function useMaterials() {
           if (payload.eventType === 'UPDATE') {
             console.log('Updating material via real-time:', payload.new)
             setMaterialsRef.current(prev => {
-              // Force completely new object references
-              const updatedMaterial = JSON.parse(JSON.stringify(payload.new)) as Material
+              // Force completely new object references with fresh timestamps
+              const updatedMaterial = { ...payload.new, __freshRef: Date.now() } as Material
               const newMaterials = prev.map(m => 
-                m.id === payload.new.id ? updatedMaterial : { ...m }
+                m.id === payload.new.id ? updatedMaterial : { ...m, __freshRef: Date.now() }
               )
               console.log('Updated materials list after update, count:', newMaterials.length)
               console.log('Updated materials array:', newMaterials.map(m => ({ id: m.id, name: m.name, updated_at: m.updated_at })))
-              console.log('🔄 FORCING RE-RENDER - Materials state updated')
+              console.log('🔄 FORCING RE-RENDER - Materials state updated with fresh references')
               return newMaterials
             })
           }
@@ -101,7 +101,7 @@ export function useMaterials() {
           if (payload.eventType === 'DELETE') {
             console.log('Removing material via real-time:', payload.old)
             setMaterialsRef.current(prev => {
-              const newMaterials = prev.filter(m => m.id !== payload.old.id)
+              const newMaterials = prev.filter(m => m.id !== payload.old.id).map(m => ({ ...m, __freshRef: Date.now() }))
               console.log('Updated materials list length after delete:', newMaterials.length)
               return newMaterials
             })
@@ -154,9 +154,14 @@ export function useMaterials() {
     }
   }, []) // NO dependencies - subscription is created once and stays stable
 
-  // Debug effect to track materials changes
+  // Debug effect to track materials changes with more detail
   useEffect(() => {
-    console.log('🎯 Materials state changed in useMaterials:', materials.length, materials.map(m => ({ id: m.id, name: m.name, updated_at: m.updated_at })))
+    console.log('🎯 Materials state changed in useMaterials:', materials.length, materials.map(m => ({ 
+      id: m.id, 
+      name: m.name, 
+      updated_at: m.updated_at,
+      __freshRef: (m as any).__freshRef 
+    })))
   }, [materials])
 
   return {
