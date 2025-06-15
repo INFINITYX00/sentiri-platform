@@ -1,10 +1,9 @@
 
 import { useState } from "react";
-import { Plus, Search, Filter } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StockGrid } from "./StockGrid";
 import { AddMaterialDialog } from "./AddMaterialDialog";
 
@@ -30,46 +29,39 @@ export function StockManagement() {
       </div>
 
       {/* Main Content with proper spacing */}
-      <div className="px-8 py-8">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <Card className="bg-white/90 backdrop-blur-sm border border-emerald-100">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Filters
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search materials..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <SelectValue placeholder="Filter by type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="wood">Wood</SelectItem>
-                    <SelectItem value="reclaimed_wood">Reclaimed Wood</SelectItem>
-                    <SelectItem value="metal">Metal</SelectItem>
-                    <SelectItem value="plastic">Plastic</SelectItem>
-                    <SelectItem value="fabric">Fabric</SelectItem>
-                    <SelectItem value="glass">Glass</SelectItem>
-                    <SelectItem value="ceramic">Ceramic</SelectItem>
-                    <SelectItem value="composite">Composite</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+      <div className="px-8 py-4">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Compact Filter Section */}
+          <div className="bg-white/90 backdrop-blur-sm border border-emerald-100 rounded-lg p-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search materials..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-            </CardContent>
-          </Card>
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="wood">Wood</SelectItem>
+                  <SelectItem value="reclaimed_wood">Reclaimed Wood</SelectItem>
+                  <SelectItem value="metal">Metal</SelectItem>
+                  <SelectItem value="plastic">Plastic</SelectItem>
+                  <SelectItem value="fabric">Fabric</SelectItem>
+                  <SelectItem value="glass">Glass</SelectItem>
+                  <SelectItem value="ceramic">Ceramic</SelectItem>
+                  <SelectItem value="composite">Composite</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           <StockGrid 
             searchQuery={searchQuery} 
