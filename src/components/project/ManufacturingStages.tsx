@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
     workers: [] as string[]
   });
 
-  // Memoized debounced stage update callback
+  // Enhanced debounced stage update callback with longer delay to prevent spam
   const debouncedOnStageUpdate = useCallback(
     (() => {
       let timeoutId: NodeJS.Timeout;
@@ -48,7 +47,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
           console.log('🔔 Manufacturing stages updated, notifying parent:', stages.length, 'stages')
           console.log('🔍 Stage completion status:', stages.map(s => ({ name: s.name, status: s.status, progress: s.progress })))
           onStageUpdate(stages)
-        }, 300);
+        }, 1000); // Increased delay to 1 second to prevent rapid updates
       };
     })(),
     [onStageUpdate]
@@ -62,7 +61,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
     }
   }, [projectId, fetchStages]);
 
-  // Update parent component when stages change (debounced)
+  // Update parent component when stages change (heavily debounced)
   useEffect(() => {
     if (stages.length > 0) {
       debouncedOnStageUpdate(stages);
@@ -130,7 +129,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
 
   const handleStartStage = useCallback(async (stage: ManufacturingStage) => {
     console.log('🚀 Starting stage:', stage.name)
-    // Don't show toast for stage start
+    // Never show toast for stage operations
     await updateStage(stage.id, {
       status: 'in_progress',
       start_date: new Date().toISOString().split('T')[0]
@@ -139,19 +138,19 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
 
   const handleCompleteStage = useCallback(async (stage: ManufacturingStage) => {
     console.log('✅ Completing stage:', stage.name)
-    // Show toast only for stage completion (major milestone)
+    // Never show toast for stage operations
     await updateStage(stage.id, {
       status: 'completed',
       progress: 100,
       completed_date: new Date().toISOString().split('T')[0]
-    }, true);
+    }, false);
   }, [updateStage]);
 
   const handleProgressUpdate = useCallback(async (stage: ManufacturingStage, progress: number) => {
     const newProgress = Math.min(100, Math.max(0, progress));
     console.log('📈 Updating stage progress:', stage.name, 'to', newProgress + '%')
     
-    // Don't show toast for progress updates
+    // Never show toast for progress updates
     await updateStage(stage.id, {
       progress: newProgress,
       status: newProgress === 100 ? 'completed' : 'in_progress'
@@ -169,7 +168,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
   }, []);
 
   const handleSaveEdit = useCallback(async (stageId: string) => {
-    // Don't show toast for detail edits
+    // Never show toast for detail edits
     await updateStage(stageId, editForm, false);
     setEditingStage(null);
   }, [updateStage, editForm]);

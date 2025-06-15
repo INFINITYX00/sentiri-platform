@@ -375,13 +375,10 @@ export function ProjectWizard() {
       // Move to manufacturing step
       setCurrentStep(3)
       
-      // Update project status in background
+      // Update project status in background (no toast)
       await debouncedUpdateProject(selectedProject, { status: 'in_progress' })
       
-      toast({
-        title: "Production Started",
-        description: "Manufacturing phase has begun.",
-      })
+      console.log('Production started - moving to manufacturing step')
     }
   }
 
@@ -410,23 +407,15 @@ export function ProjectWizard() {
         // Update local state immediately
         setLocalCompletionState(prev => ({ ...prev, manufacturingCompleted: true }))
         
-        // Update project status in background
+        // Update project status in background (no toast)
         await debouncedUpdateProject(selectedProject, { status: 'completed', progress: 100 })
         
         // Auto-advance to quality control
         setCurrentStep(4)
         
-        toast({
-          title: "Manufacturing Complete",
-          description: "All manufacturing stages have been completed successfully! Moving to Quality Control."
-        })
+        console.log('Manufacturing complete - moving to quality control step')
       } else {
         console.log('⚠️ Not all manufacturing stages are completed yet')
-        toast({
-          title: "Manufacturing In Progress",
-          description: "Complete all manufacturing stages before proceeding to Quality Control.",
-          variant: "default"
-        })
       }
     }
   }
