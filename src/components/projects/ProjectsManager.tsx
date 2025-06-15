@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -75,7 +74,7 @@ export function ProjectsManager() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pl-6">
+    <div className="min-h-screen bg-gray-50">
       <div className="px-8 py-6">
         <div className="flex justify-between items-center">
           <div>
@@ -90,7 +89,7 @@ export function ProjectsManager() {
       </div>
 
       <div className="px-8 py-4">
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-6 ml-4">
           {/* Create Project Form */}
           {showCreateForm && (
             <Card>
