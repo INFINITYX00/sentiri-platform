@@ -1,254 +1,261 @@
 
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Upload, Plus, Package, AlertTriangle, CheckCircle } from "lucide-react"
-import { useMaterials } from '@/hooks/useMaterials'
-import { useProjects } from '@/hooks/useProjects'
+import { useState, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Upload, FileText, Download, AlertCircle, CheckCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { parseCSVToBOM } from "@/utils/csvParser";
+import { useProjects } from '@/hooks/useProjects';
+import { useToast } from "@/hooks/use-toast";
 
-interface BOMItem {
-  id: string
-  material_id: string
-  material_name: string
-  quantity: number
-  unit: string
-  available_stock: number
-  carbon_footprint: number
-  cost_estimate: number
+interface EnhancedBOMUploaderProps {
+  projectId: string;
 }
 
-export function EnhancedBOMUploader() {
-  const { materials } = useMaterials()
-  const { projects, addProject, addMaterialToProject } = useProjects()
-  const [bomItems, setBomItems] = useState<BOMItem[]>([])
-  const [bomName, setBomName] = useState('')
-  const [selectedProject, setSelectedProject] = useState<string>('')
-  const [showMaterialSelector, setShowMaterialSelector] = useState(false)
+export function EnhancedBOMUploader({ projectId }: EnhancedBOMUploaderProps) {
+  const [bomName, setBomName] = useState('');
+  const [bomDescription, setBomDescription] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { addMaterialToProject, updateProject } = useProjects();
+  const { toast } = useToast();
 
-  const addMaterialToBOM = (materialId: string, quantity: number = 1) => {
-    const material = materials.find(m => m.id === materialId)
-    if (!material || bomItems.some(item => item.material_id === materialId)) return
-
-    const newItem: BOMItem = {
-      id: crypto.randomUUID(),
-      material_id: materialId,
-      material_name: material.name,
-      quantity,
-      unit: material.unit,
-      available_stock: material.quantity,
-      carbon_footprint: material.carbon_footprint,
-      cost_estimate: 0 // Would be calculated from market data
-    }
-
-    setBomItems(prev => [...prev, newItem])
-    setShowMaterialSelector(false)
-  }
-
-  const updateItemQuantity = (itemId: string, quantity: number) => {
-    setBomItems(prev => prev.map(item => 
-      item.id === itemId ? { ...item, quantity } : item
-    ))
-  }
-
-  const removeItem = (itemId: string) => {
-    setBomItems(prev => prev.filter(item => item.id !== itemId))
-  }
-
-  const getStockStatus = (item: BOMItem) => {
-    if (item.available_stock >= item.quantity) {
-      return { status: 'available', color: 'bg-green-100 text-green-800' }
-    } else if (item.available_stock > 0) {
-      return { status: 'partial', color: 'bg-yellow-100 text-yellow-800' }
-    } else {
-      return { status: 'unavailable', color: 'bg-red-100 text-red-800' }
-    }
-  }
-
-  const calculateTotals = () => {
-    const totalCarbonFootprint = bomItems.reduce((sum, item) => 
-      sum + (item.carbon_footprint * item.quantity), 0
-    )
-    const totalCost = bomItems.reduce((sum, item) => 
-      sum + (item.cost_estimate * item.quantity), 0
-    )
-    
-    return { totalCarbonFootprint, totalCost }
-  }
-
-  const createProjectFromBOM = async () => {
-    if (!bomName.trim() || bomItems.length === 0) return
-
-    const { totalCarbonFootprint, totalCost } = calculateTotals()
-
-    // Create new project
-    const project = await addProject({
-      name: bomName,
-      description: `Project created from BOM with ${bomItems.length} materials`,
-      status: 'planning',
-      progress: 0,
-      total_cost: totalCost,
-      total_carbon_footprint: totalCarbonFootprint,
-      allocated_materials: bomItems.map(item => item.material_id)
-    })
-
-    if (project) {
-      // Add materials to project
-      for (const item of bomItems) {
-        await addMaterialToProject(
-          project.id,
-          item.material_id,
-          item.quantity,
-          item.cost_estimate
-        )
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+      if (selectedFile.type === 'text/csv' || selectedFile.name.endsWith('.csv')) {
+        setFile(selectedFile);
+        setUploadResult(null);
+      } else {
+        toast({
+          title: "Invalid File Type",
+          description: "Please select a CSV file",
+          variant: "destructive"
+        });
       }
-
-      // Reset form
-      setBomItems([])
-      setBomName('')
-      setSelectedProject('')
     }
-  }
+  };
 
-  const availableMaterials = materials.filter(material => 
-    !bomItems.some(item => item.material_id === material.id)
-  )
+  const handleUpload = async () => {
+    if (!file || !bomName.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide a BOM name and select a CSV file",
+        variant: "destructive"
+      });
+      return;
+    }
 
-  const { totalCarbonFootprint, totalCost } = calculateTotals()
+    setUploading(true);
+    try {
+      const result = await parseCSVToBOM(file);
+      
+      if (result.success && result.materials) {
+        // Add materials to project
+        let totalCost = 0;
+        let totalCarbon = 0;
+        
+        for (const material of result.materials) {
+          await addMaterialToProject(
+            projectId,
+            material.material_id,
+            material.quantity,
+            material.cost_per_unit || 0
+          );
+          
+          totalCost += (material.quantity * (material.cost_per_unit || 0));
+          totalCarbon += (material.quantity * (material.carbon_footprint || 0));
+        }
+
+        // Update project
+        await updateProject(projectId, {
+          total_cost: totalCost,
+          total_carbon_footprint: totalCarbon,
+          status: 'design',
+          allocated_materials: result.materials.map(m => m.material_id)
+        });
+
+        setUploadResult(result);
+        toast({
+          title: "BOM Uploaded Successfully",
+          description: `${result.materials.length} materials added to project`,
+        });
+      } else {
+        setUploadResult(result);
+        toast({
+          title: "Upload Failed",
+          description: result.error || "Failed to process CSV file",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload Error",
+        description: "An error occurred while processing the file",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const template = `material_name,quantity,unit,cost_per_unit,carbon_footprint
+Oak Wood Board,10,pieces,25.00,5.2
+Steel Screws,50,pieces,0.50,0.1
+Wood Stain,1,liter,15.00,2.3`;
+    
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bom_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
-      {/* BOM Header */}
+      {/* BOM Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Create BOM from Stock</CardTitle>
+          <CardTitle>BOM Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input
-            placeholder="BOM/Project name"
-            value={bomName}
-            onChange={(e) => setBomName(e.target.value)}
-          />
-
-          {/* Add Material Button */}
-          {!showMaterialSelector && (
-            <Button 
-              onClick={() => setShowMaterialSelector(true)}
-              disabled={availableMaterials.length === 0}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Material from Stock
-            </Button>
-          )}
-
-          {/* Material Selector */}
-          {showMaterialSelector && (
-            <div className="flex gap-2">
-              <Select onValueChange={(value) => addMaterialToBOM(value)}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select material from stock" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableMaterials.map((material) => (
-                    <SelectItem key={material.id} value={material.id}>
-                      {material.name} - {material.quantity} {material.unit} available
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button variant="outline" onClick={() => setShowMaterialSelector(false)}>
-                Cancel
-              </Button>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="bom-name">BOM Name *</Label>
+            <Input
+              id="bom-name"
+              placeholder="Enter BOM name (e.g., Dining Table BOM)"
+              value={bomName}
+              onChange={(e) => setBomName(e.target.value)}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="bom-description">Description</Label>
+            <Textarea
+              id="bom-description"
+              placeholder="Optional description of this BOM"
+              value={bomDescription}
+              onChange={(e) => setBomDescription(e.target.value)}
+              rows={3}
+            />
+          </div>
         </CardContent>
       </Card>
 
-      {/* BOM Items */}
-      {bomItems.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>BOM Items ({bomItems.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {bomItems.map((item) => {
-              const stockStatus = getStockStatus(item)
-              
-              return (
-                <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                  <Package className="h-5 w-5 text-blue-600" />
-                  
-                  <div className="flex-1">
-                    <h4 className="font-medium">{item.material_name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {item.carbon_footprint} kg CO₂ per {item.unit}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <Input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => updateItemQuantity(item.id, parseFloat(e.target.value) || 0)}
-                      className="w-20"
-                      min="0"
-                      step="0.1"
-                    />
-                    <span className="text-sm text-muted-foreground">{item.unit}</span>
-
-                    <Badge className={stockStatus.color}>
-                      {stockStatus.status === 'available' && <CheckCircle className="h-3 w-3 mr-1" />}
-                      {stockStatus.status === 'partial' && <AlertTriangle className="h-3 w-3 mr-1" />}
-                      {stockStatus.status === 'unavailable' && <AlertTriangle className="h-3 w-3 mr-1" />}
-                      {item.available_stock} available
-                    </Badge>
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => removeItem(item.id)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              )
-            })}
-
-            {/* Totals */}
-            <div className="border-t pt-3 mt-4">
-              <div className="flex justify-between items-center text-sm">
-                <span className="font-medium">Total Carbon Footprint:</span>
-                <span className="text-primary font-medium">{totalCarbonFootprint.toFixed(2)} kg CO₂</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="font-medium">Estimated Total Cost:</span>
-                <span className="text-green-600 font-medium">${totalCost.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Create Project Button */}
-            <Button 
-              onClick={createProjectFromBOM}
-              disabled={!bomName.trim() || bomItems.length === 0}
-              className="w-full mt-4"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Create Project from BOM
+      {/* File Upload */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Upload CSV File
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Button variant="outline" onClick={downloadTemplate}>
+              <Download className="h-4 w-4 mr-2" />
+              Download Template
             </Button>
+            <span className="text-sm text-muted-foreground">
+              Required format: CSV with headers
+            </span>
+          </div>
+
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            {file ? (
+              <div className="space-y-2">
+                <FileText className="h-8 w-8 text-green-600 mx-auto" />
+                <p className="font-medium">{file.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {(file.size / 1024).toFixed(1)} KB
+                </p>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                  Choose Different File
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Upload className="h-8 w-8 text-gray-400 mx-auto" />
+                <p className="text-muted-foreground">
+                  Click to select a CSV file or drag and drop
+                </p>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                  Select CSV File
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <Button 
+            onClick={handleUpload} 
+            disabled={!file || !bomName.trim() || uploading}
+            className="w-full"
+          >
+            {uploading ? 'Processing...' : 'Upload BOM to Project'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Upload Result */}
+      {uploadResult && (
+        <Card>
+          <CardContent className="pt-6">
+            {uploadResult.success ? (
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>
+                  BOM uploaded successfully! {uploadResult.materials?.length || 0} materials added to project.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {uploadResult.error || 'Upload failed. Please check your CSV format.'}
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {bomItems.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>No materials added to BOM yet</p>
-          <p className="text-sm">Add materials from your stock to create a Bill of Materials</p>
-        </div>
-      )}
+      {/* CSV Format Guide */}
+      <Card>
+        <CardHeader>
+          <CardTitle>CSV Format Requirements</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-sm">
+            <p><strong>Required columns:</strong></p>
+            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+              <li><code>material_name</code> - Name of the material</li>
+              <li><code>quantity</code> - Amount needed</li>
+              <li><code>unit</code> - Unit of measurement (pieces, kg, m³, etc.)</li>
+              <li><code>cost_per_unit</code> - Cost per unit (optional)</li>
+              <li><code>carbon_footprint</code> - CO₂ per unit (optional)</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  )
+  );
 }

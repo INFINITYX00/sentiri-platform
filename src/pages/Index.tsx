@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
@@ -13,6 +13,35 @@ import { ProductionManager } from "@/components/production/ProductionManager";
 
 const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');
+
+  // Handle hash-based navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1); // Remove the #
+      if (hash) {
+        setActiveView(hash);
+      }
+    };
+
+    // Set initial view from hash
+    handleHashChange();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
+
+  // Update hash when activeView changes
+  useEffect(() => {
+    if (activeView !== 'dashboard') {
+      window.location.hash = activeView;
+    } else {
+      window.location.hash = '';
+    }
+  }, [activeView]);
 
   const renderActiveView = () => {
     switch (activeView) {

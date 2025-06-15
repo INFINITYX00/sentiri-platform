@@ -1,330 +1,295 @@
 
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { CheckCircle, Circle, Package, Calculator, Play, ArrowRight } from "lucide-react"
-import { useMaterials } from '@/hooks/useMaterials'
-import { useProjects } from '@/hooks/useProjects'
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Minus, Package, Calculator, Leaf, FileText } from "lucide-react";
+import { useMaterials } from "@/hooks/useMaterials";
+import { useProjects } from '@/hooks/useProjects';
+import { useToast } from "@/hooks/use-toast";
 
-interface StepProps {
-  stepNumber: number
-  title: string
-  description: string
-  isActive: boolean
-  isCompleted: boolean
-  children?: React.ReactNode
+interface StepByStepBOMProps {
+  projectId: string;
 }
 
-function Step({ stepNumber, title, description, isActive, isCompleted, children }: StepProps) {
-  return (
-    <Card className={`${isActive ? 'ring-2 ring-primary' : ''} ${isCompleted ? 'bg-green-50' : ''}`}>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          {isCompleted ? (
-            <CheckCircle className="h-6 w-6 text-green-600" />
-          ) : (
-            <Circle className={`h-6 w-6 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-          )}
-          <div>
-            <CardTitle className="text-lg">Step {stepNumber}: {title}</CardTitle>
-            <p className="text-sm text-muted-foreground">{description}</p>
-          </div>
-        </div>
-      </CardHeader>
-      {(isActive || isCompleted) && children && (
-        <CardContent>{children}</CardContent>
-      )}
-    </Card>
-  )
+interface BOMItem {
+  material_id: string;
+  quantity: number;
+  unit: string;
+  carbon_per_unit: number;
+  cost_per_unit: number;
+  material_name: string;
 }
 
-export function StepByStepBOM() {
-  const { materials } = useMaterials()
-  const { projects, addProject, addMaterialToProject } = useProjects()
-  const [currentStep, setCurrentStep] = useState(1)
-  const [projectName, setProjectName] = useState('')
-  const [projectDescription, setProjectDescription] = useState('')
-  const [selectedProject, setSelectedProject] = useState<string>('')
-  const [bomItems, setBomItems] = useState<Array<{
-    id: string
-    material_id: string
-    material_name: string
-    quantity: number
-    display_unit: string
-    cost_per_unit: number
-    total_cost: number
-    carbon_footprint: number
-  }>>([])
+export function StepByStepBOM({ projectId }: StepByStepBOMProps) {
+  const { materials } = useMaterials();
+  const { addMaterialToProject, updateProject } = useProjects();
+  const { toast } = useToast();
+  
+  const [bomItems, setBomItems] = useState<BOMItem[]>([]);
+  const [selectedMaterial, setSelectedMaterial] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const getDisplayUnit = (material: any) => {
-    if (material.display_unit) return material.display_unit
-    if (material.unit_count && material.unit_count > 1) return 'pieces'
-    if (material.type === 'wood') return 'boards'
-    if (material.type === 'metal') return 'sheets'
-    return 'units'
-  }
+  const filteredMaterials = materials.filter(material =>
+    material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    material.type.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const getDisplayQuantity = (material: any) => {
-    if (material.unit_count && material.unit_count > 1) return material.unit_count
-    return 1
-  }
-
-  const createProject = async () => {
-    if (!projectName.trim()) return
-
-    const project = await addProject({
-      name: projectName,
-      description: projectDescription,
-      status: 'planning',
-      progress: 0,
-      total_cost: 0,
-      total_carbon_footprint: 0,
-      allocated_materials: []
-    })
-
-    if (project) {
-      setSelectedProject(project.id)
-      setCurrentStep(2)
+  const addMaterialToBOM = () => {
+    if (!selectedMaterial || !quantity) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a material and enter quantity",
+        variant: "destructive"
+      });
+      return;
     }
-  }
 
-  const addMaterialToBOM = (materialId: string) => {
-    const material = materials.find(m => m.id === materialId)
-    if (!material || bomItems.some(item => item.material_id === materialId)) return
+    const material = materials.find(m => m.id === selectedMaterial);
+    if (!material) return;
 
-    const displayUnit = getDisplayUnit(material)
-    const quantity = 1
-    const costPerUnit = material.cost_per_unit || 10 // Default cost if not set
+    const existingItemIndex = bomItems.findIndex(item => item.material_id === selectedMaterial);
     
-    const newItem = {
-      id: crypto.randomUUID(),
-      material_id: materialId,
-      material_name: material.name,
-      quantity,
-      display_unit: displayUnit,
-      cost_per_unit: costPerUnit,
-      total_cost: quantity * costPerUnit,
-      carbon_footprint: material.carbon_footprint
+    if (existingItemIndex >= 0) {
+      // Update existing item
+      const updatedItems = [...bomItems];
+      updatedItems[existingItemIndex].quantity += Number(quantity);
+      setBomItems(updatedItems);
+    } else {
+      // Add new item
+      const newItem: BOMItem = {
+        material_id: selectedMaterial,
+        quantity: Number(quantity),
+        unit: material.unit,
+        carbon_per_unit: material.carbon_footprint,
+        cost_per_unit: material.cost_per_unit || 0,
+        material_name: material.name
+      };
+      setBomItems([...bomItems, newItem]);
     }
 
-    setBomItems(prev => [...prev, newItem])
-  }
+    setSelectedMaterial('');
+    setQuantity('');
+  };
 
-  const updateQuantity = (itemId: string, quantity: number) => {
-    setBomItems(prev => prev.map(item => 
-      item.id === itemId 
-        ? { ...item, quantity, total_cost: quantity * item.cost_per_unit }
+  const removeMaterialFromBOM = (materialId: string) => {
+    setBomItems(bomItems.filter(item => item.material_id !== materialId));
+  };
+
+  const updateItemQuantity = (materialId: string, newQuantity: number) => {
+    setBomItems(bomItems.map(item =>
+      item.material_id === materialId
+        ? { ...item, quantity: Math.max(0, newQuantity) }
         : item
-    ))
-  }
+    ));
+  };
 
-  const removeItem = (itemId: string) => {
-    setBomItems(prev => prev.filter(item => item.id !== itemId))
-  }
+  const calculateTotals = () => {
+    const totalCost = bomItems.reduce((sum, item) => sum + (item.quantity * item.cost_per_unit), 0);
+    const totalCarbon = bomItems.reduce((sum, item) => sum + (item.quantity * item.carbon_per_unit), 0);
+    return { totalCost, totalCarbon };
+  };
 
-  const finalizeBOM = async () => {
-    if (!selectedProject || bomItems.length === 0) return
-
-    const totalCost = bomItems.reduce((sum, item) => sum + item.total_cost, 0)
-    const totalCarbon = bomItems.reduce((sum, item) => sum + (item.carbon_footprint * item.quantity), 0)
-
-    // Add materials to project
-    for (const item of bomItems) {
-      await addMaterialToProject(
-        selectedProject,
-        item.material_id,
-        item.quantity,
-        item.cost_per_unit
-      )
+  const saveBOMToProject = async () => {
+    if (bomItems.length === 0) {
+      toast({
+        title: "Empty BOM",
+        description: "Please add materials to the BOM before saving",
+        variant: "destructive"
+      });
+      return;
     }
 
-    setCurrentStep(3)
-  }
+    try {
+      // Add each material to the project
+      for (const item of bomItems) {
+        await addMaterialToProject(
+          projectId,
+          item.material_id,
+          item.quantity,
+          item.cost_per_unit
+        );
+      }
 
-  const progress = (currentStep / 3) * 100
+      const { totalCost, totalCarbon } = calculateTotals();
+      
+      // Update project with totals and move to production status
+      await updateProject(projectId, {
+        total_cost: totalCost,
+        total_carbon_footprint: totalCarbon,
+        status: 'design', // Keep in design status until production starts
+        allocated_materials: bomItems.map(item => item.material_id)
+      });
+
+      toast({
+        title: "BOM Saved",
+        description: "Bill of Materials has been saved to the project",
+      });
+
+      // Clear the BOM
+      setBomItems([]);
+    } catch (error) {
+      console.error('Error saving BOM:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save BOM to project",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const { totalCost, totalCarbon } = calculateTotals();
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Create Project & BOM</h2>
-          <p className="text-muted-foreground">Follow these steps to create your manufacturing project</p>
-        </div>
-        <div className="text-right">
-          <div className="text-sm text-muted-foreground mb-1">Progress</div>
-          <div className="flex items-center gap-2">
-            <Progress value={progress} className="w-32" />
-            <span className="text-sm font-medium">{Math.round(progress)}%</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        {/* Step 1: Create Project */}
-        <Step
-          stepNumber={1}
-          title="Create Project"
-          description="Set up your manufacturing project details"
-          isActive={currentStep === 1}
-          isCompleted={currentStep > 1}
-        >
-          <div className="space-y-4">
-            <Input
-              placeholder="Project name (e.g., 'Custom Table Build')"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-            />
-            <Input
-              placeholder="Project description (optional)"
-              value={projectDescription}
-              onChange={(e) => setProjectDescription(e.target.value)}
-            />
-            <Button 
-              onClick={createProject}
-              disabled={!projectName.trim()}
-              className="w-full"
-            >
-              <Package className="h-4 w-4 mr-2" />
-              Create Project
-            </Button>
-          </div>
-        </Step>
-
-        {/* Step 2: Build BOM */}
-        <Step
-          stepNumber={2}
-          title="Build Bill of Materials"
-          description="Select materials from your stock and specify quantities"
-          isActive={currentStep === 2}
-          isCompleted={currentStep > 2}
-        >
-          <div className="space-y-4">
-            {/* Available Materials */}
-            <div>
-              <h4 className="font-medium mb-3">Available Materials</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-40 overflow-y-auto">
-                {materials
-                  .filter(m => !bomItems.some(item => item.material_id === m.id))
-                  .map((material) => {
-                    const displayUnit = getDisplayUnit(material)
-                    const availableQty = getDisplayQuantity(material)
-                    const cost = material.cost_per_unit || 10
-                    
-                    return (
-                      <div key={material.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <h5 className="font-medium">{material.name}</h5>
-                          <p className="text-sm text-muted-foreground">
-                            {availableQty} {displayUnit} available • ${cost}/{displayUnit}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          onClick={() => addMaterialToBOM(material.id)}
-                        >
-                          Add
-                        </Button>
+      {/* Material Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Add Materials to BOM
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Search Materials</label>
+              <Input
+                placeholder="Search by name or type..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Material</label>
+              <Select value={selectedMaterial} onValueChange={setSelectedMaterial}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose material..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredMaterials.map((material) => (
+                    <SelectItem key={material.id} value={material.id}>
+                      <div className="flex flex-col">
+                        <span>{material.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {material.type} • {material.quantity} {material.unit} available
+                        </span>
                       </div>
-                    )
-                  })
-                }
-              </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* BOM Items */}
-            {bomItems.length > 0 && (
-              <div>
-                <h4 className="font-medium mb-3">BOM Items ({bomItems.length})</h4>
-                <div className="space-y-2">
-                  {bomItems.map((item) => (
-                    <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                      <div className="flex-1">
-                        <h5 className="font-medium">{item.material_name}</h5>
-                        <p className="text-sm text-muted-foreground">
-                          ${item.cost_per_unit}/{item.display_unit} • ${item.total_cost.toFixed(2)} total
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => updateQuantity(item.id, parseFloat(e.target.value) || 0)}
-                          className="w-20"
-                          min="0"
-                          step="1"
-                        />
-                        <span className="text-sm text-muted-foreground">{item.display_unit}</span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => removeItem(item.id)}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Totals */}
-                  <div className="border-t pt-3 mt-4">
-                    <div className="flex justify-between text-sm">
-                      <span>Total Cost:</span>
-                      <span className="font-medium text-green-600">
-                        ${bomItems.reduce((sum, item) => sum + item.total_cost, 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Total Carbon:</span>
-                      <span className="font-medium text-blue-600">
-                        {bomItems.reduce((sum, item) => sum + (item.carbon_footprint * item.quantity), 0).toFixed(2)} kg CO₂
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={finalizeBOM}
-                  disabled={bomItems.length === 0}
-                  className="w-full mt-4"
-                >
-                  <Calculator className="h-4 w-4 mr-2" />
-                  Finalize BOM & Reserve Materials
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Quantity Required</label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Quantity"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  min="0"
+                  step="0.1"
+                />
+                <Button onClick={addMaterialToBOM} disabled={!selectedMaterial || !quantity}>
+                  <Plus className="h-4 w-4" />
                 </Button>
               </div>
-            )}
-          </div>
-        </Step>
-
-        {/* Step 3: Start Production */}
-        <Step
-          stepNumber={3}
-          title="Start Production"
-          description="Your project is ready - begin manufacturing"
-          isActive={currentStep === 3}
-          isCompleted={false}
-        >
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center gap-2 text-green-600">
-              <CheckCircle className="h-6 w-6" />
-              <span className="font-medium">BOM Created Successfully!</span>
             </div>
-            <p className="text-muted-foreground">
-              Your project is now set up with all materials reserved. 
-              Go to the Projects tab to manage production stages.
-            </p>
-            <Button 
-              onClick={() => window.location.hash = '#bom'}
-              className="w-full"
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Go to Projects Manager
-            </Button>
           </div>
-        </Step>
-      </div>
+        </CardContent>
+      </Card>
+
+      {/* BOM Items List */}
+      {bomItems.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Bill of Materials ({bomItems.length} items)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {bomItems.map((item, index) => (
+              <div key={item.material_id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-medium">{item.material_name}</h4>
+                  <div className="flex gap-4 text-sm text-muted-foreground">
+                    <span>Carbon: {(item.quantity * item.carbon_per_unit).toFixed(2)} kg CO₂</span>
+                    <span>Cost: ${(item.quantity * item.cost_per_unit).toFixed(2)}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateItemQuantity(item.material_id, item.quantity - 1)}
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  
+                  <span className="w-20 text-center">
+                    {item.quantity} {item.unit}
+                  </span>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateItemQuantity(item.material_id, item.quantity + 1)}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => removeMaterialFromBOM(item.material_id)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            ))}
+
+            <Separator />
+
+            {/* Totals */}
+            <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Calculator className="h-4 w-4" />
+                  <span className="font-medium">Total Cost: ${totalCost.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Leaf className="h-4 w-4" />
+                  <span className="font-medium">Total Carbon: {totalCarbon.toFixed(2)} kg CO₂</span>
+                </div>
+              </div>
+              
+              <Button onClick={saveBOMToProject} className="ml-4">
+                Save BOM to Project
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {bomItems.length === 0 && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Materials Added</h3>
+            <p className="text-muted-foreground">Start by selecting materials from your stock above</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
-  )
+  );
 }

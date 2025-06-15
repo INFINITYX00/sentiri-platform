@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -5,16 +6,14 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Plus, Package, Calendar, DollarSign, Leaf, Play, CheckCircle, Clock } from "lucide-react"
+import { Plus, Package, Calendar, DollarSign, Leaf, FileText, Settings, Clock, CheckCircle } from "lucide-react"
 import { useProjects } from '@/hooks/useProjects'
 import { ProjectMaterialsDialog } from './ProjectMaterialsDialog'
-import { ProductionDialog } from './ProductionDialog'
 
 export function ProjectsManager() {
   const { projects, loading, addProject } = useProjects()
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
-  const [showProduction, setShowProduction] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -44,9 +43,9 @@ export function ProjectsManager() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'planning': return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'design': return 'bg-purple-100 text-purple-800 border-purple-200'
       case 'in_progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
       case 'completed': return 'bg-green-100 text-green-800 border-green-200'
-      case 'on_hold': return 'bg-gray-100 text-gray-800 border-gray-200'
       default: return 'bg-gray-100 text-gray-800 border-gray-200'
     }
   }
@@ -54,7 +53,8 @@ export function ProjectsManager() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'planning': return <Clock className="h-3 w-3" />
-      case 'in_progress': return <Play className="h-3 w-3" />
+      case 'design': return <FileText className="h-3 w-3" />
+      case 'in_progress': return <Settings className="h-3 w-3" />
       case 'completed': return <CheckCircle className="h-3 w-3" />
       default: return null
     }
@@ -63,6 +63,8 @@ export function ProjectsManager() {
   const getNextAction = (project: any) => {
     switch (project.status) {
       case 'planning':
+        return 'Create BOM'
+      case 'design':
         return 'Start Production'
       case 'in_progress':
         return 'View Progress'
@@ -73,13 +75,53 @@ export function ProjectsManager() {
     }
   }
 
+  const getNextActionLink = (project: any) => {
+    switch (project.status) {
+      case 'planning':
+        return 'design-bom'
+      case 'design':
+        return 'production'
+      case 'in_progress':
+        return 'production'
+      default:
+        return null
+    }
+  }
+
+  const projectStats = [
+    { 
+      label: "Total Projects", 
+      value: projects.length.toString(), 
+      icon: Package, 
+      color: "text-blue-400" 
+    },
+    { 
+      label: "In Planning", 
+      value: projects.filter(p => p.status === 'planning').length.toString(), 
+      icon: Clock, 
+      color: "text-purple-400" 
+    },
+    { 
+      label: "In Production", 
+      value: projects.filter(p => p.status === 'in_progress').length.toString(), 
+      icon: Settings, 
+      color: "text-yellow-400" 
+    },
+    { 
+      label: "Completed", 
+      value: projects.filter(p => p.status === 'completed').length.toString(), 
+      icon: CheckCircle, 
+      color: "text-green-400" 
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="px-8 py-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Projects</h1>
-            <p className="text-muted-foreground">Manage manufacturing projects and track progress</p>
+            <p className="text-muted-foreground">Create and manage manufacturing projects</p>
           </div>
           <Button onClick={() => setShowCreateForm(!showCreateForm)} className="gap-2">
             <Plus className="h-4 w-4" />
@@ -90,6 +132,23 @@ export function ProjectsManager() {
 
       <div className="px-8 py-4">
         <div className="max-w-7xl mx-auto space-y-6 ml-4">
+          {/* Stats Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {projectStats.map((stat) => (
+              <Card key={stat.label} className="hover:shadow-lg transition-all duration-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{stat.label}</p>
+                      <p className="text-2xl font-bold">{stat.value}</p>
+                    </div>
+                    <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
           {/* Create Project Form */}
           {showCreateForm && (
             <Card>
@@ -192,22 +251,17 @@ export function ProjectsManager() {
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => setShowProduction(project.id)}
+                      onClick={() => {
+                        const link = getNextActionLink(project);
+                        if (link) {
+                          window.location.hash = link;
+                        }
+                      }}
                       className="flex-1"
                       variant={project.status === 'completed' ? 'secondary' : 'default'}
                       disabled={project.status === 'completed'}
                     >
-                      {project.status === 'completed' ? (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Completed
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-4 w-4 mr-1" />
-                          {getNextAction(project)}
-                        </>
-                      )}
+                      {getNextAction(project)}
                     </Button>
                   </div>
                 </CardContent>
@@ -220,7 +274,7 @@ export function ProjectsManager() {
                   <Package className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
                   <p className="text-muted-foreground text-center mb-4">
-                    Create your first project to start tracking manufacturing progress
+                    Create your first project to start your manufacturing journey
                   </p>
                   <Button onClick={() => setShowCreateForm(true)}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -233,20 +287,12 @@ export function ProjectsManager() {
         </div>
       </div>
 
-      {/* Dialogs */}
+      {/* Materials Dialog */}
       {selectedProject && (
         <ProjectMaterialsDialog
           projectId={selectedProject}
           open={!!selectedProject}
           onClose={() => setSelectedProject(null)}
-        />
-      )}
-
-      {showProduction && (
-        <ProductionDialog
-          projectId={showProduction}
-          open={!!showProduction}
-          onClose={() => setShowProduction(null)}
         />
       )}
     </div>
