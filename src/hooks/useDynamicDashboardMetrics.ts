@@ -17,6 +17,7 @@ interface DashboardMetrics {
   productionEfficiency: number
   activeStages: number
   workersActive: number
+  lastUpdated: string
   recentActivity: Array<{
     id: string
     type: 'project' | 'material' | 'production' | 'stage' | 'passport'
@@ -69,6 +70,7 @@ export function useDynamicDashboardMetrics() {
     productionEfficiency: 85,
     activeStages: 0,
     workersActive: 0,
+    lastUpdated: new Date().toISOString(),
     recentActivity: [],
     activeProjectsList: [],
     stockAlerts: [],
@@ -81,8 +83,9 @@ export function useDynamicDashboardMetrics() {
   const calculateMetrics = async () => {
     try {
       setLoading(true)
+      console.log('🔄 Dashboard: Starting metrics calculation')
 
-      // Fetch all data in parallel for better performance
+      // Fetch all data in parallel - only get non-deleted projects from the start
       const [
         { data: projects, error: projectsError },
         { data: materials, error: materialsError },
@@ -91,7 +94,7 @@ export function useDynamicDashboardMetrics() {
         { data: passports, error: passportsError },
         { data: manufacturingStages, error: stagesError }
       ] = await Promise.all([
-        supabase.from('projects').select('*'),
+        supabase.from('projects').select('*').eq('deleted', false),
         supabase.from('materials').select('*'),
         supabase.from('energy_records').select('*'),
         supabase.from('time_entries').select('*').order('created_at', { ascending: false }).limit(15),
@@ -106,12 +109,29 @@ export function useDynamicDashboardMetrics() {
       if (passportsError) throw passportsError
       if (stagesError) throw stagesError
 
-      // Calculate project metrics
+      console.log('📊 Dashboard: Fetched data', {
+        projects: projects?.length || 0,
+        materials: materials?.length || 0,
+        energyRecords: energyRecords?.length || 0
+      })
+
+      // Calculate project metrics (already filtered to exclude deleted projects)
       const totalProjects = projects?.length || 0
       const activeProjects = projects?.filter(p => p.status === 'in_progress').length || 0
       const completedProjects = projects?.filter(p => p.status === 'completed').length || 0
+      const planningProjects = projects?.filter(p => p.status === 'planning').length || 0
+      
+      // Carbon impact: sum of all project carbon footprints
       const totalCarbonSaved = projects?.reduce((sum, p) => sum + (p.total_carbon_footprint || 0), 0) || 0
       const totalCost = projects?.reduce((sum, p) => sum + (p.total_cost || 0), 0) || 0
+
+      console.log('📈 Dashboard: Project metrics', {
+        totalProjects,
+        activeProjects,
+        completedProjects,
+        planningProjects,
+        totalCarbonSaved
+      })
 
       // Calculate material metrics
       const totalMaterials = materials?.length || 0
@@ -164,8 +184,8 @@ export function useDynamicDashboardMetrics() {
       const usedMaterials = materials?.reduce((sum, m) => sum + Math.max(0, m.quantity - 5), 0) || 0
       const wasteReduction = plannedMaterials > 0 ? ((plannedMaterials - usedMaterials) / plannedMaterials) * 100 : 0
 
-      // Active projects list (non-deleted projects)
-      const activeProjectsList = projects?.filter(p => !p.deleted && (p.status === 'in_progress' || p.status === 'planning'))
+      // Active projects list (showing in-progress and planning projects)
+      const activeProjectsList = projects?.filter(p => p.status === 'in_progress' || p.status === 'planning')
         .slice(0, 5)
         .map(p => ({
           id: p.id,
@@ -248,6 +268,8 @@ export function useDynamicDashboardMetrics() {
         })) || []
       ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 8)
 
+      const lastUpdated = new Date().toISOString()
+
       setMetrics({
         totalProjects,
         activeProjects,
@@ -262,6 +284,7 @@ export function useDynamicDashboardMetrics() {
         productionEfficiency,
         activeStages,
         workersActive,
+        lastUpdated,
         recentActivity,
         activeProjectsList,
         stockAlerts,
@@ -269,8 +292,15 @@ export function useDynamicDashboardMetrics() {
         manufacturingStages: manufacturingStagesForDisplay
       })
 
+      console.log('✅ Dashboard: Metrics calculated successfully', {
+        totalProjects,
+        activeProjects,
+        completedProjects,
+        totalCarbonSaved: totalCarbonSaved.toFixed(1)
+      })
+
     } catch (error) {
-      console.error('Error calculating dashboard metrics:', error)
+      console.error('❌ Dashboard: Error calculating metrics:', error)
       toast({
         title: "Error",
         description: "Failed to load dashboard metrics",

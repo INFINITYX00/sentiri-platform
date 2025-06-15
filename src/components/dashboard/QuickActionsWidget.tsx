@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Plus, Upload, Zap, Package } from "lucide-react";
+import { Plus, Package, Zap } from "lucide-react";
 import { DashboardWidget } from "./DashboardWidget";
 
 export function QuickActionsWidget() {
@@ -9,10 +9,6 @@ export function QuickActionsWidget() {
   };
 
   const handleAddMaterial = () => {
-    window.location.hash = '#stock';
-  };
-
-  const handleImportBOM = () => {
     window.location.hash = '#stock';
   };
 
@@ -36,15 +32,6 @@ export function QuickActionsWidget() {
         >
           <Package className="h-4 w-4" />
           <span className="text-xs">Add Material</span>
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="h-auto p-3 flex flex-col gap-1 col-span-2"
-          onClick={handleImportBOM}
-        >
-          <Upload className="h-4 w-4" />
-          <span className="text-xs">Import BOM</span>
         </Button>
       </div>
     </DashboardWidget>
