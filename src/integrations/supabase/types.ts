@@ -418,6 +418,7 @@ export type Database = {
           allocated_materials: string[] | null
           completion_date: string | null
           created_at: string | null
+          deleted: boolean
           description: string | null
           id: string
           name: string
@@ -431,6 +432,7 @@ export type Database = {
           allocated_materials?: string[] | null
           completion_date?: string | null
           created_at?: string | null
+          deleted?: boolean
           description?: string | null
           id?: string
           name: string
@@ -444,6 +446,7 @@ export type Database = {
           allocated_materials?: string[] | null
           completion_date?: string | null
           created_at?: string | null
+          deleted?: boolean
           description?: string | null
           id?: string
           name?: string

@@ -51,8 +51,8 @@ export function ProjectWizard() {
         title: 'BOM Creation',
         description: 'Design your Bill of Materials',
         icon: FileText,
-        status: project?.status === 'planning' ? 'current' : 
-               (project?.status === 'design' || project?.status === 'in_progress' || project?.status === 'completed') ? 'completed' : 'upcoming',
+        status: project && project.status !== 'planning' ? 'completed' : 
+               project ? 'current' : 'upcoming',
         allowAccess: !!project
       },
       {
@@ -93,56 +93,41 @@ export function ProjectWizard() {
   }
 
   const steps = getProjectSteps()
-  const currentStepData = steps[currentStep]
-
-  // Auto-advance based on project status
-  useEffect(() => {
-    if (selectedProject) {
-      const project = projects.find(p => p.id === selectedProject)
-      if (project) {
-        if (project.status === 'planning' && currentStep < 1) {
-          setCurrentStep(1) // BOM Creation
-        } else if (project.status === 'design' && currentStep < 2) {
-          setCurrentStep(2) // Production Planning
-        } else if (project.status === 'in_progress' && currentStep < 3) {
-          setCurrentStep(3) // Manufacturing
-        } else if (project.status === 'completed' && currentStep < 4) {
-          setCurrentStep(4) // Quality Control
-        }
-      }
-    }
-  }, [selectedProject, projects, currentStep])
 
   const handleProjectSelect = async (projectId: string) => {
     setSelectedProject(projectId)
     const project = projects.find(p => p.id === projectId)
+    
     if (project) {
-      // Update project status to planning if it's new
+      // Navigate to appropriate step based on project status
       if (project.status === 'planning') {
-        await updateProject(projectId, { status: 'planning' })
+        setCurrentStep(1) // BOM creation
+      } else if (project.status === 'design') {
+        setCurrentStep(2) // Production planning
+      } else if (project.status === 'in_progress') {
+        setCurrentStep(3) // Manufacturing
+      } else if (project.status === 'completed') {
+        setCurrentStep(4) // Quality control
       }
-      setCurrentStep(1) // Move to BOM creation
     }
   }
 
   const handleBOMComplete = async () => {
     if (selectedProject) {
-      // Move to production planning step
-      setCurrentStep(2)
+      await updateProject(selectedProject, { status: 'design' })
+      setCurrentStep(2) // Move to production planning
     }
   }
 
   const handleProductionStart = async () => {
     if (selectedProject) {
-      // Move to manufacturing step
-      setCurrentStep(3)
+      setCurrentStep(3) // Move to manufacturing
     }
   }
 
   const handleManufacturingComplete = async () => {
     if (selectedProject) {
-      // Move to quality control
-      setCurrentStep(4)
+      setCurrentStep(4) // Move to quality control
     }
   }
 
@@ -153,6 +138,8 @@ export function ProjectWizard() {
   }
 
   const renderStepContent = () => {
+    const currentStepData = steps[currentStep]
+    
     switch (currentStepData.id) {
       case 'project-setup':
         return <ProjectsManager onProjectSelect={handleProjectSelect} />
@@ -165,6 +152,13 @@ export function ProjectWizard() {
         ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Please select a project first</p>
+            <Button 
+              onClick={() => setCurrentStep(0)} 
+              className="mt-4"
+              variant="outline"
+            >
+              Go Back to Project Setup
+            </Button>
           </div>
         )
       case 'production-planning':
@@ -178,6 +172,13 @@ export function ProjectWizard() {
         ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Please select a project first</p>
+            <Button 
+              onClick={() => setCurrentStep(0)} 
+              className="mt-4"
+              variant="outline"
+            >
+              Go Back to Project Setup
+            </Button>
           </div>
         )
       case 'quality-control':
@@ -217,9 +218,21 @@ export function ProjectWizard() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Project Wizard</h1>
             <p className="text-muted-foreground">Complete workflow from concept to product passport</p>
             {selectedProject && (
-              <p className="text-sm text-primary mt-1">
-                Current Project: {projects.find(p => p.id === selectedProject)?.name}
-              </p>
+              <div className="mt-2 flex items-center gap-4">
+                <p className="text-sm text-primary">
+                  Current Project: {projects.find(p => p.id === selectedProject)?.name}
+                </p>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedProject(null)
+                    setCurrentStep(0)
+                  }}
+                >
+                  Change Project
+                </Button>
+              </div>
             )}
           </div>
 
@@ -296,11 +309,11 @@ export function ProjectWizard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <currentStepData.icon className="h-6 w-6 text-primary" />
+                  <steps[currentStep].icon className="h-6 w-6 text-primary" />
                   <div>
-                    <CardTitle>{currentStepData.title}</CardTitle>
+                    <CardTitle>{steps[currentStep].title}</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {currentStepData.description}
+                      {steps[currentStep].description}
                     </p>
                   </div>
                 </div>

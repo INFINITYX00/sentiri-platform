@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -14,6 +13,7 @@ export interface Project {
   start_date?: string
   completion_date?: string
   allocated_materials: string[]
+  deleted?: boolean
   created_at: string
 }
 
@@ -46,6 +46,7 @@ export function useProjects() {
       const { data, error } = await supabase
         .from('projects')
         .select('*')
+        .eq('deleted', false)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -68,7 +69,7 @@ export function useProjects() {
     try {
       const { data, error } = await supabase
         .from('projects')
-        .insert([projectData])
+        .insert([{ ...projectData, deleted: false }])
         .select()
         .single()
 

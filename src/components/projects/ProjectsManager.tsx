@@ -10,6 +10,7 @@ import { Plus, Package, Calendar, DollarSign, Leaf, CheckCircle, Settings, Wrenc
 import { useProjects } from '@/hooks/useProjects'
 import { ProjectMaterialsDialog } from './ProjectMaterialsDialog'
 import { ProductionDialog } from './ProductionDialog'
+import { ProjectActions } from './ProjectActions'
 
 interface ProjectsManagerProps {
   onProjectSelect?: (projectId: string) => void
@@ -30,7 +31,7 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
     allocated_materials: []
   })
 
-  const { projects, loading, addProject } = useProjects()
+  const { projects, loading, addProject, refreshProjects } = useProjects()
 
   const handleCreateProject = async () => {
     if (!newProject.name.trim()) return
@@ -225,7 +226,7 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
                       </div>
                     </div>
                     
-                    <div className="flex gap-2 ml-4">
+                    <div className="flex gap-2 ml-4 flex-wrap">
                       {onProjectSelect && (
                         <Button 
                           variant="outline" 
@@ -248,6 +249,10 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
                         <Settings className="h-4 w-4 mr-2" />
                         Production
                       </Button>
+                      <ProjectActions 
+                        project={project} 
+                        onProjectUpdate={refreshProjects}
+                      />
                     </div>
                   </div>
                 </CardContent>

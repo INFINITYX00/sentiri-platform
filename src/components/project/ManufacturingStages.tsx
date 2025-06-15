@@ -1,9 +1,11 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   PenTool, 
   Wrench, 
@@ -12,89 +14,44 @@ import {
   CheckCircle, 
   Clock, 
   AlertCircle,
-  Zap
+  Zap,
+  Play,
+  Pause
 } from "lucide-react";
-
-interface Stage {
-  id: string;
-  name: string;
-  status: 'pending' | 'in-progress' | 'completed' | 'blocked';
-  progress: number;
-  estimatedHours: number;
-  actualHours: number;
-  energyEstimate: number; // kWh
-  actualEnergy: number;
-  workers: string[];
-  startDate?: string;
-  completedDate?: string;
-  notes: string;
-}
+import { useManufacturingStages, ManufacturingStage } from '@/hooks/useManufacturingStages';
 
 interface ManufacturingStagesProps {
   projectId: string;
-  onStageUpdate: (stages: Stage[]) => void;
+  onStageUpdate: (stages: ManufacturingStage[]) => void;
 }
 
 export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingStagesProps) {
-  const [stages, setStages] = useState<Stage[]>([
-    {
-      id: "design",
-      name: "Design & Planning",
-      status: "completed",
-      progress: 100,
-      estimatedHours: 6,
-      actualHours: 5.5,
-      energyEstimate: 2.2,
-      actualEnergy: 2.0,
-      workers: ["Sarah Chen"],
-      startDate: "2024-01-15",
-      completedDate: "2024-01-15",
-      notes: "CAD modeling and material optimization completed"
-    },
-    {
-      id: "machining",
-      name: "Machining & Cutting",
-      status: "in-progress",
-      progress: 75,
-      estimatedHours: 8,
-      actualHours: 6.0,
-      energyEstimate: 15.5,
-      actualEnergy: 12.3,
-      workers: ["Mike Rodriguez", "David Wilson"],
-      startDate: "2024-01-16",
-      notes: "Table saw and planer operations in progress"
-    },
-    {
-      id: "assembly",
-      name: "Assembly",
-      status: "pending",
-      progress: 0,
-      estimatedHours: 4,
-      actualHours: 0,
-      energyEstimate: 3.2,
-      actualEnergy: 0,
-      workers: ["Anna Thompson"],
-      notes: "Waiting for machining completion"
-    },
-    {
-      id: "finishing",
-      name: "Finishing & QC",
-      status: "pending",
-      progress: 0,
-      estimatedHours: 6,
-      actualHours: 0,
-      energyEstimate: 8.8,
-      actualEnergy: 0,
-      workers: ["Emma Davis", "Sarah Chen"],
-      notes: "Sanding, oiling, and quality control"
+  const { stages, loading, updateStage, fetchStages } = useManufacturingStages();
+  const [editingStage, setEditingStage] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    actual_hours: 0,
+    actual_energy: 0,
+    notes: '',
+    workers: [] as string[]
+  });
+
+  useEffect(() => {
+    if (projectId) {
+      fetchStages(projectId);
     }
-  ]);
+  }, [projectId, fetchStages]);
+
+  useEffect(() => {
+    onStageUpdate(stages);
+  }, [stages, onStageUpdate]);
 
   const getStageIcon = (stageId: string) => {
     switch (stageId) {
-      case 'design': return PenTool;
-      case 'machining': return Wrench;
+      case 'planning': return PenTool;
+      case 'material_prep': return Wrench;
+      case 'manufacturing': return Hammer;
       case 'assembly': return Hammer;
+      case 'quality_control': return CheckCircle;
       case 'finishing': return Sparkles;
       default: return Clock;
     }
@@ -103,7 +60,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-500';
-      case 'in-progress': return 'bg-blue-500';
+      case 'in_progress': return 'bg-blue-500';
       case 'blocked': return 'bg-red-500';
       default: return 'bg-gray-500';
     }
@@ -112,33 +69,75 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return CheckCircle;
-      case 'in-progress': return Clock;
+      case 'in_progress': return Clock;
       case 'blocked': return AlertCircle;
       default: return Clock;
     }
   };
 
-  const updateStageProgress = (stageId: string, progress: number) => {
-    const updatedStages = stages.map(stage => 
-      stage.id === stageId 
-        ? { ...stage, progress, status: progress === 100 ? 'completed' as const : 'in-progress' as const }
-        : stage
-    );
-    setStages(updatedStages);
-    onStageUpdate(updatedStages);
+  const handleStartStage = async (stage: ManufacturingStage) => {
+    await updateStage(stage.id, {
+      status: 'in_progress',
+      start_date: new Date().toISOString().split('T')[0]
+    });
   };
 
-  const totalEstimatedHours = stages.reduce((sum, stage) => sum + stage.estimatedHours, 0);
-  const totalActualHours = stages.reduce((sum, stage) => sum + stage.actualHours, 0);
-  const totalEstimatedEnergy = stages.reduce((sum, stage) => sum + stage.energyEstimate, 0);
-  const totalActualEnergy = stages.reduce((sum, stage) => sum + stage.actualEnergy, 0);
-  const overallProgress = stages.reduce((sum, stage) => sum + stage.progress, 0) / stages.length;
+  const handleCompleteStage = async (stage: ManufacturingStage) => {
+    await updateStage(stage.id, {
+      status: 'completed',
+      progress: 100,
+      completed_date: new Date().toISOString().split('T')[0]
+    });
+  };
+
+  const handleProgressUpdate = async (stage: ManufacturingStage, progress: number) => {
+    const newProgress = Math.min(100, Math.max(0, progress));
+    await updateStage(stage.id, {
+      progress: newProgress,
+      status: newProgress === 100 ? 'completed' : 'in_progress'
+    });
+  };
+
+  const handleEditStage = (stage: ManufacturingStage) => {
+    setEditingStage(stage.id);
+    setEditForm({
+      actual_hours: stage.actual_hours,
+      actual_energy: stage.actual_energy,
+      notes: stage.notes || '',
+      workers: stage.workers
+    });
+  };
+
+  const handleSaveEdit = async (stageId: string) => {
+    await updateStage(stageId, editForm);
+    setEditingStage(null);
+  };
+
+  const totalEstimatedHours = stages.reduce((sum, stage) => sum + stage.estimated_hours, 0);
+  const totalActualHours = stages.reduce((sum, stage) => sum + stage.actual_hours, 0);
+  const totalEstimatedEnergy = stages.reduce((sum, stage) => sum + stage.energy_estimate, 0);
+  const totalActualEnergy = stages.reduce((sum, stage) => sum + stage.actual_energy, 0);
+  const overallProgress = stages.length > 0 ? stages.reduce((sum, stage) => sum + stage.progress, 0) / stages.length : 0;
+
+  if (loading) {
+    return <div className="text-center py-8">Loading manufacturing stages...</div>;
+  }
+
+  if (stages.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-semibold mb-2">No Manufacturing Stages</h3>
+        <p className="text-muted-foreground">Manufacturing stages will be created when production starts.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="sentiri-card">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -150,7 +149,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
           </CardContent>
         </Card>
         
-        <Card className="sentiri-card">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -162,7 +161,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
           </CardContent>
         </Card>
         
-        <Card className="sentiri-card">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -174,7 +173,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
           </CardContent>
         </Card>
         
-        <Card className="sentiri-card">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -188,7 +187,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
       </div>
 
       {/* Manufacturing Timeline */}
-      <Card className="sentiri-card">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Hammer className="h-5 w-5 text-primary" />
@@ -197,8 +196,9 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
         </CardHeader>
         <CardContent className="space-y-4">
           {stages.map((stage, index) => {
-            const StageIcon = getStageIcon(stage.id);
+            const StageIcon = getStageIcon(stage.stage_id);
             const StatusIcon = getStatusIcon(stage.status);
+            const isEditing = editingStage === stage.id;
             
             return (
               <div key={stage.id} className="relative">
@@ -225,7 +225,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
                         </Badge>
                       </div>
                       <div className="text-right text-sm text-muted-foreground">
-                        {stage.actualHours}h / {stage.estimatedHours}h • {stage.actualEnergy}kWh / {stage.energyEstimate}kWh
+                        {stage.actual_hours}h / {stage.estimated_hours}h • {stage.actual_energy}kWh / {stage.energy_estimate}kWh
                       </div>
                     </div>
                     
@@ -238,40 +238,107 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
                         <Progress value={stage.progress} className="h-2" />
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Workers: </span>
-                          <span>{stage.workers.join(', ')}</span>
+                      {isEditing ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Actual Hours</label>
+                            <Input
+                              type="number"
+                              value={editForm.actual_hours}
+                              onChange={(e) => setEditForm({ ...editForm, actual_hours: Number(e.target.value) })}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Actual Energy (kWh)</label>
+                            <Input
+                              type="number"
+                              value={editForm.actual_energy}
+                              onChange={(e) => setEditForm({ ...editForm, actual_energy: Number(e.target.value) })}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-sm font-medium">Notes</label>
+                            <Textarea
+                              value={editForm.notes}
+                              onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">Timeline: </span>
-                          <span>
-                            {stage.startDate && new Date(stage.startDate).toLocaleDateString()}
-                            {stage.completedDate && ` - ${new Date(stage.completedDate).toLocaleDateString()}`}
-                          </span>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Workers: </span>
+                            <span>{stage.workers.join(', ') || 'None assigned'}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Timeline: </span>
+                            <span>
+                              {stage.start_date && new Date(stage.start_date).toLocaleDateString()}
+                              {stage.completed_date && ` - ${new Date(stage.completed_date).toLocaleDateString()}`}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                       
-                      <p className="text-sm text-muted-foreground">{stage.notes}</p>
+                      {stage.notes && !isEditing && (
+                        <p className="text-sm text-muted-foreground">{stage.notes}</p>
+                      )}
                       
-                      {stage.status === 'in-progress' && (
-                        <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
+                        {stage.status === 'pending' && (
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleStartStage(stage)}
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Start Stage
+                          </Button>
+                        )}
+                        
+                        {stage.status === 'in_progress' && (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleProgressUpdate(stage, stage.progress + 25)}
+                            >
+                              +25% Progress
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleCompleteStage(stage)}
+                            >
+                              Mark Complete
+                            </Button>
+                          </>
+                        )}
+                        
+                        {isEditing ? (
+                          <>
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleSaveEdit(stage.id)}
+                            >
+                              Save
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => setEditingStage(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => updateStageProgress(stage.id, Math.min(100, stage.progress + 25))}
+                            onClick={() => handleEditStage(stage)}
                           >
-                            +25% Progress
+                            Edit Details
                           </Button>
-                          <Button 
-                            size="sm" 
-                            className="bg-primary hover:bg-primary/90"
-                            onClick={() => updateStageProgress(stage.id, 100)}
-                          >
-                            Mark Complete
-                          </Button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
