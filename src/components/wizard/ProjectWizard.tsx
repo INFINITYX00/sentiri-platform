@@ -27,6 +27,7 @@ import { ProductPassportStep } from './steps/ProductPassportStep'
 import { ProductPassportDetailView } from '@/components/passport/ProductPassportDetailView'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
+import type { Project } from '@/hooks/useProjects'
 
 interface WizardStep {
   id: string
@@ -51,7 +52,7 @@ export function ProjectWizard() {
   const { toast } = useToast()
 
   // Direct database query function to fetch project by ID
-  const fetchProjectById = async (projectId: string) => {
+  const fetchProjectById = async (projectId: string): Promise<Project | null> => {
     try {
       console.log('ProjectWizard: Fetching project directly from database:', projectId)
       const { data, error } = await supabase
@@ -68,22 +69,22 @@ export function ProjectWizard() {
         console.log('ProjectWizard: No project found for id:', projectId)
         return null
       }
-      // Patch any missing optional fields to avoid type errors
+      // Return the data as a Project type, ensuring all fields are properly typed
       return {
-        allocated_materials: data.allocated_materials ?? [],
-        completion_date: data.completion_date ?? null,
-        created_at: data.created_at ?? '',
-        deleted: data.deleted ?? false,
-        description: data.description ?? '',
         id: data.id,
-        name: data.name ?? '',
-        progress: data.progress ?? 0,
-        start_date: data.start_date ?? null,
-        status: data.status ?? '',
-        total_carbon_footprint: data.total_carbon_footprint ?? 0,
-        total_cost: data.total_cost ?? 0,
-        updated_at: data.updated_at ?? '',
-      }
+        name: data.name || '',
+        description: data.description || '',
+        status: data.status || 'planning',
+        progress: data.progress || 0,
+        total_cost: data.total_cost || 0,
+        total_carbon_footprint: data.total_carbon_footprint || 0,
+        start_date: data.start_date,
+        completion_date: data.completion_date,
+        allocated_materials: data.allocated_materials || [],
+        deleted: data.deleted || false,
+        created_at: data.created_at || '',
+        updated_at: data.updated_at || ''
+      } as Project
     } catch (error) {
       console.error('ProjectWizard: Error fetching project from database:', error)
       return null
