@@ -37,12 +37,13 @@ export const workspaceMenuItems: WorkspaceMenuItem[] = [
     icon: ShoppingCart,
     items: []
   },
-  {
-    title: "Design & BOM",
-    url: "design-bom",
-    icon: Workflow,
-    items: []
-  },
+  // Temporarily hidden - Design & BOM is now integrated into Project Wizard
+  // {
+  //   title: "Design & BOM",
+  //   url: "design-bom",
+  //   icon: Workflow,
+  //   items: []
+  // },
   {
     title: "Production",
     url: "production",

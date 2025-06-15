@@ -25,7 +25,6 @@ import { ProductionManager } from '@/components/production/ProductionManager'
 import { QualityControlStep } from './steps/QualityControlStep'
 import { ProductPassportStep } from './steps/ProductPassportStep'
 import { ProductPassportDetailView } from '@/components/passport/ProductPassportDetailView'
-import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 import type { Project } from '@/hooks/useProjects'
 
@@ -59,7 +58,6 @@ export function ProjectWizard() {
   const { projects, updateProject, refreshProjects, fetchProjectById } = useProjects()
   const { generateProductPassport, productPassports } = useProductPassports()
   const { stages, fetchStages } = useManufacturingStages()
-  const { toast } = useToast()
 
   // Get current project with better error handling
   const getCurrentProject = useCallback((): Project | null => {
@@ -271,11 +269,7 @@ export function ProjectWizard() {
       
       if (!project) {
         console.error('ProjectWizard: Project not found:', projectId)
-        toast({
-          title: "Error",
-          description: "Project not found. The project may have been deleted or there was an error during creation.",
-          variant: "destructive"
-        })
+        console.error('Project not found. The project may have been deleted or there was an error during creation.')
         return
       }
       
@@ -288,10 +282,7 @@ export function ProjectWizard() {
         setGeneratedPassportId(existingPassport.id)
         setCurrentStep(5) // Product passport step
         console.log('ProjectWizard: Found existing passport, moving to step 5')
-        toast({
-          title: "Project Selected",
-          description: `${project.name} is active. Viewing existing product passport.`,
-        })
+        console.log(`${project.name} is active. Viewing existing product passport.`)
         return
       }
 
@@ -327,18 +318,10 @@ export function ProjectWizard() {
 
       setCurrentStep(targetStep)
       console.log(`ProjectWizard: Auto-advancing to step ${targetStep} based on project status: ${project.status}`)
-      
-      toast({
-        title: "Project Selected",
-        description: progressMessage,
-      })
+      console.log(progressMessage)
     } catch (error) {
       console.error('ProjectWizard: Error selecting project:', error)
-      toast({
-        title: "Error",
-        description: "Failed to select project. Please try again.",
-        variant: "destructive"
-      })
+      console.error('Failed to select project. Please try again.')
     } finally {
       setIsSelectingProject(false)
     }
@@ -354,10 +337,7 @@ export function ProjectWizard() {
       // Update project status in background
       await debouncedUpdateProject(selectedProject, { status: 'design' })
       
-      toast({
-        title: "BOM Complete",
-        description: "Bill of Materials completed successfully. You can now proceed to Production Planning.",
-      })
+      console.log('Bill of Materials completed successfully. You can now proceed to Production Planning.')
     }
   }
 
@@ -375,7 +355,7 @@ export function ProjectWizard() {
       // Move to manufacturing step
       setCurrentStep(3)
       
-      // Update project status in background (no toast)
+      // Update project status in background (no console log)
       await debouncedUpdateProject(selectedProject, { status: 'in_progress' })
       
       console.log('Production started - moving to manufacturing step')
@@ -407,7 +387,7 @@ export function ProjectWizard() {
         // Update local state immediately
         setLocalCompletionState(prev => ({ ...prev, manufacturingCompleted: true }))
         
-        // Update project status in background (no toast)
+        // Update project status in background (no console log)
         await debouncedUpdateProject(selectedProject, { status: 'completed', progress: 100 })
         
         // Auto-advance to quality control
@@ -423,11 +403,7 @@ export function ProjectWizard() {
   const handleQualityControlComplete = async (productImageUrl?: string) => {
     if (!selectedProject) {
       console.error('❌ No project selected for quality control completion')
-      toast({
-        title: "Error",
-        description: "No project selected. Please select a project first.",
-        variant: "destructive"
-      })
+      console.error('No project selected. Please select a project first.')
       return
     }
 
@@ -444,11 +420,7 @@ export function ProjectWizard() {
       
       if (!freshProject) {
         console.error('❌ Project not found after fetch attempt:', selectedProject)
-        toast({
-          title: "Error",
-          description: "Project not found in database. Please refresh the page and try again.",
-          variant: "destructive"
-        })
+        console.error('Project not found in database. Please refresh the page and try again.')
         return
       }
 
@@ -489,10 +461,7 @@ export function ProjectWizard() {
         setGeneratedPassportId(passport.id)
         setCurrentStep(5)
         
-        toast({
-          title: "Success",
-          description: "Product passport generated successfully!"
-        })
+        console.log('Product passport generated successfully!')
       } else {
         console.error('❌ Product passport generation returned null/undefined')
         throw new Error('Product passport generation returned no result')
@@ -506,11 +475,7 @@ export function ProjectWizard() {
       })
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-      toast({
-        title: "Product Passport Generation Failed",
-        description: `Error: ${errorMessage}. Please check the console for details and try again.`,
-        variant: "destructive"
-      })
+      console.error(`Product Passport Generation Failed. Error: ${errorMessage}. Please check the console for details and try again.`)
     } finally {
       console.log('=== ENHANCED PRODUCT PASSPORT GENERATION COMPLETED ===')
       setIsGeneratingPassport(false)
@@ -538,11 +503,7 @@ export function ProjectWizard() {
         URL.revokeObjectURL(url)
       } catch (error) {
         console.error('Error downloading QR code:', error)
-        toast({
-          title: "Error",
-          description: "Failed to download QR code",
-          variant: "destructive"
-        })
+        console.error('Failed to download QR code')
       }
     }
   }
