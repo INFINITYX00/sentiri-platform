@@ -112,7 +112,7 @@ export function ProjectWizard() {
         title: 'BOM Creation',
         description: 'Design your Bill of Materials',
         icon: FileText,
-        status: project && project.status !== 'planning' ? 'completed' : 
+        status: project && (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed') ? 'completed' : 
                project ? 'current' : 'upcoming',
         allowAccess: !!project
       },
@@ -123,7 +123,7 @@ export function ProjectWizard() {
         icon: Workflow,
         status: project?.status === 'design' ? 'current' :
                (project?.status === 'in_progress' || project?.status === 'completed') ? 'completed' : 'upcoming',
-        allowAccess: project?.status === 'design' || project?.status === 'in_progress' || project?.status === 'completed'
+        allowAccess: project && (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed')
       },
       {
         id: 'manufacturing',
