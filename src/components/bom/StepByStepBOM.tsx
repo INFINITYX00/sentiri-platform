@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface StepByStepBOMProps {
   projectId: string;
+  onBOMComplete?: () => void;
 }
 
 interface BOMItem {
@@ -24,7 +25,7 @@ interface BOMItem {
   material_name: string;
 }
 
-export function StepByStepBOM({ projectId }: StepByStepBOMProps) {
+export function StepByStepBOM({ projectId, onBOMComplete }: StepByStepBOMProps) {
   const { materials } = useMaterials();
   const { addMaterialToProject, updateProject } = useProjects();
   const { toast } = useToast();
@@ -117,11 +118,11 @@ export function StepByStepBOM({ projectId }: StepByStepBOMProps) {
 
       const { totalCost, totalCarbon } = calculateTotals();
       
-      // Update project with totals and move to production status
+      // Update project with totals and move to design status
       await updateProject(projectId, {
         total_cost: totalCost,
         total_carbon_footprint: totalCarbon,
-        status: 'design', // Keep in design status until production starts
+        status: 'design',
         allocated_materials: bomItems.map(item => item.material_id)
       });
 
@@ -132,6 +133,11 @@ export function StepByStepBOM({ projectId }: StepByStepBOMProps) {
 
       // Clear the BOM
       setBomItems([]);
+      
+      // Notify parent component that BOM is complete
+      if (onBOMComplete) {
+        onBOMComplete();
+      }
     } catch (error) {
       console.error('Error saving BOM:', error);
       toast({

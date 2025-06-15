@@ -13,9 +13,10 @@ import { useToast } from "@/hooks/use-toast";
 
 interface EnhancedBOMUploaderProps {
   projectId: string;
+  onBOMComplete?: () => void;
 }
 
-export function EnhancedBOMUploader({ projectId }: EnhancedBOMUploaderProps) {
+export function EnhancedBOMUploader({ projectId, onBOMComplete }: EnhancedBOMUploaderProps) {
   const [bomName, setBomName] = useState('');
   const [bomDescription, setBomDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -85,6 +86,11 @@ export function EnhancedBOMUploader({ projectId }: EnhancedBOMUploaderProps) {
           title: "BOM Uploaded Successfully",
           description: `${result.materials.length} materials added to project`,
         });
+
+        // Notify parent component that BOM is complete
+        if (onBOMComplete) {
+          onBOMComplete();
+        }
       } else {
         setUploadResult(result);
         toast({

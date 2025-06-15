@@ -125,6 +125,27 @@ export function ProjectWizard() {
     }
   }
 
+  const handleBOMComplete = async () => {
+    if (selectedProject) {
+      // Move to production planning step
+      setCurrentStep(2)
+    }
+  }
+
+  const handleProductionStart = async () => {
+    if (selectedProject) {
+      // Move to manufacturing step
+      setCurrentStep(3)
+    }
+  }
+
+  const handleManufacturingComplete = async () => {
+    if (selectedProject) {
+      // Move to quality control
+      setCurrentStep(4)
+    }
+  }
+
   const goToStep = (stepIndex: number) => {
     if (steps[stepIndex].allowAccess) {
       setCurrentStep(stepIndex)
@@ -136,14 +157,25 @@ export function ProjectWizard() {
       case 'project-setup':
         return <ProjectsManager onProjectSelect={handleProjectSelect} />
       case 'bom-creation':
-        return selectedProject ? <DesignBOMManager /> : (
+        return selectedProject ? (
+          <DesignBOMManager 
+            projectId={selectedProject} 
+            onBOMComplete={handleBOMComplete}
+          />
+        ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Please select a project first</p>
           </div>
         )
       case 'production-planning':
       case 'manufacturing':
-        return selectedProject ? <ProductionManager /> : (
+        return selectedProject ? (
+          <ProductionManager 
+            projectId={selectedProject}
+            onProductionStart={handleProductionStart}
+            onManufacturingComplete={handleManufacturingComplete}
+          />
+        ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Please select a project first</p>
           </div>
