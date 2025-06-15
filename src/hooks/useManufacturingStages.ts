@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 
@@ -27,19 +27,19 @@ export function useManufacturingStages() {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
-  const fetchStages = async (projectId?: string) => {
+  const fetchStages = useCallback(async (projectId?: string) => {
+    if (!projectId) {
+      setStages([])
+      return
+    }
+
     setLoading(true)
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('manufacturing_stages')
         .select('*')
+        .eq('project_id', projectId)
         .order('created_at', { ascending: true })
-
-      if (projectId) {
-        query = query.eq('project_id', projectId)
-      }
-
-      const { data, error } = await query
 
       if (error) throw error
       setStages(data || [])
@@ -53,9 +53,9 @@ export function useManufacturingStages() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
 
-  const addStage = async (stageData: Omit<ManufacturingStage, 'id' | 'created_at' | 'updated_at'>) => {
+  const addStage = useCallback(async (stageData: Omit<ManufacturingStage, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase
         .from('manufacturing_stages')
@@ -81,9 +81,9 @@ export function useManufacturingStages() {
       })
       return null
     }
-  }
+  }, [toast])
 
-  const updateStage = async (id: string, updates: Partial<ManufacturingStage>) => {
+  const updateStage = useCallback(async (id: string, updates: Partial<ManufacturingStage>) => {
     try {
       const { data, error } = await supabase
         .from('manufacturing_stages')
@@ -110,9 +110,9 @@ export function useManufacturingStages() {
       })
       return null
     }
-  }
+  }, [toast])
 
-  const createDefaultStages = async (projectId: string) => {
+  const createDefaultStages = useCallback(async (projectId: string) => {
     const defaultStages = [
       {
         project_id: projectId,
@@ -202,10 +202,6 @@ export function useManufacturingStages() {
       console.error('Error creating default stages:', error)
       return null
     }
-  }
-
-  useEffect(() => {
-    fetchStages()
   }, [])
 
   return {

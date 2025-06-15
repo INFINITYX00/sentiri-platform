@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import {
   Pause
 } from "lucide-react";
 import { useManufacturingStages, ManufacturingStage } from '@/hooks/useManufacturingStages';
+import { ManufacturingStagesSkeleton } from '@/components/manufacturing/ManufacturingStagesSkeleton';
 
 interface ManufacturingStagesProps {
   projectId: string;
@@ -35,17 +36,52 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
     workers: [] as string[]
   });
 
+  // Memoized debounced stage update callback
+  const debouncedOnStageUpdate = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (stages: ManufacturingStage[]) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => onStageUpdate(stages), 300);
+      };
+    })(),
+    [onStageUpdate]
+  );
+
+  // Fetch stages only when projectId changes
   useEffect(() => {
     if (projectId) {
       fetchStages(projectId);
     }
   }, [projectId, fetchStages]);
 
+  // Update parent component when stages change (debounced)
   useEffect(() => {
-    onStageUpdate(stages);
-  }, [stages, onStageUpdate]);
+    if (stages.length > 0) {
+      debouncedOnStageUpdate(stages);
+    }
+  }, [stages, debouncedOnStageUpdate]);
 
-  const getStageIcon = (stageId: string) => {
+  // Memoized calculations to prevent unnecessary re-renders
+  const stageMetrics = useMemo(() => {
+    const totalEstimatedHours = stages.reduce((sum, stage) => sum + stage.estimated_hours, 0);
+    const totalActualHours = stages.reduce((sum, stage) => sum + stage.actual_hours, 0);
+    const totalEstimatedEnergy = stages.reduce((sum, stage) => sum + stage.energy_estimate, 0);
+    const totalActualEnergy = stages.reduce((sum, stage) => sum + stage.actual_energy, 0);
+    const overallProgress = stages.length > 0 ? stages.reduce((sum, stage) => sum + stage.progress, 0) / stages.length : 0;
+    const efficiency = Math.round((totalEstimatedHours / Math.max(totalActualHours, 1)) * 100);
+
+    return {
+      totalEstimatedHours,
+      totalActualHours,
+      totalEstimatedEnergy,
+      totalActualEnergy,
+      overallProgress,
+      efficiency
+    };
+  }, [stages]);
+
+  const getStageIcon = useCallback((stageId: string) => {
     switch (stageId) {
       case 'planning': return PenTool;
       case 'material_prep': return Wrench;
@@ -55,50 +91,50 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
       case 'finishing': return Sparkles;
       default: return Clock;
     }
-  };
+  }, []);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-500';
       case 'in_progress': return 'bg-blue-500';
       case 'blocked': return 'bg-red-500';
       default: return 'bg-gray-500';
     }
-  };
+  }, []);
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = useCallback((status: string) => {
     switch (status) {
       case 'completed': return CheckCircle;
       case 'in_progress': return Clock;
       case 'blocked': return AlertCircle;
       default: return Clock;
     }
-  };
+  }, []);
 
-  const handleStartStage = async (stage: ManufacturingStage) => {
+  const handleStartStage = useCallback(async (stage: ManufacturingStage) => {
     await updateStage(stage.id, {
       status: 'in_progress',
       start_date: new Date().toISOString().split('T')[0]
     });
-  };
+  }, [updateStage]);
 
-  const handleCompleteStage = async (stage: ManufacturingStage) => {
+  const handleCompleteStage = useCallback(async (stage: ManufacturingStage) => {
     await updateStage(stage.id, {
       status: 'completed',
       progress: 100,
       completed_date: new Date().toISOString().split('T')[0]
     });
-  };
+  }, [updateStage]);
 
-  const handleProgressUpdate = async (stage: ManufacturingStage, progress: number) => {
+  const handleProgressUpdate = useCallback(async (stage: ManufacturingStage, progress: number) => {
     const newProgress = Math.min(100, Math.max(0, progress));
     await updateStage(stage.id, {
       progress: newProgress,
       status: newProgress === 100 ? 'completed' : 'in_progress'
     });
-  };
+  }, [updateStage]);
 
-  const handleEditStage = (stage: ManufacturingStage) => {
+  const handleEditStage = useCallback((stage: ManufacturingStage) => {
     setEditingStage(stage.id);
     setEditForm({
       actual_hours: stage.actual_hours,
@@ -106,21 +142,16 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
       notes: stage.notes || '',
       workers: stage.workers
     });
-  };
+  }, []);
 
-  const handleSaveEdit = async (stageId: string) => {
+  const handleSaveEdit = useCallback(async (stageId: string) => {
     await updateStage(stageId, editForm);
     setEditingStage(null);
-  };
+  }, [updateStage, editForm]);
 
-  const totalEstimatedHours = stages.reduce((sum, stage) => sum + stage.estimated_hours, 0);
-  const totalActualHours = stages.reduce((sum, stage) => sum + stage.actual_hours, 0);
-  const totalEstimatedEnergy = stages.reduce((sum, stage) => sum + stage.energy_estimate, 0);
-  const totalActualEnergy = stages.reduce((sum, stage) => sum + stage.actual_energy, 0);
-  const overallProgress = stages.length > 0 ? stages.reduce((sum, stage) => sum + stage.progress, 0) / stages.length : 0;
-
+  // Show skeleton while loading
   if (loading) {
-    return <div className="text-center py-8">Loading manufacturing stages...</div>;
+    return <ManufacturingStagesSkeleton />;
   }
 
   if (stages.length === 0) {
@@ -142,7 +173,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Overall Progress</p>
-                <p className="text-2xl font-bold">{Math.round(overallProgress)}%</p>
+                <p className="text-2xl font-bold">{Math.round(stageMetrics.overallProgress)}%</p>
               </div>
               <CheckCircle className="h-6 w-6 text-primary" />
             </div>
@@ -154,7 +185,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Time Progress</p>
-                <p className="text-xl font-bold">{totalActualHours}h / {totalEstimatedHours}h</p>
+                <p className="text-xl font-bold">{stageMetrics.totalActualHours}h / {stageMetrics.totalEstimatedHours}h</p>
               </div>
               <Clock className="h-6 w-6 text-blue-400" />
             </div>
@@ -166,7 +197,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Energy Used</p>
-                <p className="text-xl font-bold">{totalActualEnergy}kWh / {totalEstimatedEnergy}kWh</p>
+                <p className="text-xl font-bold">{stageMetrics.totalActualEnergy}kWh / {stageMetrics.totalEstimatedEnergy}kWh</p>
               </div>
               <Zap className="h-6 w-6 text-yellow-400" />
             </div>
@@ -178,7 +209,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Efficiency</p>
-                <p className="text-2xl font-bold">{Math.round((totalEstimatedHours / Math.max(totalActualHours, 1)) * 100)}%</p>
+                <p className="text-2xl font-bold">{stageMetrics.efficiency}%</p>
               </div>
               <CheckCircle className="h-6 w-6 text-green-400" />
             </div>

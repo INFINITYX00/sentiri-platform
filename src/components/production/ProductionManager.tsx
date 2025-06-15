@@ -1,5 +1,4 @@
-
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -62,7 +61,7 @@ export function ProductionManager({
     }
   ];
 
-  const handleStartProduction = async (projectId: string) => {
+  const handleStartProduction = useCallback(async (projectId: string) => {
     setSelectedProject(projectId)
     await updateProject(projectId, { 
       status: 'in_progress',
@@ -75,20 +74,20 @@ export function ProductionManager({
     if (onProductionStart) {
       await onProductionStart()
     }
-  }
+  }, [updateProject, createDefaultStages, onProductionStart])
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case 'design': return 'bg-purple-100 text-purple-800 border-purple-200'
       case 'in_progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
       case 'completed': return 'bg-green-100 text-green-800 border-green-200'
       default: return 'bg-gray-100 text-gray-800 border-gray-200'
     }
-  }
+  }, [])
 
   const selectedProjectData = currentProjectId ? projects.find(p => p.id === currentProjectId) : null
 
-  const handleStageUpdate = async (stages: any[]) => {
+  const handleStageUpdate = useCallback(async (stages: any[]) => {
     if (!currentProjectId) return
     
     // Calculate overall progress from stages
@@ -104,7 +103,7 @@ export function ProductionManager({
     if (overallProgress === 100 && onManufacturingComplete) {
       await onManufacturingComplete()
     }
-  }
+  }, [currentProjectId, updateProject, onManufacturingComplete])
 
   // If projectId is provided via props, show production view for that project
   if (providedProjectId) {
