@@ -75,7 +75,7 @@ export function ProjectsManager() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-6 pl-12">
       {/* Header Section */}
       <div className="flex justify-between items-center">
         <div>
