@@ -46,127 +46,135 @@ export function MaterialPassport() {
   const uniqueTypes = [...new Set(productPassports.map(p => p.product_type))];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Product Passports</h1>
-          <p className="text-muted-foreground mt-1">Track finished products and their material journey</p>
-        </div>
-        <Button onClick={() => setShowScanner(!showScanner)}>
-          <QrCode className="h-4 w-4 mr-2" />
-          {showScanner ? 'Hide Scanner' : 'Scan QR Code'}
-        </Button>
-      </div>
-
-      {/* QR Scanner */}
-      <QRScanner 
-        isOpen={showScanner} 
-        onClose={() => setShowScanner(false)}
-      />
-
-      {/* Search and Filter */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by product name or project..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {uniqueTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Section */}
+      <div className="px-8 py-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Product Passports</h1>
+            <p className="text-muted-foreground mt-1">Track finished products and their material journey</p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Products</p>
-                <p className="text-2xl font-bold">{productPassports.length}</p>
-              </div>
-              <Package className="h-6 w-6 text-blue-400" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Carbon Impact</p>
-                <p className="text-2xl font-bold">
-                  {productPassports.reduce((sum, p) => sum + p.total_carbon_footprint, 0).toFixed(1)} kg
-                </p>
-              </div>
-              <QrCode className="h-6 w-6 text-green-400" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Avg Carbon/Product</p>
-                <p className="text-2xl font-bold">
-                  {productPassports.length > 0 
-                    ? (productPassports.reduce((sum, p) => sum + p.total_carbon_footprint, 0) / productPassports.length).toFixed(1)
-                    : '0'} kg
-                </p>
-              </div>
-              <Package className="h-6 w-6 text-purple-400" />
-            </div>
-          </CardContent>
-        </Card>
+          <Button onClick={() => setShowScanner(!showScanner)}>
+            <QrCode className="h-4 w-4 mr-2" />
+            {showScanner ? 'Hide Scanner' : 'Scan QR Code'}
+          </Button>
+        </div>
       </div>
 
-      {/* Product Passports Grid */}
-      {loading ? (
-        <div className="text-center py-8">Loading product passports...</div>
-      ) : filteredPassports.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredPassports.map((passport) => (
-            <ProductPassportCard
-              key={passport.id}
-              productPassport={passport}
-              onDownloadQR={handleDownloadQR}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <h3 className="text-lg font-medium mb-2">No Product Passports Found</h3>
-          <p className="text-muted-foreground mb-4">
-            {searchTerm || filterType !== 'all' 
-              ? 'No products match your search criteria' 
-              : 'Complete a project to generate your first product passport'}
-          </p>
-          {!searchTerm && filterType === 'all' && (
-            <Button onClick={() => window.location.hash = '#bom'}>
-              Create Your First Project
-            </Button>
+      {/* Main Content Area */}
+      <div className="px-8 py-4">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* QR Scanner */}
+          <QRScanner 
+            isOpen={showScanner} 
+            onClose={() => setShowScanner(false)}
+          />
+
+          {/* Search and Filter */}
+          <Card className="bg-white">
+            <CardContent className="p-4">
+              <div className="flex gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by product name or project..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger className="w-48">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {uniqueTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Products</p>
+                    <p className="text-2xl font-bold">{productPassports.length}</p>
+                  </div>
+                  <Package className="h-6 w-6 text-blue-400" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Carbon Impact</p>
+                    <p className="text-2xl font-bold">
+                      {productPassports.reduce((sum, p) => sum + p.total_carbon_footprint, 0).toFixed(1)} kg
+                    </p>
+                  </div>
+                  <QrCode className="h-6 w-6 text-green-400" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Avg Carbon/Product</p>
+                    <p className="text-2xl font-bold">
+                      {productPassports.length > 0 
+                        ? (productPassports.reduce((sum, p) => sum + p.total_carbon_footprint, 0) / productPassports.length).toFixed(1)
+                        : '0'} kg
+                    </p>
+                  </div>
+                  <Package className="h-6 w-6 text-purple-400" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Product Passports Grid */}
+          {loading ? (
+            <div className="text-center py-8">Loading product passports...</div>
+          ) : filteredPassports.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredPassports.map((passport) => (
+                <ProductPassportCard
+                  key={passport.id}
+                  productPassport={passport}
+                  onDownloadQR={handleDownloadQR}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <h3 className="text-lg font-medium mb-2">No Product Passports Found</h3>
+              <p className="text-muted-foreground mb-4">
+                {searchTerm || filterType !== 'all' 
+                  ? 'No products match your search criteria' 
+                  : 'Complete a project to generate your first product passport'}
+              </p>
+              {!searchTerm && filterType === 'all' && (
+                <Button onClick={() => window.location.hash = '#bom'}>
+                  Create Your First Project
+                </Button>
+              )}
+            </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
