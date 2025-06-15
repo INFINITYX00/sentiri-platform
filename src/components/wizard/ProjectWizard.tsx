@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,9 +19,13 @@ import {
 } from "lucide-react"
 import { useProjects } from '@/hooks/useProjects'
 import { useProductPassports } from '@/hooks/useProductPassports'
+import { useManufacturingStages } from '@/hooks/useManufacturingStages'
 import { ProjectsManager } from '@/components/projects/ProjectsManager'
 import { DesignBOMManager } from '@/components/design/DesignBOMManager'
 import { ProductionManager } from '@/components/production/ProductionManager'
+import { QualityControlStep } from './steps/QualityControlStep'
+import { ProductPassportStep } from './steps/ProductPassportStep'
+import { ProductPassportDetailView } from '@/components/passport/ProductPassportDetailView'
 import { useToast } from '@/hooks/use-toast'
 
 interface WizardStep {
@@ -38,12 +42,28 @@ export function ProjectWizard() {
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
   const [generatedPassportId, setGeneratedPassportId] = useState<string | null>(null)
   const [isGeneratingPassport, setIsGeneratingPassport] = useState(false)
+  const [showPassportDetail, setShowPassportDetail] = useState(false)
+  
   const { projects, updateProject } = useProjects()
   const { generateProductPassport, productPassports } = useProductPassports()
+  const { stages, fetchStages } = useManufacturingStages()
   const { toast } = useToast()
+
+  // Debounced toast to prevent flashing messages
+  const [lastToastTime, setLastToastTime] = useState(0)
+  const showToast = useCallback((title: string, description: string, variant?: "default" | "destructive") => {
+    const now = Date.now()
+    if (now - lastToastTime > 2000) { // Prevent toasts within 2 seconds
+      toast({ title, description, variant })
+      setLastToastTime(now)
+    }
+  }, [toast, lastToastTime])
 
   const getProjectSteps = (): WizardStep[] => {
     const project = selectedProject ? projects.find(p => p.id === selectedProject) : null
+    
+    // Check if all manufacturing stages are completed
+    const allStagesCompleted = stages.length > 0 && stages.every(stage => stage.status === 'completed' && stage.progress === 100)
     
     return [
       {
@@ -77,18 +97,18 @@ export function ProjectWizard() {
         title: 'Manufacturing',
         description: 'Execute production stages',
         icon: Factory,
-        status: project?.status === 'in_progress' ? 'current' :
-               project?.status === 'completed' ? 'completed' : 'upcoming',
-        allowAccess: project?.status === 'in_progress' || project?.status === 'completed'
+        status: project?.status === 'in_progress' && !allStagesCompleted ? 'current' :
+               allStagesCompleted ? 'completed' : 'upcoming',
+        allowAccess: project?.status === 'in_progress' || project?.status === 'completed' || allStagesCompleted
       },
       {
         id: 'quality-control',
         title: 'Quality Control',
         description: 'Final inspection and testing',
         icon: ClipboardCheck,
-        status: project?.status === 'completed' && project?.progress === 100 && !generatedPassportId ? 'current' : 
+        status: allStagesCompleted && !generatedPassportId ? 'current' : 
                generatedPassportId ? 'completed' : 'upcoming',
-        allowAccess: project?.status === 'completed' && project?.progress === 100
+        allowAccess: allStagesCompleted
       },
       {
         id: 'product-passport',
@@ -114,6 +134,13 @@ export function ProjectWizard() {
     }
   }, [selectedProject, productPassports, generatedPassportId])
 
+  // Fetch manufacturing stages when project is selected
+  useEffect(() => {
+    if (selectedProject) {
+      fetchStages(selectedProject)
+    }
+  }, [selectedProject, fetchStages])
+
   const handleProjectSelect = async (projectId: string) => {
     setSelectedProject(projectId)
     const project = projects.find(p => p.id === projectId)
@@ -127,14 +154,18 @@ export function ProjectWizard() {
         return
       }
 
-      // Navigate to appropriate step based on project status
+      // Navigate to appropriate step based on project status and manufacturing stages
+      await fetchStages(projectId)
+      const projectStages = stages.filter(s => s.project_id === projectId)
+      const allStagesCompleted = projectStages.length > 0 && projectStages.every(stage => stage.status === 'completed' && stage.progress === 100)
+
       if (project.status === 'planning') {
         setCurrentStep(1) // BOM creation
       } else if (project.status === 'design') {
         setCurrentStep(2) // Production planning
-      } else if (project.status === 'in_progress') {
+      } else if (project.status === 'in_progress' && !allStagesCompleted) {
         setCurrentStep(3) // Manufacturing
-      } else if (project.status === 'completed' && project.progress === 100) {
+      } else if (allStagesCompleted) {
         setCurrentStep(4) // Quality control
       }
     }
@@ -155,11 +186,17 @@ export function ProjectWizard() {
 
   const handleManufacturingComplete = async () => {
     if (selectedProject) {
-      setCurrentStep(4) // Move to quality control
+      // Check if all stages are actually completed
+      const allStagesCompleted = stages.every(stage => stage.status === 'completed' && stage.progress === 100)
+      if (allStagesCompleted) {
+        await updateProject(selectedProject, { status: 'completed', progress: 100 })
+        setCurrentStep(4) // Move to quality control
+        showToast("Manufacturing Complete", "All manufacturing stages have been completed successfully!")
+      }
     }
   }
 
-  const handleQualityControlComplete = async () => {
+  const handleQualityControlComplete = async (productImageUrl?: string) => {
     if (!selectedProject) return
 
     const project = projects.find(p => p.id === selectedProject)
@@ -167,7 +204,23 @@ export function ProjectWizard() {
 
     setIsGeneratingPassport(true)
     try {
-      // Generate product passport
+      // Gather project materials for passport specifications
+      const projectMaterials = project.allocated_materials || []
+      const materialsData = projectMaterials.map(materialId => {
+        // This would ideally fetch the actual material data
+        return { id: materialId, name: 'Material', type: 'Unknown', quantity: 1, unit: 'unit', carbon_footprint: 0 }
+      })
+
+      // Gather manufacturing stages data
+      const manufacturingStages = stages.map(stage => ({
+        name: stage.name,
+        estimated_hours: stage.estimated_hours,
+        actual_hours: stage.actual_hours,
+        energy_consumed: stage.actual_energy,
+        completed_date: stage.completed_date
+      }))
+
+      // Generate product passport with enhanced data
       const passport = await generateProductPassport(
         selectedProject,
         project.name,
@@ -178,27 +231,55 @@ export function ProjectWizard() {
           project_description: project.description,
           completion_date: new Date().toISOString(),
           total_cost: project.total_cost,
-          progress: project.progress
+          progress: project.progress,
+          materials_used: materialsData,
+          manufacturing_stages: manufacturingStages,
+          product_image_url: productImageUrl
         }
       )
 
       if (passport) {
+        // Update the passport with image if provided
+        if (productImageUrl) {
+          // This would typically update the passport record with the image URL
+          console.log('Product image URL:', productImageUrl)
+        }
+
         setGeneratedPassportId(passport.id)
         setCurrentStep(5) // Move to product passport step
-        toast({
-          title: "Success",
-          description: "Product passport generated successfully!",
-        })
+        showToast("Success", "Product passport generated successfully!")
       }
     } catch (error) {
       console.error('Error generating product passport:', error)
-      toast({
-        title: "Error",
-        description: "Failed to generate product passport",
-        variant: "destructive"
-      })
+      showToast("Error", "Failed to generate product passport", "destructive")
     } finally {
       setIsGeneratingPassport(false)
+    }
+  }
+
+  const handleViewPassportDetails = () => {
+    setShowPassportDetail(true)
+  }
+
+  const handleDownloadQR = async () => {
+    const passport = generatedPassportId ? productPassports.find(p => p.id === generatedPassportId) : null
+    if (passport?.qr_image_url) {
+      try {
+        const response = await fetch(passport.qr_image_url)
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `product-qr-${passport.product_name}.png`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      } catch (error) {
+        console.error('Error downloading QR code:', error)
+        showToast("Error", "Failed to download QR code", "destructive")
+      }
     }
   }
 
@@ -206,6 +287,19 @@ export function ProjectWizard() {
     if (steps[stepIndex].allowAccess) {
       setCurrentStep(stepIndex)
     }
+  }
+
+  const currentPassport = generatedPassportId ? productPassports.find(p => p.id === generatedPassportId) : null
+
+  // Show detailed passport view if requested
+  if (showPassportDetail && currentPassport) {
+    return (
+      <ProductPassportDetailView 
+        productPassport={currentPassport}
+        onBack={() => setShowPassportDetail(false)}
+        onDownloadQR={handleDownloadQR}
+      />
+    )
   }
 
   const renderStepContent = () => {
@@ -254,88 +348,20 @@ export function ProjectWizard() {
         )
       case 'quality-control':
         return (
-          <div className="text-center py-12">
-            <ClipboardCheck className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Quality Control</h3>
-            <p className="text-muted-foreground mb-6">
-              Final inspection and quality assurance completed. Ready to generate your product passport.
-            </p>
-            {selectedProject && !generatedPassportId && (
-              <Button 
-                className="mt-4"
-                onClick={handleQualityControlComplete}
-                disabled={isGeneratingPassport}
-              >
-                {isGeneratingPassport ? (
-                  <>
-                    <ClipboardCheck className="h-4 w-4 mr-2 animate-spin" />
-                    Generating Passport...
-                  </>
-                ) : (
-                  <>
-                    <Award className="h-4 w-4 mr-2" />
-                    Generate Product Passport
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+          <QualityControlStep
+            selectedProject={selectedProject}
+            generatedPassportId={generatedPassportId}
+            isGeneratingPassport={isGeneratingPassport}
+            onQualityControlComplete={handleQualityControlComplete}
+          />
         )
       case 'product-passport':
-        const passport = generatedPassportId ? productPassports.find(p => p.id === generatedPassportId) : null
         return (
-          <div className="text-center py-12">
-            <Award className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Product Passport Generated!</h3>
-            <p className="text-muted-foreground mb-6">
-              Your product passport has been created successfully
-            </p>
-            
-            {passport && (
-              <div className="max-w-md mx-auto bg-muted/20 rounded-lg p-6 mb-6">
-                <div className="flex items-center justify-center mb-4">
-                  {passport.qr_image_url ? (
-                    <img 
-                      src={passport.qr_image_url} 
-                      alt="Product QR Code"
-                      className="w-24 h-24 object-contain border rounded bg-white p-1"
-                    />
-                  ) : (
-                    <QrCode className="w-24 h-24 text-muted-foreground" />
-                  )}
-                </div>
-                <h4 className="font-semibold mb-2">{passport.product_name}</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Carbon Footprint: {passport.total_carbon_footprint.toFixed(2)} kg CO₂
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Generated: {new Date(passport.production_date).toLocaleDateString()}
-                </p>
-              </div>
-            )}
-            
-            <div className="flex gap-3 justify-center">
-              <Button 
-                onClick={() => window.location.hash = '#passport'}
-                variant="outline"
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                View All Passports
-              </Button>
-              {passport && (
-                <Button 
-                  onClick={() => {
-                    if (passport.qr_code) {
-                      window.open(passport.qr_code, '_blank')
-                    }
-                  }}
-                >
-                  <QrCode className="h-4 w-4 mr-2" />
-                  View Passport Details
-                </Button>
-              )}
-            </div>
-          </div>
+          <ProductPassportStep
+            passport={currentPassport}
+            onViewDetails={handleViewPassportDetails}
+            onDownloadQR={handleDownloadQR}
+          />
         )
       default:
         return null
@@ -362,6 +388,7 @@ export function ProjectWizard() {
                     setSelectedProject(null)
                     setGeneratedPassportId(null)
                     setCurrentStep(0)
+                    setShowPassportDetail(false)
                   }}
                 >
                   Change Project
