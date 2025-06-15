@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -46,6 +45,7 @@ export function ProjectWizard() {
   const [isGeneratingPassport, setIsGeneratingPassport] = useState(false)
   const [showPassportDetail, setShowPassportDetail] = useState(false)
   const [isSelectingProject, setIsSelectingProject] = useState(false)
+  const [bomCompleted, setBomCompleted] = useState(false)
   
   const { projects, updateProject, refreshProjects } = useProjects()
   const { generateProductPassport, productPassports } = useProductPassports()
@@ -113,8 +113,7 @@ export function ProjectWizard() {
         description: 'Design your Bill of Materials',
         icon: FileText,
         status: project && (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed') ? 'completed' : 
-               project && currentStep === 1 ? 'current' :
-               project ? 'current' : 'upcoming',
+               project && currentStep === 1 ? 'current' : 'upcoming',
         allowAccess: !!project
       },
       {
@@ -125,7 +124,7 @@ export function ProjectWizard() {
         status: project?.status === 'design' && currentStep === 2 ? 'current' :
                project?.status === 'design' ? 'current' :
                (project?.status === 'in_progress' || project?.status === 'completed') ? 'completed' : 'upcoming',
-        allowAccess: project && (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed')
+        allowAccess: project && (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed') || bomCompleted
       },
       {
         id: 'manufacturing',
@@ -157,6 +156,19 @@ export function ProjectWizard() {
   }
 
   const steps = getProjectSteps()
+
+  // Effect to listen for project status changes
+  useEffect(() => {
+    if (selectedProject) {
+      const project = projects.find(p => p.id === selectedProject)
+      if (project) {
+        // Update bomCompleted state based on project status
+        if (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed') {
+          setBomCompleted(true)
+        }
+      }
+    }
+  }, [selectedProject, projects])
 
   useEffect(() => {
     if (selectedProject && productPassports.length > 0) {
@@ -216,6 +228,11 @@ export function ProjectWizard() {
         return
       }
 
+      // Check if BOM is already completed
+      if (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed') {
+        setBomCompleted(true)
+      }
+
       // Smart auto-progression based on project status
       let targetStep = 0
       let progressMessage = ""
@@ -264,6 +281,7 @@ export function ProjectWizard() {
   const handleBOMComplete = async () => {
     if (selectedProject) {
       await updateProject(selectedProject, { status: 'design' })
+      setBomCompleted(true)
       toast({
         title: "BOM Complete",
         description: "Bill of Materials completed successfully. You can now proceed to Production Planning.",
@@ -395,6 +413,11 @@ export function ProjectWizard() {
     
     if (!nextStep) return false
     
+    // Special case for BOM Creation step - enable next if BOM is completed
+    if (currentStep === 1 && bomCompleted) {
+      return true
+    }
+    
     return nextStep.allowAccess
   }
 
@@ -503,6 +526,7 @@ export function ProjectWizard() {
                   onClick={() => {
                     setSelectedProject(null)
                     setGeneratedPassportId(null)
+                    setBomCompleted(false)
                     setCurrentStep(0)
                     setShowPassportDetail(false)
                   }}
