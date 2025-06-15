@@ -74,8 +74,10 @@ export function useMaterials() {
                 console.log('Material already exists, skipping duplicate')
                 return prev
               }
-              const newMaterials = [{ ...payload.new } as Material, ...prev]
+              const newMaterial = { ...payload.new } as Material
+              const newMaterials = [newMaterial, ...prev]
               console.log('Updated materials list length after insert:', newMaterials.length)
+              console.log('New materials array:', newMaterials.map(m => ({ id: m.id, name: m.name, updated_at: m.updated_at })))
               return newMaterials
             })
           } 
@@ -83,10 +85,12 @@ export function useMaterials() {
           if (payload.eventType === 'UPDATE') {
             console.log('Updating material via real-time:', payload.new)
             setMaterialsRef.current(prev => {
+              const updatedMaterial = { ...payload.new } as Material
               const newMaterials = prev.map(m => 
-                m.id === payload.new.id ? { ...payload.new } as Material : m
+                m.id === payload.new.id ? updatedMaterial : m
               )
               console.log('Updated materials list after update, count:', newMaterials.length)
+              console.log('Updated materials array:', newMaterials.map(m => ({ id: m.id, name: m.name, updated_at: m.updated_at })))
               return newMaterials
             })
           }
@@ -146,6 +150,11 @@ export function useMaterials() {
       }
     }
   }, []) // NO dependencies - subscription is created once and stays stable
+
+  // Debug effect to track materials changes
+  useEffect(() => {
+    console.log('Materials state changed:', materials.length, materials.map(m => ({ id: m.id, name: m.name, updated_at: m.updated_at })))
+  }, [materials])
 
   return {
     materials,

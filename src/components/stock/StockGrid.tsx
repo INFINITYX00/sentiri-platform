@@ -115,7 +115,7 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
           
           return (
             <MaterialStockCard
-              key={`${item.id}-${item.updated_at}`}
+              key={item.id}
               material={item}
               allocation={allocation}
               onViewQR={handleViewQR}
