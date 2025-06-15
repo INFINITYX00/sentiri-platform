@@ -75,27 +75,36 @@ export function useProductPassports() {
       let qrImageUrl: string | null = null
       
       try {
+        console.log('Generating QR code for product passport...')
         const qrPackage = await generateCompleteQRPackage(tempId)
         qrData = qrPackage.qrData
         
         // Convert QR code to file and upload
         const response = await fetch(qrPackage.qrCodeDataURL)
+        if (!response.ok) {
+          throw new Error(`Failed to fetch QR code data: ${response.statusText}`)
+        }
         const blob = await response.blob()
         const qrFile = new File([blob], `product-qr-${tempId}.png`, { type: 'image/png' })
         
+        console.log('Uploading QR code to storage...')
         const uploadResult = await uploadFile(qrFile, 'material-images', 'product-qr-codes')
         
         if (uploadResult.error) {
           console.warn('QR code upload failed:', uploadResult.error)
+          throw new Error(`QR code upload failed: ${uploadResult.error}`)
         } else {
           qrImageUrl = uploadResult.url
           console.log('Product QR code uploaded successfully:', qrImageUrl)
         }
       } catch (qrError) {
-        console.error('QR generation failed:', qrError)
+        console.error('QR generation/upload failed:', qrError)
+        // Fallback to simple URL
         qrData = `${window.location.origin}/product/${tempId}`
+        console.log('Using fallback QR data:', qrData)
       }
 
+      console.log('Creating product passport record...')
       // Create product passport
       const { data, error } = await supabase
         .from('product_passports')
@@ -114,9 +123,12 @@ export function useProductPassports() {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Database insert error:', error)
+        throw new Error(`Failed to create product passport: ${error.message}`)
+      }
 
-      console.log('Product passport created:', data.id)
+      console.log('Product passport created successfully:', data.id)
       await fetchProductPassports()
       
       toast({
@@ -127,12 +139,13 @@ export function useProductPassports() {
       return data
     } catch (error) {
       console.error('Error generating product passport:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       toast({
         title: "Error",
-        description: "Failed to generate product passport",
+        description: `Failed to generate product passport: ${errorMessage}`,
         variant: "destructive"
       })
-      return null
+      throw error // Re-throw so calling code can handle it
     } finally {
       setLoading(false)
     }

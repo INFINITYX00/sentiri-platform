@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -46,6 +47,7 @@ export function ProjectWizard() {
   const [showPassportDetail, setShowPassportDetail] = useState(false)
   const [isSelectingProject, setIsSelectingProject] = useState(false)
   const [bomCompleted, setBomCompleted] = useState(false)
+  const [isUpdatingProject, setIsUpdatingProject] = useState(false)
   
   const { projects, updateProject, refreshProjects } = useProjects()
   const { generateProductPassport, productPassports } = useProductPassports()
@@ -95,6 +97,8 @@ export function ProjectWizard() {
   const getProjectSteps = (): WizardStep[] => {
     const project = selectedProject ? projects.find(p => p.id === selectedProject) : null
     
+    console.log('Getting project steps for project:', project?.name, 'status:', project?.status, 'bomCompleted:', bomCompleted)
+    
     // Check if all manufacturing stages are completed
     const allStagesCompleted = stages.length > 0 && stages.every(stage => stage.status === 'completed' && stage.progress === 100)
     
@@ -112,7 +116,7 @@ export function ProjectWizard() {
         title: 'BOM Creation',
         description: 'Design your Bill of Materials',
         icon: FileText,
-        status: project && (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed') ? 'completed' : 
+        status: bomCompleted || (project && ['design', 'in_progress', 'completed'].includes(project.status)) ? 'completed' : 
                project && currentStep === 1 ? 'current' : 'upcoming',
         allowAccess: !!project
       },
@@ -121,18 +125,17 @@ export function ProjectWizard() {
         title: 'Production Planning',
         description: 'Plan manufacturing stages',
         icon: Workflow,
-        status: project?.status === 'design' && currentStep === 2 ? 'current' :
-               project?.status === 'design' ? 'current' :
-               (project?.status === 'in_progress' || project?.status === 'completed') ? 'completed' : 'upcoming',
-        allowAccess: project && (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed') || bomCompleted
+        status: project?.status === 'in_progress' || project?.status === 'completed' ? 'completed' :
+               (bomCompleted || project?.status === 'design') && currentStep === 2 ? 'current' : 'upcoming',
+        allowAccess: bomCompleted || (project && ['design', 'in_progress', 'completed'].includes(project.status))
       },
       {
         id: 'manufacturing',
         title: 'Manufacturing',
         description: 'Execute production stages',
         icon: Factory,
-        status: project?.status === 'in_progress' && !allStagesCompleted ? 'current' :
-               allStagesCompleted ? 'completed' : 'upcoming',
+        status: allStagesCompleted ? 'completed' :
+               project?.status === 'in_progress' && currentStep === 3 ? 'current' : 'upcoming',
         allowAccess: project?.status === 'in_progress' || project?.status === 'completed' || allStagesCompleted
       },
       {
@@ -140,8 +143,8 @@ export function ProjectWizard() {
         title: 'Quality Control',
         description: 'Final inspection and testing',
         icon: ClipboardCheck,
-        status: allStagesCompleted && !generatedPassportId ? 'current' : 
-               generatedPassportId ? 'completed' : 'upcoming',
+        status: generatedPassportId ? 'completed' :
+               allStagesCompleted && currentStep === 4 ? 'current' : 'upcoming',
         allowAccess: allStagesCompleted
       },
       {
@@ -149,7 +152,7 @@ export function ProjectWizard() {
         title: 'Product Passport',
         description: 'Generated digital passport',
         icon: Award,
-        status: generatedPassportId ? 'current' : 'upcoming',
+        status: generatedPassportId && currentStep === 5 ? 'current' : 'upcoming',
         allowAccess: !!generatedPassportId
       }
     ]
@@ -157,13 +160,15 @@ export function ProjectWizard() {
 
   const steps = getProjectSteps()
 
-  // Effect to listen for project status changes
+  // Effect to listen for project status changes and update bomCompleted state
   useEffect(() => {
     if (selectedProject) {
       const project = projects.find(p => p.id === selectedProject)
       if (project) {
+        console.log('Project status changed:', project.status)
         // Update bomCompleted state based on project status
         if (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed') {
+          console.log('Setting bomCompleted to true based on project status')
           setBomCompleted(true)
         }
       }
@@ -185,6 +190,29 @@ export function ProjectWizard() {
       fetchStages(selectedProject)
     }
   }, [selectedProject, fetchStages])
+
+  // Debounced project update to prevent race conditions
+  const debouncedUpdateProject = useCallback(
+    async (projectId: string, updates: Partial<Project>) => {
+      if (isUpdatingProject) {
+        console.log('Project update already in progress, skipping...')
+        return
+      }
+      
+      setIsUpdatingProject(true)
+      try {
+        console.log('Updating project:', projectId, 'with:', updates)
+        await updateProject(projectId, updates)
+        // Small delay to allow state to propagate
+        await new Promise(resolve => setTimeout(resolve, 100))
+      } catch (error) {
+        console.error('Error updating project:', error)
+      } finally {
+        setIsUpdatingProject(false)
+      }
+    },
+    [updateProject, isUpdatingProject]
+  )
 
   const handleProjectSelect = async (projectId: string) => {
     setIsSelectingProject(true)
@@ -230,6 +258,7 @@ export function ProjectWizard() {
 
       // Check if BOM is already completed
       if (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed') {
+        console.log('Setting bomCompleted to true based on project status during selection')
         setBomCompleted(true)
       }
 
@@ -279,9 +308,10 @@ export function ProjectWizard() {
   }
 
   const handleBOMComplete = async () => {
-    if (selectedProject) {
-      await updateProject(selectedProject, { status: 'design' })
+    if (selectedProject && !isUpdatingProject) {
+      console.log('BOM completed, updating project status to design')
       setBomCompleted(true)
+      await debouncedUpdateProject(selectedProject, { status: 'design' })
       toast({
         title: "BOM Complete",
         description: "Bill of Materials completed successfully. You can now proceed to Production Planning.",
@@ -296,10 +326,11 @@ export function ProjectWizard() {
   }
 
   const handleManufacturingComplete = async () => {
-    if (selectedProject) {
+    if (selectedProject && !isUpdatingProject) {
       const allStagesCompleted = stages.every(stage => stage.status === 'completed' && stage.progress === 100)
       if (allStagesCompleted) {
-        await updateProject(selectedProject, { status: 'completed', progress: 100 })
+        console.log('All manufacturing stages completed, updating project status')
+        await debouncedUpdateProject(selectedProject, { status: 'completed', progress: 100 })
         setCurrentStep(4)
         toast({
           title: "Manufacturing Complete",
@@ -310,13 +341,21 @@ export function ProjectWizard() {
   }
 
   const handleQualityControlComplete = async (productImageUrl?: string) => {
-    if (!selectedProject) return
+    if (!selectedProject) {
+      console.error('No project selected for quality control completion')
+      return
+    }
 
     const project = projects.find(p => p.id === selectedProject)
-    if (!project) return
+    if (!project) {
+      console.error('Project not found for quality control completion')
+      return
+    }
 
     setIsGeneratingPassport(true)
     try {
+      console.log('Starting product passport generation for project:', project.name)
+      
       const projectMaterials = project.allocated_materials || []
       const materialsData = projectMaterials.map(materialId => {
         return { id: materialId, name: 'Material', type: 'Unknown', quantity: 1, unit: 'unit', carbon_footprint: 0 }
@@ -348,6 +387,7 @@ export function ProjectWizard() {
       )
 
       if (passport) {
+        console.log('Product passport generated successfully:', passport.id)
         if (productImageUrl) {
           console.log('Product image URL:', productImageUrl)
         }
@@ -358,12 +398,14 @@ export function ProjectWizard() {
           title: "Success",
           description: "Product passport generated successfully!"
         })
+      } else {
+        throw new Error('Failed to generate product passport')
       }
     } catch (error) {
       console.error('Error generating product passport:', error)
       toast({
         title: "Error",
-        description: "Failed to generate product passport",
+        description: `Failed to generate product passport: ${error.message || 'Unknown error'}`,
         variant: "destructive"
       })
     } finally {
@@ -403,6 +445,7 @@ export function ProjectWizard() {
 
   const goToStep = (stepIndex: number) => {
     if (steps[stepIndex].allowAccess) {
+      console.log('Navigating to step:', stepIndex, steps[stepIndex].title)
       setCurrentStep(stepIndex)
     }
   }
@@ -411,10 +454,14 @@ export function ProjectWizard() {
     const currentStepData = steps[currentStep]
     const nextStep = steps[currentStep + 1]
     
+    console.log('Checking if can advance from step:', currentStep, currentStepData.title, 'to:', nextStep?.title)
+    console.log('Current step status:', currentStepData.status, 'Next step access:', nextStep?.allowAccess)
+    
     if (!nextStep) return false
     
     // Special case for BOM Creation step - enable next if BOM is completed
     if (currentStep === 1 && bomCompleted) {
+      console.log('BOM completed, allowing advance to next step')
       return true
     }
     
@@ -524,6 +571,7 @@ export function ProjectWizard() {
                   size="sm" 
                   variant="outline"
                   onClick={() => {
+                    console.log('Resetting wizard state')
                     setSelectedProject(null)
                     setGeneratedPassportId(null)
                     setBomCompleted(false)
