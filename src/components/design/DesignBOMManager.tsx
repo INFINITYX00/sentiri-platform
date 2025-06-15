@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Package, Trash2, Calculator, Leaf, AlertCircle } from "lucide-react"
+import { Plus, Package, Trash2, Calculator, Leaf, AlertCircle, CheckCircle } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,14 +41,24 @@ export function DesignBOMManager({ projectId, onBOMComplete }: DesignBOMManagerP
   const [costPerUnit, setCostPerUnit] = useState<number>(0)
   const [loading, setLoading] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [bomCompleted, setBomCompleted] = useState(false)
   
   const { materials } = useMaterials()
-  const { updateProject } = useProjects()
+  const { updateProject, projects } = useProjects()
   const { toast } = useToast()
+
+  const currentProject = projects.find(p => p.id === projectId)
 
   useEffect(() => {
     fetchBOMItems()
   }, [projectId])
+
+  useEffect(() => {
+    // Check if BOM is already completed (project status is 'design' or higher)
+    if (currentProject && currentProject.status !== 'planning') {
+      setBomCompleted(true)
+    }
+  }, [currentProject])
 
   const fetchBOMItems = async () => {
     if (!projectId) return
@@ -237,10 +246,11 @@ export function DesignBOMManager({ projectId, onBOMComplete }: DesignBOMManagerP
       
       // Update project status to design phase
       await updateProject(projectId, { status: 'design' })
+      setBomCompleted(true)
       
       toast({
         title: "BOM Complete",
-        description: "Bill of Materials completed successfully"
+        description: "Bill of Materials completed successfully. You can now proceed to Production Planning.",
       })
       
       onBOMComplete?.()
@@ -276,68 +286,76 @@ export function DesignBOMManager({ projectId, onBOMComplete }: DesignBOMManagerP
         <div>
           <h2 className="text-2xl font-bold">Bill of Materials</h2>
           <p className="text-muted-foreground">Define the materials needed for this project</p>
+          {bomCompleted && (
+            <div className="flex items-center gap-2 mt-2">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span className="text-sm text-green-600 font-medium">BOM Completed</span>
+            </div>
+          )}
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={isUpdating}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Material
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Material to BOM</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="material">Material</Label>
-                <Select value={selectedMaterialId} onValueChange={setSelectedMaterialId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a material" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {materials.map((material) => (
-                      <SelectItem key={material.id} value={material.id}>
-                        {material.name} ({material.type})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="quantity">Quantity Required</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                  min="0.1"
-                  step="0.1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="cost">Cost per Unit (optional)</Label>
-                <Input
-                  id="cost"
-                  type="number"
-                  value={costPerUnit}
-                  onChange={(e) => setCostPerUnit(Number(e.target.value))}
-                  min="0"
-                  step="0.01"
-                  placeholder="Leave blank to use material default"
-                />
-              </div>
-              <Button 
-                onClick={addBOMItem} 
-                className="w-full"
-                disabled={isUpdating || !selectedMaterialId || quantity <= 0}
-              >
-                {isUpdating ? "Adding..." : "Add to BOM"}
+        {!bomCompleted && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button disabled={isUpdating}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Material
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Material to BOM</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="material">Material</Label>
+                  <Select value={selectedMaterialId} onValueChange={setSelectedMaterialId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a material" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {materials.map((material) => (
+                        <SelectItem key={material.id} value={material.id}>
+                          {material.name} ({material.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="quantity">Quantity Required</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    min="0.1"
+                    step="0.1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cost">Cost per Unit (optional)</Label>
+                  <Input
+                    id="cost"
+                    type="number"
+                    value={costPerUnit}
+                    onChange={(e) => setCostPerUnit(Number(e.target.value))}
+                    min="0"
+                    step="0.01"
+                    placeholder="Leave blank to use material default"
+                  />
+                </div>
+                <Button 
+                  onClick={addBOMItem} 
+                  className="w-full"
+                  disabled={isUpdating || !selectedMaterialId || quantity <= 0}
+                >
+                  {isUpdating ? "Adding..." : "Add to BOM"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* BOM Summary */}
@@ -405,14 +423,16 @@ export function DesignBOMManager({ projectId, onBOMComplete }: DesignBOMManagerP
                       <span>Carbon: {((item.material?.carbon_footprint || 0) * item.quantity_required).toFixed(1)} kg</span>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => removeBOMItem(item.id)}
-                    disabled={isUpdating}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {!bomCompleted && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeBOMItem(item.id)}
+                      disabled={isUpdating}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -421,15 +441,30 @@ export function DesignBOMManager({ projectId, onBOMComplete }: DesignBOMManagerP
       </Card>
 
       {/* Complete BOM Button */}
-      {bomItems.length > 0 && (
+      {bomItems.length > 0 && !bomCompleted && (
         <div className="flex justify-end">
           <Button 
             onClick={completeBOM}
             disabled={isUpdating}
             size="lg"
           >
-            {isUpdating ? "Completing..." : "Complete BOM & Continue"}
+            {isUpdating ? "Completing..." : "Complete BOM"}
           </Button>
+        </div>
+      )}
+
+      {/* BOM Status Message */}
+      {bomCompleted && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <div>
+              <h4 className="text-sm font-medium text-green-800">BOM Completed Successfully</h4>
+              <p className="text-sm text-green-600">
+                Your Bill of Materials is complete. You can now proceed to Production Planning using the navigation controls above.
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>

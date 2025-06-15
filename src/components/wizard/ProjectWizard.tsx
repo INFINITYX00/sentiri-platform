@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -136,18 +137,15 @@ export function ProjectWizard() {
     console.log('ProjectWizard: Selecting project:', projectId)
     
     try {
-      // First, refresh the projects list to ensure we have the latest data
+      // Force refresh projects to ensure latest data
       await refreshProjects()
       
-      // Small delay to ensure state is fully updated
+      // Small delay to ensure state is updated
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      // Find the project in the refreshed list
-      const updatedProjects = await refreshProjects()
-      const project = updatedProjects?.find(p => p.id === projectId) || projects.find(p => p.id === projectId)
-      
+      const project = projects.find(p => p.id === projectId)
       if (!project) {
-        console.error('Project not found after refresh:', projectId)
+        console.error('Project not found:', projectId)
         toast({
           title: "Error",
           description: "Project not found. Please try again.",
@@ -156,7 +154,7 @@ export function ProjectWizard() {
         return
       }
 
-      console.log('ProjectWizard: Project found:', project.name, 'Status:', project.status)
+      console.log('ProjectWizard: Project selected:', project.name, 'Status:', project.status)
       setSelectedProject(projectId)
       
       // Check if product passport already exists
@@ -167,22 +165,8 @@ export function ProjectWizard() {
         return
       }
 
-      // Navigate to appropriate step based on project status and manufacturing stages
-      await fetchStages(projectId)
-      const projectStages = stages.filter(s => s.project_id === projectId)
-      const allStagesCompleted = projectStages.length > 0 && projectStages.every(stage => stage.status === 'completed' && stage.progress === 100)
-
-      if (project.status === 'planning') {
-        setCurrentStep(1) // BOM creation
-      } else if (project.status === 'design') {
-        setCurrentStep(2) // Production planning
-      } else if (project.status === 'in_progress' && !allStagesCompleted) {
-        setCurrentStep(3) // Manufacturing
-      } else if (allStagesCompleted) {
-        setCurrentStep(4) // Quality control
-      }
-
-      console.log('ProjectWizard: Project selected successfully, moving to step:', currentStep)
+      // Stay on current step - let user manually navigate
+      console.log('ProjectWizard: Project selected successfully, staying on current step')
       
       toast({
         title: "Project Selected",
@@ -203,7 +187,10 @@ export function ProjectWizard() {
   const handleBOMComplete = async () => {
     if (selectedProject) {
       await updateProject(selectedProject, { status: 'design' })
-      setCurrentStep(2) // Move to production planning
+      toast({
+        title: "BOM Complete",
+        description: "Bill of Materials completed successfully. You can now proceed to Production Planning.",
+      })
     }
   }
 
@@ -330,6 +317,16 @@ export function ProjectWizard() {
     if (steps[stepIndex].allowAccess) {
       setCurrentStep(stepIndex)
     }
+  }
+
+  const canAdvanceToNext = () => {
+    const currentStepData = steps[currentStep]
+    const nextStep = steps[currentStep + 1]
+    
+    if (!nextStep) return false
+    
+    // Allow advancement if the next step is accessible
+    return nextStep.allowAccess
   }
 
   const currentPassport = generatedPassportId ? productPassports.find(p => p.id === generatedPassportId) : null
@@ -542,7 +539,7 @@ export function ProjectWizard() {
                   </Button>
                   <Button
                     onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
-                    disabled={currentStep === steps.length - 1 || !steps[currentStep + 1]?.allowAccess}
+                    disabled={currentStep === steps.length - 1 || !canAdvanceToNext()}
                   >
                     Next
                     <ArrowRight className="h-4 w-4 ml-2" />
