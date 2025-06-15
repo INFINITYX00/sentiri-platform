@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -53,16 +52,13 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
           allocated_materials: []
         })
         
-        // Force refresh and wait for it to complete
+        // Force refresh the projects list to ensure the new project is available
         await refreshProjects()
         
-        // Use setTimeout to ensure the projects list is fully updated in the UI
-        setTimeout(() => {
-          if (onProjectSelect) {
-            console.log('Selecting newly created project:', created.id)
-            onProjectSelect(created.id)
-          }
-        }, 100)
+        // Now select the project after ensuring it's in the list
+        if (onProjectSelect) {
+          onProjectSelect(created.id)
+        }
       }
     } finally {
       setIsCreatingProject(false)
