@@ -59,15 +59,31 @@ export function ProjectWizard() {
         .select('*')
         .eq('id', projectId)
         .eq('deleted', false)
-        .single()
-
+        .maybeSingle()
       if (error) {
         console.error('ProjectWizard: Database query error:', error)
         return null
       }
-
-      console.log('ProjectWizard: Project found in database:', data?.name)
-      return data
+      if (!data) {
+        console.log('ProjectWizard: No project found for id:', projectId)
+        return null
+      }
+      // Patch any missing optional fields to avoid type errors
+      return {
+        allocated_materials: data.allocated_materials ?? [],
+        completion_date: data.completion_date ?? null,
+        created_at: data.created_at ?? '',
+        deleted: data.deleted ?? false,
+        description: data.description ?? '',
+        id: data.id,
+        name: data.name ?? '',
+        progress: data.progress ?? 0,
+        start_date: data.start_date ?? null,
+        status: data.status ?? '',
+        total_carbon_footprint: data.total_carbon_footprint ?? 0,
+        total_cost: data.total_cost ?? 0,
+        updated_at: data.updated_at ?? '',
+      }
     } catch (error) {
       console.error('ProjectWizard: Error fetching project from database:', error)
       return null
@@ -157,25 +173,20 @@ export function ProjectWizard() {
   const handleProjectSelect = async (projectId: string) => {
     setIsSelectingProject(true)
     console.log('ProjectWizard: Selecting project:', projectId)
-    
     try {
       // First, try to get the project directly from the database
       let project = await fetchProjectById(projectId)
-      
       // If not found in database, refresh local state and try local state
       if (!project) {
         console.log('ProjectWizard: Project not found in database, refreshing local state...')
         await refreshProjects()
         await new Promise(resolve => setTimeout(resolve, 500))
-        
         project = projects.find(p => p.id === projectId)
-        
         if (!project) {
           // Try database one more time
           project = await fetchProjectById(projectId)
         }
       }
-      
       if (!project) {
         console.error('ProjectWizard: Project not found:', projectId)
         toast({
@@ -185,10 +196,8 @@ export function ProjectWizard() {
         })
         return
       }
-
       console.log('ProjectWizard: Project found successfully:', project.name, 'Status:', project.status)
       setSelectedProject(projectId)
-      
       // Check if product passport already exists
       const existingPassport = productPassports.find(p => p.project_id === projectId)
       if (existingPassport) {
@@ -197,10 +206,8 @@ export function ProjectWizard() {
         console.log('ProjectWizard: Found existing passport, moving to step 5')
         return
       }
-
       // No automatic step progression - user controls navigation
       console.log('ProjectWizard: Project selected successfully, staying on current step')
-      
       toast({
         title: "Project Selected",
         description: `${project.name} is now active in the wizard`,
