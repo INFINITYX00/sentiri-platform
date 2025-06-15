@@ -2,33 +2,32 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, FolderOpen, Workflow, Package } from "lucide-react";
+import { Upload, FileText, Workflow, Package } from "lucide-react";
 import { EnhancedBOMUploader } from "./EnhancedBOMUploader";
 import { StepByStepBOM } from "./StepByStepBOM";
-import { ProjectsManager } from "../projects/ProjectsManager";
 
 export function BOMManager() {
-  const [activeTab, setActiveTab] = useState<'projects' | 'guided' | 'upload'>('guided');
+  const [activeTab, setActiveTab] = useState<'guided' | 'upload'>('guided');
 
-  const projectStats = [
-    { label: "Active Projects", value: "8", icon: FolderOpen, color: "text-blue-400" },
+  const bomStats = [
+    { label: "Active BOMs", value: "12", icon: FileText, color: "text-blue-400" },
     { label: "Total Materials", value: "156", icon: Package, color: "text-purple-400" },
-    { label: "Completed BOMs", value: "12", icon: FileText, color: "text-green-400" },
-    { label: "In Progress", value: "5", icon: Workflow, color: "text-orange-400" }
+    { label: "Completed BOMs", value: "28", icon: Workflow, color: "text-green-400" },
+    { label: "Templates", value: "8", icon: Upload, color: "text-orange-400" }
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Projects</h1>
-          <p className="text-muted-foreground mt-1">Manage projects, create BOMs and track manufacturing</p>
+          <h1 className="text-3xl font-bold">Bill of Materials</h1>
+          <p className="text-muted-foreground mt-1">Create and manage Bills of Materials for your projects</p>
         </div>
       </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {projectStats.map((stat) => (
+        {bomStats.map((stat) => (
           <Card key={stat.label} className="sentiri-card">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -56,14 +55,6 @@ export function BOMManager() {
               Guided Setup
             </Button>
             <Button
-              variant={activeTab === 'projects' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('projects')}
-              className="flex-1 min-w-[120px]"
-            >
-              <FolderOpen className="h-4 w-4 mr-2" />
-              Projects
-            </Button>
-            <Button
               variant={activeTab === 'upload' ? 'default' : 'outline'}
               onClick={() => setActiveTab('upload')}
               className="flex-1 min-w-[120px]"
@@ -75,7 +66,6 @@ export function BOMManager() {
 
           {/* Tab Content */}
           {activeTab === 'guided' && <StepByStepBOM />}
-          {activeTab === 'projects' && <ProjectsManager />}
           {activeTab === 'upload' && <EnhancedBOMUploader />}
         </CardContent>
       </Card>

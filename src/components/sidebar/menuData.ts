@@ -6,6 +6,8 @@ import {
   ShoppingCart, 
   TrendingUp,
   Leaf,
+  Workflow,
+  Factory,
 } from "lucide-react";
 import { MenuItem, WorkspaceMenuItem } from "./types";
 
@@ -23,15 +25,27 @@ export const workspaceMenuItems: WorkspaceMenuItem[] = [
     items: []
   },
   {
-    title: "Product Passports",
-    url: "passport",
-    icon: FileText,
-    items: []
-  },
-  {
     title: "Projects",
     url: "projects",
     icon: ShoppingCart,
+    items: []
+  },
+  {
+    title: "Design & BOM",
+    url: "design-bom",
+    icon: Workflow,
+    items: []
+  },
+  {
+    title: "Production",
+    url: "production",
+    icon: Factory,
+    items: []
+  },
+  {
+    title: "Product Passports",
+    url: "passport",
+    icon: FileText,
     items: []
   },
   {

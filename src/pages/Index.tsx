@@ -5,10 +5,11 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { StockManagement } from "@/components/stock/StockManagement";
 import { MaterialPassport } from "@/components/passport/MaterialPassport";
-import { BOMManager } from "@/components/bom/BOMManager";
 import { CarbonTracker } from "@/components/carbon/CarbonTracker";
 import { AIInsights } from "@/components/insights/AIInsights";
 import { ProjectsManager } from "@/components/projects/ProjectsManager";
+import { DesignBOMManager } from "@/components/design/DesignBOMManager";
+import { ProductionManager } from "@/components/production/ProductionManager";
 
 const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -17,14 +18,16 @@ const Index = () => {
     switch (activeView) {
       case 'dashboard':
         return <DashboardOverview />;
-      case 'projects':
-        return <ProjectsManager />;
       case 'stock':
         return <StockManagement />;
+      case 'projects':
+        return <ProjectsManager />;
+      case 'design-bom':
+        return <DesignBOMManager />;
+      case 'production':
+        return <ProductionManager />;
       case 'passport':
         return <MaterialPassport />;
-      case 'bom':
-        return <BOMManager />;
       case 'carbon':
         return <CarbonTracker />;
       case 'insights':
