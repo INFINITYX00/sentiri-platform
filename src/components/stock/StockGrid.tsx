@@ -1,9 +1,11 @@
+
 import { QRCodeViewer } from "@/components/qr/QRCodeViewer";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useStockAllocations } from "@/hooks/useStockAllocations";
 import { useState } from "react";
-import { Package, Loader2 } from "lucide-react";
+import { Package, Loader2, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { MaterialStockCard } from "./MaterialStockCard";
 import { AddMaterialDialog } from "./AddMaterialDialog";
 import {
@@ -23,7 +25,7 @@ interface StockGridProps {
 }
 
 export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
-  const { materials, loading, regenerateQRCode, deleteMaterial } = useMaterials();
+  const { materials, loading, regenerateQRCode, deleteMaterial, refreshMaterials } = useMaterials();
   const { allocations } = useStockAllocations();
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [qrViewerOpen, setQrViewerOpen] = useState(false);
@@ -31,6 +33,7 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [materialToEdit, setMaterialToEdit] = useState<Material | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   console.log('StockGrid rendering with materials:', materials.length, materials);
 
@@ -45,6 +48,15 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
     
     return matchesSearch && matchesType;
   });
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshMaterials();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -71,9 +83,20 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
           </p>
         )}
         {materials.length > 0 && (
-          <p className="text-sm text-muted-foreground mt-2">
-            Try adjusting your search or filter criteria.
-          </p>
+          <>
+            <p className="text-sm text-muted-foreground mt-2">
+              Try adjusting your search or filter criteria.
+            </p>
+            <Button 
+              onClick={handleRefresh} 
+              variant="outline" 
+              className="mt-4"
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh Materials
+            </Button>
+          </>
         )}
       </div>
     );
@@ -108,6 +131,19 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
 
   return (
     <>
+      {/* Refresh Button - positioned above the grid */}
+      <div className="flex justify-end mb-4">
+        <Button 
+          onClick={handleRefresh} 
+          variant="outline" 
+          size="sm"
+          disabled={refreshing}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" key={`materials-${materials.length}-${Date.now()}`}>
         {filteredItems.map((item) => {
           const allocation = allocations.find(a => a.material_id === item.id);

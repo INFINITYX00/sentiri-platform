@@ -1,5 +1,5 @@
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 
@@ -9,7 +9,7 @@ export function useMaterialsCore() {
   const { toast } = useToast()
   const channelRef = useRef<any>(null)
 
-  const fetchMaterials = async () => {
+  const fetchMaterials = useCallback(async () => {
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -30,9 +30,9 @@ export function useMaterialsCore() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
 
-  const updateMaterial = async (id: string, updates: Partial<Material>) => {
+  const updateMaterial = useCallback(async (id: string, updates: Partial<Material>) => {
     setLoading(true)
     try {
       const { error } = await supabase
@@ -58,9 +58,9 @@ export function useMaterialsCore() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
 
-  const deleteMaterial = async (id: string) => {
+  const deleteMaterial = useCallback(async (id: string) => {
     setLoading(true)
     try {
       console.log('Deleting material:', id)
@@ -88,7 +88,7 @@ export function useMaterialsCore() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
 
   return {
     materials,

@@ -25,17 +25,21 @@ export function useMaterials() {
   useEffect(() => {
     console.log('Setting up materials hook with real-time subscription')
     
+    // Initial fetch
     fetchMaterials()
 
+    // Clean up existing channel
     if (channelRef.current) {
       console.log('Cleaning up existing channel before creating new one')
       supabase.removeChannel(channelRef.current)
       channelRef.current = null
     }
     
+    // Create unique channel name
     const channelName = `materials-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     console.log('Creating new real-time channel:', channelName)
     
+    // Set up real-time subscription
     const channel = supabase
       .channel(channelName)
       .on(
@@ -63,24 +67,38 @@ export function useMaterials() {
             
             if (payload.eventType === 'UPDATE') {
               console.log('Updating material via real-time:', payload.new)
-              return prev.map(m => 
+              const updated = prev.map(m => 
                 m.id === payload.new.id ? payload.new as Material : m
               )
+              console.log('Updated materials list after update')
+              return updated
             }
             
             if (payload.eventType === 'DELETE') {
               console.log('Removing material via real-time:', payload.old)
-              return prev.filter(m => m.id !== payload.old.id)
+              const updated = prev.filter(m => m.id !== payload.old.id)
+              console.log('Updated materials list length after delete:', updated.length)
+              return updated
             }
             
             return prev
           })
         }
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         console.log('Real-time subscription status:', status)
+        if (err) {
+          console.error('Real-time subscription error:', err)
+        }
         if (status === 'SUBSCRIBED') {
           console.log('Real-time subscription active for channel:', channelName)
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.error('Channel error, attempting to reconnect...')
+          // Attempt to reconnect after a delay
+          setTimeout(() => {
+            fetchMaterials()
+          }, 2000)
         }
       })
 
@@ -93,7 +111,7 @@ export function useMaterials() {
         channelRef.current = null
       }
     }
-  }, [])
+  }, [fetchMaterials, setMaterials])
 
   return {
     materials,
