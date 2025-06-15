@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -221,7 +220,7 @@ export function MaterialStockCard({
               </div>
 
               {(material.carbon_source || material.ai_carbon_source) && (
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <span className="text-sm text-muted-foreground">Data Source:</span>
                   <span className={`font-medium text-sm ${material.ai_carbon_source ? 'text-blue-600' : 'text-green-600'} leading-tight`}>
                     {material.ai_carbon_source || material.carbon_source}
