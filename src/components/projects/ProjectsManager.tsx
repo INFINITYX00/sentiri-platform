@@ -75,12 +75,12 @@ export function ProjectsManager() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="page-container">
       {/* Header Section */}
-      <div className="px-8 py-6">
+      <div className="page-header">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Projects</h1>
+            <h1 className="page-title">Projects</h1>
             <p className="text-muted-foreground mt-1">Manage manufacturing projects and track progress</p>
           </div>
           <Button onClick={() => setShowCreateForm(!showCreateForm)} className="shadow-sm">
@@ -91,11 +91,11 @@ export function ProjectsManager() {
       </div>
 
       {/* Main Content Area */}
-      <div className="px-8 py-4">
+      <div className="content-section">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Create Project Form */}
           {showCreateForm && (
-            <Card className="border-dashed bg-white">
+            <Card className="border-dashed professional-card">
               <CardHeader>
                 <CardTitle className="text-lg">Create New Project</CardTitle>
               </CardHeader>
@@ -132,7 +132,7 @@ export function ProjectsManager() {
           {/* Projects Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((project) => (
-              <Card key={project.id} className="bg-white hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500">
+              <Card key={project.id} className="professional-card hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
@@ -218,7 +218,7 @@ export function ProjectsManager() {
             ))}
 
             {projects.length === 0 && !loading && (
-              <Card className="col-span-full border-dashed bg-white">
+              <Card className="col-span-full border-dashed professional-card">
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Package className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
