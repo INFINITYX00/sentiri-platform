@@ -309,7 +309,7 @@ export function ProjectWizard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <steps[currentStep].icon className="h-6 w-6 text-primary" />
+                  {React.createElement(steps[currentStep].icon, { className: "h-6 w-6 text-primary" })}
                   <div>
                     <CardTitle>{steps[currentStep].title}</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
