@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useMaterialsCore } from './useMaterialsCore'
 import { useMaterialsOperations } from './useMaterialsOperations'
@@ -21,6 +21,73 @@ export function useMaterials() {
     generateQRCodeForMaterial,
     regenerateQRCode
   } = useMaterialsOperations()
+
+  // Stable callback for handling real-time events
+  const handleRealtimeEvent = useCallback((payload: any) => {
+    console.log('Real-time update received:', payload.eventType, payload)
+    
+    if (payload.eventType === 'INSERT') {
+      console.log('Adding new material via real-time:', payload.new)
+      setMaterials(prev => {
+        const exists = prev.some(m => m.id === payload.new.id)
+        if (exists) {
+          console.log('Material already exists, skipping duplicate')
+          return prev
+        }
+        const updated = [payload.new as Material, ...prev]
+        console.log('Updated materials list length after insert:', updated.length)
+        return updated
+      })
+    } 
+    
+    if (payload.eventType === 'UPDATE') {
+      console.log('Updating material via real-time:', payload.new)
+      setMaterials(prev => {
+        const updated = prev.map(m => 
+          m.id === payload.new.id ? payload.new as Material : m
+        )
+        console.log('Updated materials list after update, count:', updated.length)
+        return updated
+      })
+    }
+    
+    if (payload.eventType === 'DELETE') {
+      console.log('Removing material via real-time:', payload.old)
+      setMaterials(prev => {
+        const updated = prev.filter(m => m.id !== payload.old.id)
+        console.log('Updated materials list length after delete:', updated.length)
+        return updated
+      })
+    }
+  }, [setMaterials])
+
+  // Stable callback for subscription status changes
+  const handleSubscriptionStatus = useCallback((status: string, err?: any) => {
+    console.log('Real-time subscription status changed to:', status)
+    if (err) {
+      console.error('Real-time subscription error:', err)
+    }
+    if (status === 'SUBSCRIBED') {
+      console.log('Real-time subscription is now active for materials')
+    }
+    if (status === 'CLOSED') {
+      console.log('Real-time subscription was closed')
+    }
+    if (status === 'CHANNEL_ERROR') {
+      console.error('Channel error occurred, attempting to reconnect...')
+      setTimeout(() => {
+        console.log('Reconnecting and fetching materials...')
+        fetchMaterials()
+      }, 2000)
+    }
+    if (status === 'TIMED_OUT') {
+      console.error('Subscription timed out, attempting to reconnect...')
+      setTimeout(() => {
+        console.log('Reconnecting after timeout...')
+        fetchMaterials()
+      }, 1000)
+    }
+  }, [fetchMaterials])
 
   useEffect(() => {
     console.log('Setting up materials hook with real-time subscription')
@@ -53,75 +120,14 @@ export function useMaterials() {
           schema: 'public',
           table: 'materials'
         },
-        (payload) => {
-          console.log('Real-time update received:', payload.eventType, payload)
-          
-          if (payload.eventType === 'INSERT') {
-            console.log('Adding new material via real-time:', payload.new)
-            setMaterials(prev => {
-              const exists = prev.some(m => m.id === payload.new.id)
-              if (exists) {
-                console.log('Material already exists, skipping duplicate')
-                return prev
-              }
-              const updated = [payload.new as Material, ...prev]
-              console.log('Updated materials list length after insert:', updated.length)
-              return updated
-            })
-          } 
-          
-          if (payload.eventType === 'UPDATE') {
-            console.log('Updating material via real-time:', payload.new)
-            setMaterials(prev => {
-              const updated = prev.map(m => 
-                m.id === payload.new.id ? payload.new as Material : m
-              )
-              console.log('Updated materials list after update, count:', updated.length)
-              return updated
-            })
-          }
-          
-          if (payload.eventType === 'DELETE') {
-            console.log('Removing material via real-time:', payload.old)
-            setMaterials(prev => {
-              const updated = prev.filter(m => m.id !== payload.old.id)
-              console.log('Updated materials list length after delete:', updated.length)
-              return updated
-            })
-          }
-        }
+        handleRealtimeEvent
       )
 
     // Store the channel reference immediately
     channelRef.current = channel
 
     // Subscribe to the channel
-    channel.subscribe((status, err) => {
-      console.log('Real-time subscription status changed to:', status)
-      if (err) {
-        console.error('Real-time subscription error:', err)
-      }
-      if (status === 'SUBSCRIBED') {
-        console.log('Real-time subscription is now active for materials')
-      }
-      if (status === 'CLOSED') {
-        console.log('Real-time subscription was closed')
-      }
-      if (status === 'CHANNEL_ERROR') {
-        console.error('Channel error occurred, attempting to reconnect...')
-        setTimeout(() => {
-          console.log('Reconnecting and fetching materials...')
-          fetchMaterials()
-        }, 2000)
-      }
-      if (status === 'TIMED_OUT') {
-        console.error('Subscription timed out, attempting to reconnect...')
-        setTimeout(() => {
-          console.log('Reconnecting after timeout...')
-          fetchMaterials()
-        }, 1000)
-      }
-    })
+    channel.subscribe(handleSubscriptionStatus)
 
     return () => {
       console.log('Cleaning up materials subscription on unmount')
@@ -135,7 +141,7 @@ export function useMaterials() {
         channelRef.current = null
       }
     }
-  }, [fetchMaterials, setMaterials]) // Add dependencies to ensure fresh references
+  }, []) // Remove all dependencies to prevent recreation
 
   return {
     materials,
