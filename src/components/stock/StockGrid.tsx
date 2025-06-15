@@ -3,7 +3,7 @@ import { QRCodeViewer } from "@/components/qr/QRCodeViewer";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useStockAllocations } from "@/hooks/useStockAllocations";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Package, Loader2 } from "lucide-react";
 import { MaterialStockCard } from "./MaterialStockCard";
 import { AddMaterialDialog } from "./AddMaterialDialog";
@@ -32,25 +32,30 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [materialToEdit, setMaterialToEdit] = useState<Material | null>(null);
+  const [renderKey, setRenderKey] = useState(0);
 
   console.log('🎯 StockGrid rendering with materials:', materials.length, materials);
 
-  // Debug effect to track when StockGrid re-renders
+  // Force re-render when materials change
   useEffect(() => {
-    console.log('📊 StockGrid re-rendered with materials count:', materials.length)
+    console.log('📊 StockGrid materials changed, forcing re-render. Count:', materials.length)
+    setRenderKey(prev => prev + 1);
   }, [materials])
 
-  const filteredItems = materials.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (item.origin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (item.specific_material || '').toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const itemType = item.type.toLowerCase().replace(/_/g, ' ');
-    const selectedTypeNormalized = selectedType.toLowerCase().replace(/_/g, ' ');
-    const matchesType = selectedType === 'all' || itemType === selectedTypeNormalized || item.type.toLowerCase() === selectedType.toLowerCase();
-    
-    return matchesSearch && matchesType;
-  });
+  // Memoize filtered items to ensure fresh references
+  const filteredItems = useMemo(() => {
+    return materials.filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           (item.origin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           (item.specific_material || '').toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const itemType = item.type.toLowerCase().replace(/_/g, ' ');
+      const selectedTypeNormalized = selectedType.toLowerCase().replace(/_/g, ' ');
+      const matchesType = selectedType === 'all' || itemType === selectedTypeNormalized || item.type.toLowerCase() === selectedType.toLowerCase();
+      
+      return matchesSearch && matchesType;
+    }).map(item => ({ ...item })); // Force new object references
+  }, [materials, searchQuery, selectedType]);
 
   if (loading) {
     return (
@@ -114,15 +119,22 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div key={`grid-${renderKey}`} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredItems.map((item, index) => {
           const allocation = allocations.find(a => a.material_id === item.id);
           
-          console.log(`🔍 Rendering card ${index + 1}/${filteredItems.length}:`, { id: item.id, name: item.name, updated_at: item.updated_at });
+          // Create a unique key that will force re-render when material updates
+          const cardKey = `${item.id}-${item.updated_at}-${renderKey}-${index}`;
+          console.log(`🔍 Rendering card ${index + 1}/${filteredItems.length}:`, { 
+            id: item.id, 
+            name: item.name, 
+            updated_at: item.updated_at,
+            key: cardKey
+          });
           
           return (
             <MaterialStockCard
-              key={`${item.id}-${item.updated_at}-${index}`}
+              key={cardKey}
               material={item}
               allocation={allocation}
               onViewQR={handleViewQR}
