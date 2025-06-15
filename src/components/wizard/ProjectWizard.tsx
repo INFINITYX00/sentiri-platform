@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -466,26 +465,7 @@ export function ProjectWizard() {
     console.log('Product image URL:', productImageUrl)
     
     try {
-      console.log('Step 1: Preparing project materials...')
-      const projectMaterials = currentProject.allocated_materials || []
-      console.log('Project materials:', projectMaterials)
-      
-      const materialsData = projectMaterials.map(materialId => {
-        return { id: materialId, name: 'Material', type: 'Unknown', quantity: 1, unit: 'unit', carbon_footprint: 0 }
-      })
-      console.log('Materials data prepared:', materialsData)
-
-      console.log('Step 2: Preparing manufacturing stages...')
-      const manufacturingStages = stages.map(stage => ({
-        name: stage.name,
-        estimated_hours: stage.estimated_hours,
-        actual_hours: stage.actual_hours,
-        energy_consumed: stage.actual_energy,
-        completed_date: stage.completed_date
-      }))
-      console.log('Manufacturing stages prepared:', manufacturingStages)
-
-      console.log('Step 3: Calling generateProductPassport...')
+      console.log('Step 1: Calling generateProductPassport with enhanced data...')
       const passport = await generateProductPassport(
         selectedProject,
         currentProject.name,
@@ -496,14 +476,12 @@ export function ProjectWizard() {
           project_description: currentProject.description,
           completion_date: new Date().toISOString(),
           total_cost: currentProject.total_cost,
-          progress: currentProject.progress,
-          materials_used: materialsData,
-          manufacturing_stages: manufacturingStages,
-          product_image_url: productImageUrl
-        }
+          progress: currentProject.progress
+        },
+        productImageUrl // Pass the product image URL as a separate parameter
       )
 
-      console.log('Step 4: Checking passport generation result...')
+      console.log('Step 2: Checking passport generation result...')
       if (passport) {
         console.log('✅ Product passport generated successfully:', passport.id)
         if (productImageUrl) {

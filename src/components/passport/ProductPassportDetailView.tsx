@@ -3,7 +3,7 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { QrCode, Package, Calendar, Leaf, ArrowLeft, Download } from "lucide-react"
+import { QrCode, Package, Calendar, Leaf, ArrowLeft, Download, Factory, DollarSign, Clock, Zap } from "lucide-react"
 import type { ProductPassport } from '@/hooks/useProductPassports'
 
 interface ProductPassportDetailViewProps {
@@ -19,6 +19,13 @@ export function ProductPassportDetailView({
 }: ProductPassportDetailViewProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString()
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount)
   }
 
   return (
@@ -89,11 +96,29 @@ export function ProductPassportDetailView({
                     )}
                   </div>
                 )}
+
+                {/* Enhanced Project Information */}
+                {productPassport.specifications && (
+                  <div className="border-t pt-4 grid grid-cols-2 gap-4">
+                    {productPassport.specifications.total_cost && (
+                      <div>
+                        <span className="text-sm text-muted-foreground">Production Cost</span>
+                        <p className="font-medium">{formatCurrency(productPassport.specifications.total_cost)}</p>
+                      </div>
+                    )}
+                    {productPassport.specifications.progress !== undefined && (
+                      <div>
+                        <span className="text-sm text-muted-foreground">Project Progress</span>
+                        <p className="font-medium">{productPassport.specifications.progress}%</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Materials Used */}
-            {productPassport.specifications?.materials_used && (
+            {/* Enhanced Materials Used */}
+            {productPassport.specifications?.materials_used && productPassport.specifications.materials_used.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle>Materials Used</CardTitle>
@@ -105,11 +130,14 @@ export function ProductPassportDetailView({
                         <div>
                           <p className="font-medium">{material.name}</p>
                           <p className="text-sm text-muted-foreground">{material.type}</p>
+                          {material.total_cost && (
+                            <p className="text-sm text-blue-600">{formatCurrency(material.total_cost)}</p>
+                          )}
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">{material.quantity} {material.unit}</p>
+                          <p className="font-medium">{material.quantity_consumed || material.quantity} {material.unit}</p>
                           {material.carbon_footprint && (
-                            <p className="text-sm text-green-600">{material.carbon_footprint.toFixed(2)} kg CO₂</p>
+                            <p className="text-sm text-green-600">{(material.total_carbon_impact || material.carbon_footprint).toFixed(2)} kg CO₂</p>
                           )}
                         </div>
                       </div>
@@ -119,8 +147,8 @@ export function ProductPassportDetailView({
               </Card>
             )}
 
-            {/* Manufacturing Stages */}
-            {productPassport.specifications?.manufacturing_stages && (
+            {/* Enhanced Manufacturing Stages */}
+            {productPassport.specifications?.manufacturing_stages && productPassport.specifications.manufacturing_stages.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle>Manufacturing Process</CardTitle>
@@ -128,16 +156,47 @@ export function ProductPassportDetailView({
                 <CardContent>
                   <div className="space-y-3">
                     {productPassport.specifications.manufacturing_stages.map((stage: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
-                        <div>
-                          <p className="font-medium">{stage.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {stage.actual_hours || stage.estimated_hours} hours
-                          </p>
+                      <div key={index} className="p-3 bg-muted/20 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium">{stage.name}</h4>
+                          <Badge variant="outline" className="bg-green-50 text-green-700">
+                            {stage.status || 'Completed'}
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className="bg-green-50 text-green-700">
-                          Completed
-                        </Badge>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          {stage.actual_hours && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 text-blue-600" />
+                              <span>{stage.actual_hours}h actual</span>
+                            </div>
+                          )}
+                          {stage.actual_energy && (
+                            <div className="flex items-center gap-1">
+                              <Zap className="h-3 w-3 text-yellow-600" />
+                              <span>{stage.actual_energy} kWh</span>
+                            </div>
+                          )}
+                          {stage.progress !== undefined && (
+                            <div className="text-muted-foreground">
+                              Progress: {stage.progress}%
+                            </div>
+                          )}
+                          {stage.completed_date && (
+                            <div className="text-muted-foreground">
+                              Completed: {formatDate(stage.completed_date)}
+                            </div>
+                          )}
+                        </div>
+                        {stage.workers && stage.workers.length > 0 && (
+                          <div className="mt-2 text-sm text-muted-foreground">
+                            Workers: {stage.workers.join(', ')}
+                          </div>
+                        )}
+                        {stage.notes && (
+                          <div className="mt-2 text-sm text-muted-foreground">
+                            Notes: {stage.notes}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -172,7 +231,7 @@ export function ProductPassportDetailView({
               </CardContent>
             </Card>
 
-            {/* Environmental Impact */}
+            {/* Enhanced Environmental Impact */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -193,12 +252,40 @@ export function ProductPassportDetailView({
                     {(productPassport.total_carbon_footprint / productPassport.quantity_produced).toFixed(2)} kg CO₂
                   </span>
                 </div>
+                
+                {/* Enhanced Carbon Breakdown */}
+                {productPassport.specifications?.carbon_breakdown && (
+                  <>
+                    <div className="border-t pt-2">
+                      <h4 className="text-sm font-medium mb-2">Carbon Breakdown</h4>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Materials</span>
+                          <span>{productPassport.specifications.carbon_breakdown.materials_carbon?.toFixed(2) || 0} kg CO₂</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Manufacturing</span>
+                          <span>{productPassport.specifications.carbon_breakdown.manufacturing_carbon?.toFixed(2) || 0} kg CO₂</span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 {productPassport.specifications?.total_cost && (
-                  <div className="flex justify-between">
-                    <span className="text-sm">Production Cost</span>
-                    <span className="font-medium">
-                      ${productPassport.specifications.total_cost.toFixed(2)}
-                    </span>
+                  <div className="border-t pt-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Production Cost</span>
+                      <span className="font-medium">
+                        {formatCurrency(productPassport.specifications.total_cost)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Cost per Unit</span>
+                      <span>
+                        {formatCurrency(productPassport.specifications.total_cost / productPassport.quantity_produced)}
+                      </span>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -212,7 +299,7 @@ export function ProductPassportDetailView({
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {Object.entries(productPassport.specifications).map(([key, value]) => {
-                    if (key === 'materials_used' || key === 'manufacturing_stages') return null
+                    if (['materials_used', 'manufacturing_stages', 'carbon_breakdown', 'total_cost', 'progress'].includes(key)) return null
                     return (
                       <div key={key} className="flex justify-between text-sm">
                         <span className="text-muted-foreground capitalize">

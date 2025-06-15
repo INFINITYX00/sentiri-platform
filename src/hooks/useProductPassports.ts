@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -62,14 +63,75 @@ export function useProductPassports() {
     productType: string = 'manufactured',
     quantityProduced: number = 1,
     totalCarbonFootprint: number = 0,
-    specifications: Record<string, any> = {}
+    specifications: Record<string, any> = {},
+    productImageUrl?: string
   ) => {
     setLoading(true)
     console.log('🔧 useProductPassports: generateProductPassport called')
-    console.log('📋 Parameters:', { projectId, productName, productType, quantityProduced, totalCarbonFootprint })
+    console.log('📋 Parameters:', { projectId, productName, productType, quantityProduced, totalCarbonFootprint, productImageUrl })
     
     try {
-      console.log('🎯 Step 1: Generating QR package...')
+      console.log('🎯 Step 1: Fetching complete project data...')
+      
+      // Fetch complete project data
+      const { data: projectData, error: projectError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', projectId)
+        .single()
+      
+      if (projectError || !projectData) {
+        throw new Error(`Failed to fetch project data: ${projectError?.message}`)
+      }
+      
+      // Fetch project materials with actual material details
+      const { data: projectMaterials, error: materialsError } = await supabase
+        .from('projects_materials')
+        .select(`
+          *,
+          material:materials(*)
+        `)
+        .eq('project_id', projectId)
+      
+      if (materialsError) {
+        console.warn('Failed to fetch project materials:', materialsError)
+      }
+      
+      // Fetch manufacturing stages
+      const { data: manufacturingStages, error: stagesError } = await supabase
+        .from('manufacturing_stages')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: true })
+      
+      if (stagesError) {
+        console.warn('Failed to fetch manufacturing stages:', stagesError)
+      }
+      
+      console.log('📊 Fetched data:', {
+        project: projectData.name,
+        materialsCount: projectMaterials?.length || 0,
+        stagesCount: manufacturingStages?.length || 0
+      })
+      
+      // Calculate actual carbon footprint from materials and stages
+      let calculatedCarbonFootprint = 0
+      
+      // Add carbon from materials
+      if (projectMaterials) {
+        calculatedCarbonFootprint += projectMaterials.reduce((total, pm) => {
+          const material = pm.material as any
+          if (material && material.carbon_footprint) {
+            return total + (material.carbon_footprint * pm.quantity_consumed)
+          }
+          return total
+        }, 0)
+      }
+      
+      // Use calculated carbon footprint if available, otherwise use provided value
+      const finalCarbonFootprint = calculatedCarbonFootprint > 0 ? calculatedCarbonFootprint : totalCarbonFootprint
+      
+      console.log('🎯 Step 2: Generating QR package...')
       
       // Generate QR package
       const tempId = crypto.randomUUID()
@@ -113,17 +175,60 @@ export function useProductPassports() {
         console.log('🔄 Using fallback QR data:', qrData)
       }
 
-      console.log('🎯 Step 2: Creating product passport database record...')
+      console.log('🎯 Step 3: Preparing enhanced specifications...')
+      
+      // Prepare enhanced specifications with actual data
+      const enhancedSpecifications = {
+        ...specifications,
+        project_description: projectData.description,
+        completion_date: new Date().toISOString(),
+        total_cost: projectData.total_cost,
+        progress: projectData.progress,
+        materials_used: projectMaterials?.map(pm => ({
+          id: pm.material_id,
+          name: pm.material?.name || 'Unknown Material',
+          type: pm.material?.type || 'Unknown',
+          quantity_required: pm.quantity_required,
+          quantity_consumed: pm.quantity_consumed,
+          unit: pm.material?.unit || 'unit',
+          carbon_footprint: pm.material?.carbon_footprint || 0,
+          total_carbon_impact: (pm.material?.carbon_footprint || 0) * pm.quantity_consumed,
+          cost_per_unit: pm.cost_per_unit,
+          total_cost: pm.total_cost
+        })) || [],
+        manufacturing_stages: manufacturingStages?.map(stage => ({
+          name: stage.name,
+          status: stage.status,
+          estimated_hours: stage.estimated_hours,
+          actual_hours: stage.actual_hours,
+          estimated_energy: stage.energy_estimate,
+          actual_energy: stage.actual_energy,
+          progress: stage.progress,
+          start_date: stage.start_date,
+          completed_date: stage.completed_date,
+          workers: stage.workers,
+          notes: stage.notes
+        })) || [],
+        carbon_breakdown: {
+          materials_carbon: projectMaterials?.reduce((total, pm) => 
+            total + ((pm.material?.carbon_footprint || 0) * pm.quantity_consumed), 0) || 0,
+          manufacturing_carbon: 0, // Could be calculated from energy consumption
+          total_carbon: finalCarbonFootprint
+        }
+      }
+      
+      console.log('🎯 Step 4: Creating product passport database record...')
       console.log('📝 Passport data:', {
         id: tempId,
         project_id: projectId,
         product_name: productName,
         product_type: productType,
         quantity_produced: quantityProduced,
-        total_carbon_footprint: totalCarbonFootprint,
+        total_carbon_footprint: finalCarbonFootprint,
         qr_code: qrData,
         qr_image_url: qrImageUrl,
-        specifications
+        image_url: productImageUrl, // Store image in the correct field
+        specifications: enhancedSpecifications
       })
       
       // Create product passport
@@ -135,10 +240,11 @@ export function useProductPassports() {
           product_name: productName,
           product_type: productType,
           quantity_produced: quantityProduced,
-          total_carbon_footprint: totalCarbonFootprint,
+          total_carbon_footprint: finalCarbonFootprint,
           qr_code: qrData,
           qr_image_url: qrImageUrl,
-          specifications,
+          image_url: productImageUrl, // Store image in the correct field
+          specifications: enhancedSpecifications,
           production_date: new Date().toISOString()
         }])
         .select()
