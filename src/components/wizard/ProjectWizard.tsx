@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -61,6 +62,24 @@ export function ProjectWizard() {
   const { stages, fetchStages } = useManufacturingStages()
   const { toast } = useToast()
 
+  // Get current project with better error handling
+  const getCurrentProject = useCallback((): Project | null => {
+    if (!selectedProject) {
+      console.log('ProjectWizard: No project selected')
+      return null
+    }
+    
+    const project = projects.find(p => p.id === selectedProject)
+    if (!project) {
+      console.error('ProjectWizard: Project not found in projects array:', selectedProject)
+      console.log('ProjectWizard: Available projects:', projects.map(p => ({ id: p.id, name: p.name })))
+      return null
+    }
+    
+    console.log('ProjectWizard: Current project found:', project.name, 'Status:', project.status)
+    return project
+  }, [selectedProject, projects])
+
   // Direct database query function to fetch project by ID
   const fetchProjectById = async (projectId: string): Promise<Project | null> => {
     try {
@@ -102,7 +121,7 @@ export function ProjectWizard() {
   }
 
   const getProjectSteps = (): WizardStep[] => {
-    const project = selectedProject ? projects.find(p => p.id === selectedProject) : null
+    const project = getCurrentProject()
     
     console.log('Getting project steps for project:', project?.name, 'status:', project?.status, 'localState:', localCompletionState)
     
@@ -124,7 +143,7 @@ export function ProjectWizard() {
         description: 'Design your Bill of Materials',
         icon: FileText,
         status: localCompletionState.bomCompleted ? 'completed' : 
-               project ? 'current' : 'upcoming', // Fixed: Show current immediately when project is selected
+               project ? 'current' : 'upcoming',
         allowAccess: !!project
       },
       {
@@ -170,7 +189,7 @@ export function ProjectWizard() {
   // Effect to sync local state with project status
   useEffect(() => {
     if (selectedProject) {
-      const project = projects.find(p => p.id === selectedProject)
+      const project = getCurrentProject()
       if (project) {
         console.log('Syncing local state with project status:', project.status)
         
@@ -193,7 +212,7 @@ export function ProjectWizard() {
         setLocalCompletionState(newState)
       }
     }
-  }, [selectedProject, projects])
+  }, [selectedProject, projects, getCurrentProject])
 
   useEffect(() => {
     if (selectedProject && productPassports.length > 0) {
@@ -398,12 +417,44 @@ export function ProjectWizard() {
       return
     }
 
-    const project = projects.find(p => p.id === selectedProject)
+    // Use the getCurrentProject function for better error handling
+    const project = getCurrentProject()
     if (!project) {
-      console.error('Project not found for quality control completion')
+      console.error('Project not found for quality control completion. Selected project ID:', selectedProject)
+      console.log('Available projects:', projects.map(p => ({ id: p.id, name: p.name })))
+      
+      // Try to refresh projects and fetch the specific project
+      console.log('Attempting to refresh projects and fetch project from database...')
+      try {
+        await refreshProjects()
+        const freshProject = await fetchProjectById(selectedProject)
+        if (!freshProject) {
+          toast({
+            title: "Error",
+            description: "Project not found. Please refresh the page and try again.",
+            variant: "destructive"
+          })
+          return
+        }
+        // Use the fresh project data
+        console.log('Found fresh project data:', freshProject.name)
+      } catch (error) {
+        console.error('Failed to fetch fresh project data:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load project data. Please refresh the page and try again.",
+          variant: "destructive"
+        })
+        return
+      }
+    }
+
+    // Get the current project again after potential refresh
+    const currentProject = getCurrentProject()
+    if (!currentProject) {
       toast({
         title: "Error",
-        description: "Project not found. Please refresh and try again.",
+        description: "Project data could not be loaded. Please refresh the page and try again.",
         variant: "destructive"
       })
       return
@@ -411,12 +462,12 @@ export function ProjectWizard() {
 
     setIsGeneratingPassport(true)
     console.log('=== STARTING PRODUCT PASSPORT GENERATION ===')
-    console.log('Project:', project.name, 'ID:', project.id)
+    console.log('Project:', currentProject.name, 'ID:', currentProject.id)
     console.log('Product image URL:', productImageUrl)
     
     try {
       console.log('Step 1: Preparing project materials...')
-      const projectMaterials = project.allocated_materials || []
+      const projectMaterials = currentProject.allocated_materials || []
       console.log('Project materials:', projectMaterials)
       
       const materialsData = projectMaterials.map(materialId => {
@@ -437,15 +488,15 @@ export function ProjectWizard() {
       console.log('Step 3: Calling generateProductPassport...')
       const passport = await generateProductPassport(
         selectedProject,
-        project.name,
+        currentProject.name,
         'manufactured',
         1,
-        project.total_carbon_footprint,
+        currentProject.total_carbon_footprint,
         {
-          project_description: project.description,
+          project_description: currentProject.description,
           completion_date: new Date().toISOString(),
-          total_cost: project.total_cost,
-          progress: project.progress,
+          total_cost: currentProject.total_cost,
+          progress: currentProject.progress,
           materials_used: materialsData,
           manufacturing_stages: manufacturingStages,
           product_image_url: productImageUrl
