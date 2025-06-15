@@ -40,11 +40,11 @@ export function StockManagement() {
               />
             </div>
 
-            {/* Filter Sidebar - Right Side (1/3 width) */}
+            {/* Filter Section - Right Side (1/3 width) */}
             <div className="w-full lg:w-80 lg:flex-none">
               <div className="sticky top-6">
-                <div className="bg-white rounded-lg border border-emerald-100 shadow-sm p-6">
-                  <h3 className="text-lg font-semibold mb-4 text-foreground">Filters</h3>
+                <div className="bg-white rounded-lg border shadow-sm p-6">
+                  <h3 className="text-lg font-semibold mb-4">Filters</h3>
                   
                   <div className="space-y-4">
                     {/* Search Input */}
