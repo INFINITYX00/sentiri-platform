@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -199,19 +200,52 @@ export function ProjectWizard() {
       }
       console.log('ProjectWizard: Project found successfully:', project.name, 'Status:', project.status)
       setSelectedProject(projectId)
+      
       // Check if product passport already exists
       const existingPassport = productPassports.find(p => p.project_id === projectId)
       if (existingPassport) {
         setGeneratedPassportId(existingPassport.id)
         setCurrentStep(5) // Product passport step
         console.log('ProjectWizard: Found existing passport, moving to step 5')
+        toast({
+          title: "Project Selected",
+          description: `${project.name} is active. Viewing existing product passport.`,
+        })
         return
       }
-      // No automatic step progression - user controls navigation
-      console.log('ProjectWizard: Project selected successfully, staying on current step')
+
+      // Smart auto-progression based on project status
+      let targetStep = 0
+      let progressMessage = ""
+
+      switch (project.status) {
+        case 'planning':
+          targetStep = 1 // BOM Creation
+          progressMessage = `${project.name} is active. Moving to BOM Creation.`
+          break
+        case 'design':
+          targetStep = 2 // Production Planning
+          progressMessage = `${project.name} is active. Moving to Production Planning.`
+          break
+        case 'in_progress':
+          targetStep = 3 // Manufacturing
+          progressMessage = `${project.name} is active. Moving to Manufacturing.`
+          break
+        case 'completed':
+          targetStep = 4 // Quality Control
+          progressMessage = `${project.name} is active. Moving to Quality Control.`
+          break
+        default:
+          targetStep = 1 // Default to BOM Creation for unknown status
+          progressMessage = `${project.name} is active. Moving to BOM Creation.`
+      }
+
+      setCurrentStep(targetStep)
+      console.log(`ProjectWizard: Auto-advancing to step ${targetStep} based on project status: ${project.status}`)
+      
       toast({
         title: "Project Selected",
-        description: `${project.name} is now active in the wizard`,
+        description: progressMessage,
       })
     } catch (error) {
       console.error('ProjectWizard: Error selecting project:', error)
