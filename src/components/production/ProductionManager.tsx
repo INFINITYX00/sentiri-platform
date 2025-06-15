@@ -9,10 +9,23 @@ import { useProjects } from '@/hooks/useProjects'
 import { useManufacturingStages } from '@/hooks/useManufacturingStages'
 import { ManufacturingStages } from '@/components/project/ManufacturingStages'
 
-export function ProductionManager() {
-  const [selectedProject, setSelectedProject] = useState<string | null>(null)
+interface ProductionManagerProps {
+  projectId?: string;
+  onProductionStart?: () => Promise<void>;
+  onManufacturingComplete?: () => Promise<void>;
+}
+
+export function ProductionManager({ 
+  projectId: providedProjectId, 
+  onProductionStart, 
+  onManufacturingComplete 
+}: ProductionManagerProps) {
+  const [selectedProject, setSelectedProject] = useState<string | null>(providedProjectId || null)
   const { projects, updateProject } = useProjects()
   const { createDefaultStages } = useManufacturingStages()
+
+  // Use provided projectId if available
+  const currentProjectId = providedProjectId || selectedProject
 
   // Filter projects that are ready for production (have BOMs)
   const readyForProduction = projects.filter(project => 
@@ -57,6 +70,11 @@ export function ProductionManager() {
     })
     // Create default manufacturing stages for the project
     await createDefaultStages(projectId)
+    
+    // Notify parent component that production has started
+    if (onProductionStart) {
+      await onProductionStart()
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -68,21 +86,133 @@ export function ProductionManager() {
     }
   }
 
-  const selectedProjectData = selectedProject ? projects.find(p => p.id === selectedProject) : null
+  const selectedProjectData = currentProjectId ? projects.find(p => p.id === currentProjectId) : null
 
   const handleStageUpdate = async (stages: any[]) => {
-    if (!selectedProject) return
+    if (!currentProjectId) return
     
     // Calculate overall progress from stages
     const overallProgress = stages.reduce((sum, stage) => sum + stage.progress, 0) / stages.length
     
     // Update project progress
-    await updateProject(selectedProject, { 
+    await updateProject(currentProjectId, { 
       progress: Math.round(overallProgress),
       status: overallProgress === 100 ? 'completed' : 'in_progress'
     })
+
+    // If manufacturing is complete, notify parent
+    if (overallProgress === 100 && onManufacturingComplete) {
+      await onManufacturingComplete()
+    }
   }
 
+  // If projectId is provided via props, show production view for that project
+  if (providedProjectId) {
+    const project = projects.find(p => p.id === providedProjectId)
+    
+    // If project is ready for production, show start production interface
+    if (project?.status === 'design' && project.allocated_materials.length > 0) {
+      return (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Start Production for {project.name}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-muted-foreground">
+                  This project is ready for production. Click below to create manufacturing stages and begin production.
+                </p>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <DollarSign className="h-4 w-4 text-green-600" />
+                    <span>${project.total_cost.toFixed(0)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Leaf className="h-4 w-4 text-primary" />
+                    <span>{project.total_carbon_footprint.toFixed(1)} kg CO₂</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Package className="h-4 w-4 text-blue-600" />
+                    <span>{project.allocated_materials.length} materials</span>
+                  </div>
+                </div>
+                <Button onClick={() => handleStartProduction(providedProjectId)} className="w-full">
+                  <Play className="h-4 w-4 mr-2" />
+                  Start Production
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+    
+    // If project is in production, show manufacturing stages
+    if (project?.status === 'in_progress') {
+      return (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Manufacturing Progress for {project.name}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge className={getStatusColor(project.status)}>
+                    in progress
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    {project.progress}% complete
+                  </span>
+                </div>
+                <Progress value={project.progress} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <ManufacturingStages 
+            projectId={providedProjectId} 
+            onStageUpdate={handleStageUpdate}
+          />
+        </div>
+      )
+    }
+    
+    // If project is completed
+    if (project?.status === 'completed') {
+      return (
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="text-center py-12">
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Production Complete!</h3>
+              <p className="text-muted-foreground">
+                {project.name} has been successfully manufactured and is ready for quality control.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
+    // Default case for projects not ready for production
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="text-center py-12">
+            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Project Not Ready</h3>
+            <p className="text-muted-foreground">
+              This project needs a completed BOM before production can begin.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Original standalone production manager view
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="px-8 py-6">
@@ -119,7 +249,7 @@ export function ProductionManager() {
             ))}
           </div>
 
-          {!selectedProject ? (
+          {!currentProjectId ? (
             <>
               {/* Ready for Production */}
               <Card>
