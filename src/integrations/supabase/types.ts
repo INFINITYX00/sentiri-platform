@@ -427,6 +427,7 @@ export type Database = {
           status: string | null
           total_carbon_footprint: number | null
           total_cost: number | null
+          updated_at: string
         }
         Insert: {
           allocated_materials?: string[] | null
@@ -441,6 +442,7 @@ export type Database = {
           status?: string | null
           total_carbon_footprint?: number | null
           total_cost?: number | null
+          updated_at?: string
         }
         Update: {
           allocated_materials?: string[] | null
@@ -455,6 +457,7 @@ export type Database = {
           status?: string | null
           total_carbon_footprint?: number | null
           total_cost?: number | null
+          updated_at?: string
         }
         Relationships: []
       }

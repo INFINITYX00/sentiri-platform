@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -15,6 +16,7 @@ export interface Project {
   allocated_materials: string[]
   deleted?: boolean
   created_at: string
+  updated_at?: string
 }
 
 export interface ProjectMaterial {
@@ -64,7 +66,7 @@ export function useProjects() {
     }
   }
 
-  const addProject = async (projectData: Omit<Project, 'id' | 'created_at'>) => {
+  const addProject = async (projectData: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => {
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -98,30 +100,78 @@ export function useProjects() {
   }
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
-    setLoading(true)
     try {
-      const { error } = await supabase
-        .from('projects')
-        .update(updates)
-        .eq('id', id)
-
-      if (error) throw error
-
-      await fetchProjects()
+      console.log('Updating project:', id, 'with:', updates)
       
-      toast({
-        title: "Success",
-        description: "Project updated successfully",
-      })
+      // Remove any fields that shouldn't be updated directly
+      const cleanUpdates = { ...updates }
+      delete cleanUpdates.id
+      delete cleanUpdates.created_at
+      delete cleanUpdates.updated_at // Let the trigger handle this
+
+      const { data, error } = await supabase
+        .from('projects')
+        .update(cleanUpdates)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Supabase update error:', error)
+        throw error
+      }
+
+      console.log('Project updated successfully:', data)
+      
+      // Update local state immediately for better UX
+      setProjects(prev => prev.map(p => p.id === id ? { ...p, ...cleanUpdates } : p))
+      
+      // Show success message only for non-deletion updates
+      if (!updates.deleted) {
+        toast({
+          title: "Success",
+          description: "Project updated successfully",
+        })
+      }
+      
+      return data
     } catch (error) {
       console.error('Error updating project:', error)
       toast({
         title: "Error",
-        description: "Failed to update project",
+        description: `Failed to update project: ${error.message || 'Unknown error'}`,
         variant: "destructive"
       })
-    } finally {
-      setLoading(false)
+      throw error // Re-throw to allow caller to handle
+    }
+  }
+
+  const deleteProject = async (id: string) => {
+    try {
+      console.log('Soft deleting project:', id)
+      
+      const { error } = await supabase
+        .from('projects')
+        .update({ deleted: true })
+        .eq('id', id)
+
+      if (error) throw error
+
+      // Remove from local state immediately
+      setProjects(prev => prev.filter(p => p.id !== id))
+      
+      toast({
+        title: "Success",
+        description: "Project deleted successfully"
+      })
+    } catch (error) {
+      console.error('Error deleting project:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete project",
+        variant: "destructive"
+      })
+      throw error
     }
   }
 
@@ -180,6 +230,7 @@ export function useProjects() {
     loading,
     addProject,
     updateProject,
+    deleteProject,
     addMaterialToProject,
     getProjectMaterials,
     refreshProjects: fetchProjects

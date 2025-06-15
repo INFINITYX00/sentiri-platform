@@ -1,335 +1,437 @@
+
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Upload, FileText, Workflow, Package, Lightbulb, Play, ArrowLeft } from "lucide-react"
-import { EnhancedBOMUploader } from "../bom/EnhancedBOMUploader"
-import { StepByStepBOM } from "../bom/StepByStepBOM"
+import { Plus, Package, Trash2, Calculator, Leaf, AlertCircle } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
+import { useMaterials } from '@/hooks/useMaterials'
 import { useProjects } from '@/hooks/useProjects'
+import { supabase } from '@/lib/supabase'
 
 interface DesignBOMManagerProps {
-  projectId?: string
+  projectId: string
   onBOMComplete?: () => void
 }
 
-export function DesignBOMManager({ projectId: providedProjectId, onBOMComplete }: DesignBOMManagerProps) {
-  const [activeTab, setActiveTab] = useState<'guided' | 'upload' | 'templates'>('guided')
-  const [selectedProject, setSelectedProject] = useState<string | null>(providedProjectId || null)
-  const { projects, updateProject } = useProjects()
-
-  // Use provided projectId if available
-  const currentProjectId = providedProjectId || selectedProject
-
-  // Filter projects that are in planning status (ready for BOM creation)
-  const planningProjects = projects.filter(project => project.status === 'planning')
-
-  const designStats = [
-    { 
-      label: "Projects Ready for BOM", 
-      value: planningProjects.length.toString(), 
-      icon: FileText, 
-      color: "text-blue-400" 
-    },
-    { 
-      label: "BOMs in Progress", 
-      value: projects.filter(p => p.status === 'design').length.toString(), 
-      icon: Package, 
-      color: "text-purple-400" 
-    },
-    { 
-      label: "Templates Available", 
-      value: "5", 
-      icon: Lightbulb, 
-      color: "text-green-400" 
-    },
-    { 
-      label: "Ready for Production", 
-      value: projects.filter(p => p.status === 'design' && p.allocated_materials.length > 0).length.toString(), 
-      icon: Workflow, 
-      color: "text-orange-400" 
-    }
-  ];
-
-  const handleStartBOM = async (projectId: string) => {
-    setSelectedProject(projectId)
-    // Move project to design status when BOM creation starts
-    await updateProject(projectId, { status: 'design' })
+interface BOMItem {
+  id: string
+  material_id: string
+  quantity_required: number
+  cost_per_unit: number
+  total_cost: number
+  material?: {
+    id: string
+    name: string
+    type: string
+    unit: string
+    carbon_footprint: number
+    quantity: number
   }
+}
 
-  const handleBackToProjects = () => {
-    setSelectedProject(null)
-    setActiveTab('guided')
-  }
+export function DesignBOMManager({ projectId, onBOMComplete }: DesignBOMManagerProps) {
+  const [bomItems, setBomItems] = useState<BOMItem[]>([])
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [selectedMaterialId, setSelectedMaterialId] = useState<string>('')
+  const [quantity, setQuantity] = useState<number>(1)
+  const [costPerUnit, setCostPerUnit] = useState<number>(0)
+  const [loading, setLoading] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  
+  const { materials } = useMaterials()
+  const { updateProject } = useProjects()
+  const { toast } = useToast()
 
-  const handleBOMSaved = () => {
-    // Callback to notify wizard that BOM is complete
-    if (onBOMComplete) {
-      onBOMComplete()
-    }
-  }
+  useEffect(() => {
+    fetchBOMItems()
+  }, [projectId])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'planning': return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'design': return 'bg-purple-100 text-purple-800 border-purple-200'
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'completed': return 'bg-green-100 text-green-800 border-green-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
+  const fetchBOMItems = async () => {
+    if (!projectId) return
+    
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('projects_materials')
+        .select(`
+          *,
+          material:materials(id, name, type, unit, carbon_footprint, quantity)
+        `)
+        .eq('project_id', projectId)
+
+      if (error) throw error
+      
+      console.log('BOM items fetched:', data?.length || 0)
+      setBomItems(data || [])
+    } catch (error) {
+      console.error('Error fetching BOM items:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load BOM items",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
-  const selectedProjectData = currentProjectId ? projects.find(p => p.id === currentProjectId) : null
+  const addBOMItem = async () => {
+    if (!selectedMaterialId || quantity <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a material and enter a valid quantity",
+        variant: "destructive"
+      })
+      return
+    }
 
-  // If projectId is provided via props, skip project selection
-  if (providedProjectId) {
+    setIsUpdating(true)
+    try {
+      // Check if material already exists in BOM
+      const existingItem = bomItems.find(item => item.material_id === selectedMaterialId)
+      if (existingItem) {
+        toast({
+          title: "Material Already Added",
+          description: "This material is already in the BOM. Edit the existing entry instead.",
+          variant: "destructive"
+        })
+        return
+      }
+
+      const selectedMaterial = materials.find(m => m.id === selectedMaterialId)
+      if (!selectedMaterial) {
+        throw new Error('Selected material not found')
+      }
+
+      // Calculate costs
+      const finalCostPerUnit = costPerUnit > 0 ? costPerUnit : (selectedMaterial.cost_per_unit || 0)
+      const totalCost = quantity * finalCostPerUnit
+
+      console.log('Adding BOM item:', {
+        project_id: projectId,
+        material_id: selectedMaterialId,
+        quantity_required: quantity,
+        cost_per_unit: finalCostPerUnit,
+        total_cost: totalCost
+      })
+
+      const { data, error } = await supabase
+        .from('projects_materials')
+        .insert([{
+          project_id: projectId,
+          material_id: selectedMaterialId,
+          quantity_required: quantity,
+          quantity_consumed: 0,
+          cost_per_unit: finalCostPerUnit,
+          total_cost: totalCost
+        }])
+        .select(`
+          *,
+          material:materials(id, name, type, unit, carbon_footprint, quantity)
+        `)
+        .single()
+
+      if (error) throw error
+
+      console.log('BOM item added successfully:', data)
+      
+      // Update local state
+      setBomItems(prev => [...prev, data])
+      
+      // Update project totals
+      await updateProjectTotals([...bomItems, data])
+      
+      // Reset form
+      setSelectedMaterialId('')
+      setQuantity(1)
+      setCostPerUnit(0)
+      setIsDialogOpen(false)
+      
+      toast({
+        title: "Success",
+        description: "Material added to BOM successfully"
+      })
+    } catch (error) {
+      console.error('Error adding BOM item:', error)
+      toast({
+        title: "Error",
+        description: `Failed to add material: ${error.message || 'Unknown error'}`,
+        variant: "destructive"
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const removeBOMItem = async (itemId: string) => {
+    setIsUpdating(true)
+    try {
+      const { error } = await supabase
+        .from('projects_materials')
+        .delete()
+        .eq('id', itemId)
+
+      if (error) throw error
+
+      // Update local state
+      const updatedItems = bomItems.filter(item => item.id !== itemId)
+      setBomItems(updatedItems)
+      
+      // Update project totals
+      await updateProjectTotals(updatedItems)
+      
+      toast({
+        title: "Success",
+        description: "Material removed from BOM"
+      })
+    } catch (error) {
+      console.error('Error removing BOM item:', error)
+      toast({
+        title: "Error",
+        description: "Failed to remove material",
+        variant: "destructive"
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const updateProjectTotals = async (currentBomItems: BOMItem[]) => {
+    try {
+      const totalCost = currentBomItems.reduce((sum, item) => sum + item.total_cost, 0)
+      const totalCarbonFootprint = currentBomItems.reduce((sum, item) => {
+        const carbonPerUnit = item.material?.carbon_footprint || 0
+        return sum + (carbonPerUnit * item.quantity_required)
+      }, 0)
+
+      console.log('Updating project totals:', { totalCost, totalCarbonFootprint })
+
+      await updateProject(projectId, {
+        total_cost: totalCost,
+        total_carbon_footprint: totalCarbonFootprint,
+        allocated_materials: currentBomItems.map(item => item.material_id)
+      })
+    } catch (error) {
+      console.error('Error updating project totals:', error)
+      // Don't show error to user as this is a background operation
+    }
+  }
+
+  const completeBOM = async () => {
+    if (bomItems.length === 0) {
+      toast({
+        title: "No Materials",
+        description: "Please add at least one material to complete the BOM",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      setIsUpdating(true)
+      
+      // Update project status to design phase
+      await updateProject(projectId, { status: 'design' })
+      
+      toast({
+        title: "BOM Complete",
+        description: "Bill of Materials completed successfully"
+      })
+      
+      onBOMComplete?.()
+    } catch (error) {
+      console.error('Error completing BOM:', error)
+      toast({
+        title: "Error",
+        description: "Failed to complete BOM",
+        variant: "destructive"
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const totalCost = bomItems.reduce((sum, item) => sum + item.total_cost, 0)
+  const totalCarbonFootprint = bomItems.reduce((sum, item) => {
+    const carbonPerUnit = item.material?.carbon_footprint || 0
+    return sum + (carbonPerUnit * item.quantity_required)
+  }, 0)
+
+  if (loading) {
     return (
-      <div className="space-y-6">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {designStats.map((stat) => (
-            <Card key={stat.label} className="hover:shadow-lg transition-all duration-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                    <p className="text-2xl font-bold">{stat.value}</p>
-                  </div>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* BOM Creation for Selected Project */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-semibold">
-                  Creating BOM for: {selectedProjectData?.name}
-                </h2>
-                {selectedProjectData?.description && (
-                  <p className="text-sm text-muted-foreground mt-1">{selectedProjectData.description}</p>
-                )}
-              </div>
-              <Badge className={getStatusColor(selectedProjectData?.status || 'design')}>
-                {selectedProjectData?.status?.replace('_', ' ')}
-              </Badge>
-            </div>
-
-            <div className="flex gap-2 mb-6 flex-wrap">
-              <Button
-                variant={activeTab === 'guided' ? 'default' : 'outline'}
-                onClick={() => setActiveTab('guided')}
-                className="flex-1 min-w-[120px]"
-              >
-                <Workflow className="h-4 w-4 mr-2" />
-                Guided BOM Creation
-              </Button>
-              <Button
-                variant={activeTab === 'upload' ? 'default' : 'outline'}
-                onClick={() => setActiveTab('upload')}
-                className="flex-1 min-w-[120px]"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Advanced BOM Upload
-              </Button>
-              <Button
-                variant={activeTab === 'templates' ? 'default' : 'outline'}
-                onClick={() => setActiveTab('templates')}
-                className="flex-1 min-w-[120px]"
-              >
-                <Lightbulb className="h-4 w-4 mr-2" />
-                Design Templates
-              </Button>
-            </div>
-
-            {/* Tab Content */}
-            {activeTab === 'guided' && (
-              <StepByStepBOM 
-                projectId={providedProjectId} 
-                onBOMComplete={handleBOMSaved}
-              />
-            )}
-            {activeTab === 'upload' && (
-              <EnhancedBOMUploader 
-                projectId={providedProjectId} 
-                onBOMComplete={handleBOMSaved}
-              />
-            )}
-            {activeTab === 'templates' && (
-              <div className="text-center py-12">
-                <Lightbulb className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Design Templates</h3>
-                <p className="text-muted-foreground">Pre-built BOM templates for common furniture designs coming soon</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <div className="text-center py-12">
+        <p>Loading BOM...</p>
       </div>
     )
   }
 
-  // Original project selection flow when no projectId provided
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="px-8 py-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Design & BOM</h1>
-            <p className="text-muted-foreground">Create Bills of Materials for existing projects</p>
-          </div>
-          {selectedProject && (
-            <Button variant="outline" onClick={handleBackToProjects} className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Projects
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Bill of Materials</h2>
+          <p className="text-muted-foreground">Define the materials needed for this project</p>
+        </div>
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button disabled={isUpdating}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Material
             </Button>
-          )}
-        </div>
-      </div>
-      
-      <div className="px-8 py-4">
-        <div className="max-w-7xl mx-auto space-y-6 ml-4">
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {designStats.map((stat) => (
-              <Card key={stat.label} className="hover:shadow-lg transition-all duration-200">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">{stat.label}</p>
-                      <p className="text-2xl font-bold">{stat.value}</p>
-                    </div>
-                    <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {!currentProjectId ? (
-            // Project Selection View
-            <Card>
-              <CardHeader>
-                <CardTitle>Select a Project for BOM Creation</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {planningProjects.length > 0 ? (
-                  <div className="grid gap-4">
-                    {planningProjects.map((project) => (
-                      <Card key={project.id} className="border-l-4 border-l-blue-500 hover:shadow-md transition-all">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-lg">{project.name}</h3>
-                              {project.description && (
-                                <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
-                              )}
-                              <div className="flex items-center gap-2 mt-2">
-                                <Badge className={getStatusColor(project.status)}>
-                                  {project.status}
-                                </Badge>
-                                {project.start_date && (
-                                  <span className="text-sm text-muted-foreground">
-                                    Created: {new Date(project.start_date).toLocaleDateString()}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <Button onClick={() => handleStartBOM(project.id)} className="ml-4">
-                              <Play className="h-4 w-4 mr-2" />
-                              Create BOM
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Material to BOM</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="material">Material</Label>
+                <Select value={selectedMaterialId} onValueChange={setSelectedMaterialId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a material" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {materials.map((material) => (
+                      <SelectItem key={material.id} value={material.id}>
+                        {material.name} ({material.type})
+                      </SelectItem>
                     ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Projects Ready for BOM</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Create a project first in the Projects section before designing a BOM
-                    </p>
-                    <Button onClick={() => window.location.hash = 'projects'} variant="outline">
-                      Go to Projects
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            // BOM Creation View (same as above but duplicated for standalone mode)
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-semibold">
-                      Creating BOM for: {selectedProjectData?.name}
-                    </h2>
-                    {selectedProjectData?.description && (
-                      <p className="text-sm text-muted-foreground mt-1">{selectedProjectData.description}</p>
-                    )}
-                  </div>
-                  <Badge className={getStatusColor(selectedProjectData?.status || 'design')}>
-                    {selectedProjectData?.status?.replace('_', ' ')}
-                  </Badge>
-                </div>
-
-                <div className="flex gap-2 mb-6 flex-wrap">
-                  <Button
-                    variant={activeTab === 'guided' ? 'default' : 'outline'}
-                    onClick={() => setActiveTab('guided')}
-                    className="flex-1 min-w-[120px]"
-                  >
-                    <Workflow className="h-4 w-4 mr-2" />
-                    Guided BOM Creation
-                  </Button>
-                  <Button
-                    variant={activeTab === 'upload' ? 'default' : 'outline'}
-                    onClick={() => setActiveTab('upload')}
-                    className="flex-1 min-w-[120px]"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Advanced BOM Upload
-                  </Button>
-                  <Button
-                    variant={activeTab === 'templates' ? 'default' : 'outline'}
-                    onClick={() => setActiveTab('templates')}
-                    className="flex-1 min-w-[120px]"
-                  >
-                    <Lightbulb className="h-4 w-4 mr-2" />
-                    Design Templates
-                  </Button>
-                </div>
-
-                {/* Tab Content */}
-                {activeTab === 'guided' && (
-                  <StepByStepBOM 
-                    projectId={providedProjectId} 
-                    onBOMComplete={handleBOMSaved}
-                  />
-                )}
-                {activeTab === 'upload' && (
-                  <EnhancedBOMUploader 
-                    projectId={providedProjectId} 
-                    onBOMComplete={handleBOMSaved}
-                  />
-                )}
-                {activeTab === 'templates' && (
-                  <div className="text-center py-12">
-                    <Lightbulb className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Design Templates</h3>
-                    <p className="text-muted-foreground">Pre-built BOM templates for common furniture designs coming soon</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="quantity">Quantity Required</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(Number(e.target.value))}
+                  min="0.1"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="cost">Cost per Unit (optional)</Label>
+                <Input
+                  id="cost"
+                  type="number"
+                  value={costPerUnit}
+                  onChange={(e) => setCostPerUnit(Number(e.target.value))}
+                  min="0"
+                  step="0.01"
+                  placeholder="Leave blank to use material default"
+                />
+              </div>
+              <Button 
+                onClick={addBOMItem} 
+                className="w-full"
+                disabled={isUpdating || !selectedMaterialId || quantity <= 0}
+              >
+                {isUpdating ? "Adding..." : "Add to BOM"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
+
+      {/* BOM Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Materials</p>
+                <p className="text-2xl font-bold">{bomItems.length}</p>
+              </div>
+              <Package className="h-6 w-6 text-blue-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Cost</p>
+                <p className="text-2xl font-bold">${totalCost.toFixed(2)}</p>
+              </div>
+              <Calculator className="h-6 w-6 text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Carbon Footprint</p>
+                <p className="text-2xl font-bold">{totalCarbonFootprint.toFixed(1)} kg</p>
+              </div>
+              <Leaf className="h-6 w-6 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* BOM Items */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Materials List</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {bomItems.length === 0 ? (
+            <div className="text-center py-8">
+              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Materials Added</h3>
+              <p className="text-muted-foreground">Start building your BOM by adding materials</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {bomItems.map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-medium">{item.material?.name}</h4>
+                      <Badge variant="secondary">{item.material?.type}</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                      <span>Qty: {item.quantity_required} {item.material?.unit}</span>
+                      <span>Cost/unit: ${item.cost_per_unit.toFixed(2)}</span>
+                      <span>Total: ${item.total_cost.toFixed(2)}</span>
+                      <span>Carbon: {((item.material?.carbon_footprint || 0) * item.quantity_required).toFixed(1)} kg</span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeBOMItem(item.id)}
+                    disabled={isUpdating}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Complete BOM Button */}
+      {bomItems.length > 0 && (
+        <div className="flex justify-end">
+          <Button 
+            onClick={completeBOM}
+            disabled={isUpdating}
+            size="lg"
+          >
+            {isUpdating ? "Completing..." : "Complete BOM & Continue"}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

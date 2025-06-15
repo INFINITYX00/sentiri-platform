@@ -17,14 +17,19 @@ interface ProjectActionsProps {
 export function ProjectActions({ project, onProjectUpdate }: ProjectActionsProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [editedProject, setEditedProject] = useState({
     name: project.name,
     description: project.description || ''
   })
-  const { updateProject } = useProjects()
+  const { updateProject, deleteProject } = useProjects()
   const { toast } = useToast()
 
   const handleEdit = async () => {
+    if (isUpdating) return
+    
+    setIsUpdating(true)
     try {
       await updateProject(project.id, {
         name: editedProject.name,
@@ -32,42 +37,52 @@ export function ProjectActions({ project, onProjectUpdate }: ProjectActionsProps
       })
       setEditDialogOpen(false)
       onProjectUpdate?.()
-      toast({
-        title: "Success",
-        description: "Project updated successfully"
-      })
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update project",
-        variant: "destructive"
-      })
+      // Error is already handled in updateProject hook
+      console.error('Failed to update project:', error)
+    } finally {
+      setIsUpdating(false)
     }
   }
 
   const handleDelete = async () => {
+    if (isDeleting) return
+    
+    setIsDeleting(true)
     try {
-      await updateProject(project.id, { deleted: true })
+      await deleteProject(project.id)
       setDeleteDialogOpen(false)
       onProjectUpdate?.()
-      toast({
-        title: "Success",
-        description: "Project deleted successfully"
-      })
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete project",
-        variant: "destructive"
+      // Error is already handled in deleteProject hook
+      console.error('Failed to delete project:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleEditDialogChange = (open: boolean) => {
+    if (isUpdating) return // Prevent closing during update
+    setEditDialogOpen(open)
+    if (!open) {
+      // Reset form when closing
+      setEditedProject({
+        name: project.name,
+        description: project.description || ''
       })
     }
   }
 
+  const handleDeleteDialogChange = (open: boolean) => {
+    if (isDeleting) return // Prevent closing during deletion
+    setDeleteDialogOpen(open)
+  }
+
   return (
     <div className="flex gap-2">
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={handleEditDialogChange}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" disabled={isUpdating || isDeleting}>
             <Edit className="h-4 w-4 mr-2" />
             Edit
           </Button>
@@ -83,6 +98,7 @@ export function ProjectActions({ project, onProjectUpdate }: ProjectActionsProps
                 id="edit-name"
                 value={editedProject.name}
                 onChange={(e) => setEditedProject({ ...editedProject, name: e.target.value })}
+                disabled={isUpdating}
               />
             </div>
             <div>
@@ -91,23 +107,31 @@ export function ProjectActions({ project, onProjectUpdate }: ProjectActionsProps
                 id="edit-description"
                 value={editedProject.description}
                 onChange={(e) => setEditedProject({ ...editedProject, description: e.target.value })}
+                disabled={isUpdating}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => handleEditDialogChange(false)}
+              disabled={isUpdating}
+            >
               Cancel
             </Button>
-            <Button onClick={handleEdit}>
-              Save Changes
+            <Button 
+              onClick={handleEdit}
+              disabled={isUpdating || !editedProject.name.trim()}
+            >
+              {isUpdating ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog open={deleteDialogOpen} onOpenChange={handleDeleteDialogChange}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" disabled={isUpdating || isDeleting}>
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
           </Button>
@@ -118,11 +142,19 @@ export function ProjectActions({ project, onProjectUpdate }: ProjectActionsProps
           </DialogHeader>
           <p>Are you sure you want to delete "{project.name}"? This action cannot be undone.</p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => handleDeleteDialogChange(false)}
+              disabled={isDeleting}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete Project
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete Project"}
             </Button>
           </DialogFooter>
         </DialogContent>
