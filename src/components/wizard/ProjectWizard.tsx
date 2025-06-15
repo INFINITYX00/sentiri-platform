@@ -79,25 +79,31 @@ export function ProjectWizard() {
     return project
   }, [selectedProject, projects])
 
-  // Direct database query function to fetch project by ID
-  const fetchProjectById = async (projectId: string): Promise<Project | null> => {
+  // Enhanced function to fetch fresh project data from database
+  const fetchFreshProjectData = async (projectId: string): Promise<Project | null> => {
     try {
-      console.log('ProjectWizard: Fetching project directly from database:', projectId)
+      console.log('🔄 ProjectWizard: Fetching fresh project data from database:', projectId)
+      
       const { data, error } = await supabase
         .from('projects')
         .select('*')
         .eq('id', projectId)
         .eq('deleted', false)
-        .maybeSingle()
+        .single()
+
       if (error) {
-        console.error('ProjectWizard: Database query error:', error)
-        return null
+        console.error('❌ ProjectWizard: Database query error:', error)
+        throw new Error(`Database error: ${error.message}`)
       }
+
       if (!data) {
-        console.log('ProjectWizard: No project found for id:', projectId)
+        console.log('⚠️ ProjectWizard: No project found for id:', projectId)
         return null
       }
-      // Return the data as a Project type, ensuring all fields are properly typed
+
+      console.log('✅ ProjectWizard: Fresh project data retrieved:', data.name)
+      
+      // Return properly typed project data
       return {
         id: data.id,
         name: data.name || '',
@@ -114,8 +120,8 @@ export function ProjectWizard() {
         updated_at: data.updated_at || ''
       } as Project
     } catch (error) {
-      console.error('ProjectWizard: Error fetching project from database:', error)
-      return null
+      console.error('💥 ProjectWizard: Error fetching fresh project data:', error)
+      throw error
     }
   }
 
@@ -185,7 +191,6 @@ export function ProjectWizard() {
 
   const steps = getProjectSteps()
 
-  // Effect to sync local state with project status
   useEffect(() => {
     if (selectedProject) {
       const project = getCurrentProject()
@@ -257,7 +262,7 @@ export function ProjectWizard() {
     console.log('ProjectWizard: Selecting project:', projectId)
     try {
       // First, try to get the project directly from the database
-      let project = await fetchProjectById(projectId)
+      let project = await fetchFreshProjectData(projectId)
       // If not found in database, refresh local state and try local state
       if (!project) {
         console.log('ProjectWizard: Project not found in database, refreshing local state...')
@@ -266,7 +271,7 @@ export function ProjectWizard() {
         project = projects.find(p => p.id === projectId)
         if (!project) {
           // Try database one more time
-          project = await fetchProjectById(projectId)
+          project = await fetchFreshProjectData(projectId)
         }
       }
       if (!project) {
@@ -407,7 +412,7 @@ export function ProjectWizard() {
 
   const handleQualityControlComplete = async (productImageUrl?: string) => {
     if (!selectedProject) {
-      console.error('No project selected for quality control completion')
+      console.error('❌ No project selected for quality control completion')
       toast({
         title: "Error",
         description: "No project selected. Please select a project first.",
@@ -416,72 +421,52 @@ export function ProjectWizard() {
       return
     }
 
-    // Use the getCurrentProject function for better error handling
-    const project = getCurrentProject()
-    if (!project) {
-      console.error('Project not found for quality control completion. Selected project ID:', selectedProject)
-      console.log('Available projects:', projects.map(p => ({ id: p.id, name: p.name })))
+    setIsGeneratingPassport(true)
+    console.log('=== STARTING ENHANCED PRODUCT PASSPORT GENERATION ===')
+    console.log('📋 Selected project ID:', selectedProject)
+    console.log('🖼️ Product image URL:', productImageUrl)
+    
+    try {
+      console.log('🔄 Step 1: Fetching fresh project data from database...')
       
-      // Try to refresh projects and fetch the specific project
-      console.log('Attempting to refresh projects and fetch project from database...')
-      try {
-        await refreshProjects()
-        const freshProject = await fetchProjectById(selectedProject)
-        if (!freshProject) {
-          toast({
-            title: "Error",
-            description: "Project not found. Please refresh the page and try again.",
-            variant: "destructive"
-          })
-          return
-        }
-        // Use the fresh project data
-        console.log('Found fresh project data:', freshProject.name)
-      } catch (error) {
-        console.error('Failed to fetch fresh project data:', error)
+      // Always fetch fresh project data to avoid race conditions
+      const freshProject = await fetchFreshProjectData(selectedProject)
+      
+      if (!freshProject) {
+        console.error('❌ Project not found in database:', selectedProject)
         toast({
           title: "Error",
-          description: "Failed to load project data. Please refresh the page and try again.",
+          description: "Project not found in database. Please refresh the page and try again.",
           variant: "destructive"
         })
         return
       }
-    }
 
-    // Get the current project again after potential refresh
-    const currentProject = getCurrentProject()
-    if (!currentProject) {
-      toast({
-        title: "Error",
-        description: "Project data could not be loaded. Please refresh the page and try again.",
-        variant: "destructive"
+      console.log('✅ Fresh project data retrieved:', freshProject.name, 'Status:', freshProject.status)
+      console.log('📊 Project details:', {
+        totalCost: freshProject.total_cost,
+        carbonFootprint: freshProject.total_carbon_footprint,
+        progress: freshProject.progress
       })
-      return
-    }
 
-    setIsGeneratingPassport(true)
-    console.log('=== STARTING PRODUCT PASSPORT GENERATION ===')
-    console.log('Project:', currentProject.name, 'ID:', currentProject.id)
-    console.log('Product image URL:', productImageUrl)
-    
-    try {
-      console.log('Step 1: Calling generateProductPassport with enhanced data...')
+      console.log('🔄 Step 2: Generating product passport with fresh data...')
+      
       const passport = await generateProductPassport(
         selectedProject,
-        currentProject.name,
+        freshProject.name,
         'manufactured',
         1,
-        currentProject.total_carbon_footprint,
+        freshProject.total_carbon_footprint,
         {
-          project_description: currentProject.description,
+          project_description: freshProject.description,
           completion_date: new Date().toISOString(),
-          total_cost: currentProject.total_cost,
-          progress: currentProject.progress
+          total_cost: freshProject.total_cost,
+          progress: freshProject.progress
         },
-        productImageUrl // Pass the product image URL as a separate parameter
+        productImageUrl
       )
 
-      console.log('Step 2: Checking passport generation result...')
+      console.log('🔄 Step 3: Validating passport generation result...')
       if (passport) {
         console.log('✅ Product passport generated successfully:', passport.id)
         if (productImageUrl) {
@@ -493,6 +478,7 @@ export function ProjectWizard() {
 
         setGeneratedPassportId(passport.id)
         setCurrentStep(5)
+        
         toast({
           title: "Success",
           description: "Product passport generated successfully!"
@@ -502,7 +488,7 @@ export function ProjectWizard() {
         throw new Error('Product passport generation returned no result')
       }
     } catch (error) {
-      console.error('❌ ERROR IN PRODUCT PASSPORT GENERATION:', error)
+      console.error('💥 CRITICAL ERROR IN ENHANCED PRODUCT PASSPORT GENERATION:', error)
       console.error('Error details:', {
         message: error.message,
         stack: error.stack,
@@ -516,7 +502,7 @@ export function ProjectWizard() {
         variant: "destructive"
       })
     } finally {
-      console.log('=== PRODUCT PASSPORT GENERATION COMPLETED ===')
+      console.log('=== ENHANCED PRODUCT PASSPORT GENERATION COMPLETED ===')
       setIsGeneratingPassport(false)
     }
   }

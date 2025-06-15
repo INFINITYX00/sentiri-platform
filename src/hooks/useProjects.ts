@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -67,6 +68,80 @@ export function useProjects() {
     }
   }
 
+  // Enhanced function to fetch a specific project by ID with retry logic
+  const fetchProjectById = async (projectId: string, retries: number = 2): Promise<Project | null> => {
+    let attempt = 0
+    while (attempt <= retries) {
+      try {
+        console.log(`🔄 useProjects: Fetching project by ID (attempt ${attempt + 1}/${retries + 1}):`, projectId)
+        
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', projectId)
+          .eq('deleted', false)
+          .single()
+
+        if (error) {
+          console.error(`❌ useProjects: Database query error (attempt ${attempt + 1}):`, error)
+          if (attempt === retries) {
+            throw new Error(`Database error after ${retries + 1} attempts: ${error.message}`)
+          }
+          attempt++
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000))
+          continue
+        }
+
+        if (!data) {
+          console.log(`⚠️ useProjects: No project found for id (attempt ${attempt + 1}):`, projectId)
+          return null
+        }
+
+        console.log(`✅ useProjects: Project retrieved successfully (attempt ${attempt + 1}):`, data.name)
+        
+        // Return properly typed project data
+        const project: Project = {
+          id: data.id,
+          name: data.name || '',
+          description: data.description || '',
+          status: data.status || 'planning',
+          progress: data.progress || 0,
+          total_cost: data.total_cost || 0,
+          total_carbon_footprint: data.total_carbon_footprint || 0,
+          start_date: data.start_date,
+          completion_date: data.completion_date,
+          allocated_materials: data.allocated_materials || [],
+          deleted: data.deleted || false,
+          created_at: data.created_at || '',
+          updated_at: data.updated_at || ''
+        }
+
+        // Update local cache if project found
+        setProjects(prevProjects => {
+          const existingIndex = prevProjects.findIndex(p => p.id === projectId)
+          if (existingIndex >= 0) {
+            const updated = [...prevProjects]
+            updated[existingIndex] = project
+            return updated
+          } else {
+            return [project, ...prevProjects]
+          }
+        })
+
+        return project
+      } catch (error) {
+        if (attempt === retries) {
+          console.error(`💥 useProjects: Final error fetching project by ID:`, error)
+          throw error
+        }
+        attempt++
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000))
+      }
+    }
+    return null
+  }
+
   const addProject = async (projectData: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => {
     setLoading(true)
     try {
@@ -104,7 +179,7 @@ export function useProjects() {
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
-      console.log('Updating project:', id, 'with:', updates)
+      console.log('🔄 useProjects: Updating project:', id, 'with:', updates)
       
       // Remove any fields that shouldn't be updated directly
       const cleanUpdates = { ...updates }
@@ -120,11 +195,11 @@ export function useProjects() {
         .single()
 
       if (error) {
-        console.error('Supabase update error:', error)
+        console.error('❌ useProjects: Supabase update error:', error)
         throw error
       }
 
-      console.log('Project updated successfully:', data)
+      console.log('✅ useProjects: Project updated successfully:', data)
       
       // Update local state immediately for better UX
       setProjects(prev => prev.map(p => p.id === id ? { ...p, ...cleanUpdates } : p))
@@ -139,7 +214,7 @@ export function useProjects() {
       
       return data
     } catch (error) {
-      console.error('Error updating project:', error)
+      console.error('💥 useProjects: Error updating project:', error)
       toast({
         title: "Error",
         description: `Failed to update project: ${error.message || 'Unknown error'}`,
@@ -236,6 +311,7 @@ export function useProjects() {
     deleteProject,
     addMaterialToProject,
     getProjectMaterials,
-    refreshProjects: fetchProjects
+    refreshProjects: fetchProjects,
+    fetchProjectById // Export the new function for direct project fetching
   }
 }
