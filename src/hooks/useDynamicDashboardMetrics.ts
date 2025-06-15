@@ -20,6 +20,27 @@ interface DashboardMetrics {
     description: string
     timestamp: string
   }>
+  activeProjectsList: Array<{
+    id: string
+    name: string
+    status: string
+    progress: number
+    total_cost: number
+    start_date: string
+  }>
+  stockAlerts: Array<{
+    id: string
+    name: string
+    quantity: number
+    unit: string
+    type: string
+  }>
+  recentPassports: Array<{
+    id: string
+    product_name: string
+    total_carbon_footprint: number
+    production_date: string
+  }>
 }
 
 export function useDynamicDashboardMetrics() {
@@ -34,7 +55,10 @@ export function useDynamicDashboardMetrics() {
     averageProjectDuration: 0,
     energyConsumed: 0,
     wasteReduction: 0,
-    recentActivity: []
+    recentActivity: [],
+    activeProjectsList: [],
+    stockAlerts: [],
+    recentPassports: []
   })
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
@@ -73,6 +97,15 @@ export function useDynamicDashboardMetrics() {
 
       if (timeError) throw timeError
 
+      // Fetch recent product passports
+      const { data: passports, error: passportsError } = await supabase
+        .from('product_passports')
+        .select('*')
+        .order('production_date', { ascending: false })
+        .limit(5)
+
+      if (passportsError) throw passportsError
+
       // Calculate project metrics
       const totalProjects = projects?.length || 0
       const activeProjects = projects?.filter(p => p.status === 'in_progress').length || 0
@@ -102,16 +135,47 @@ export function useDynamicDashboardMetrics() {
 
       // Calculate waste reduction (estimated based on material efficiency)
       const plannedMaterials = materials?.reduce((sum, m) => sum + m.quantity, 0) || 0
-      const usedMaterials = materials?.reduce((sum, m) => sum + Math.max(0, m.quantity - 5), 0) || 0 // Assuming 5 units as buffer
+      const usedMaterials = materials?.reduce((sum, m) => sum + Math.max(0, m.quantity - 5), 0) || 0
       const wasteReduction = plannedMaterials > 0 ? ((plannedMaterials - usedMaterials) / plannedMaterials) * 100 : 0
 
-      // Build recent activity
+      // Active projects list
+      const activeProjectsList = projects?.filter(p => p.status === 'in_progress' || p.status === 'planning')
+        .slice(0, 5)
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          status: p.status,
+          progress: p.progress || 0,
+          total_cost: p.total_cost || 0,
+          start_date: p.start_date || p.created_at
+        })) || []
+
+      // Stock alerts (low inventory items)
+      const stockAlerts = materials?.filter(m => m.quantity < 10)
+        .slice(0, 5)
+        .map(m => ({
+          id: m.id,
+          name: m.name,
+          quantity: m.quantity,
+          unit: m.unit,
+          type: m.type
+        })) || []
+
+      // Recent passports
+      const recentPassports = passports?.map(p => ({
+        id: p.id,
+        product_name: p.product_name,
+        total_carbon_footprint: p.total_carbon_footprint,
+        production_date: p.production_date
+      })) || []
+
+      // Build recent activity using created_at instead of updated_at
       const recentActivity = [
         ...projects?.slice(0, 3).map(p => ({
           id: p.id,
           type: 'project' as const,
           description: `Project "${p.name}" ${p.status === 'completed' ? 'completed' : 'updated'}`,
-          timestamp: p.updated_at || p.created_at
+          timestamp: p.created_at
         })) || [],
         ...timeEntries?.slice(0, 3).map(t => ({
           id: t.id,
@@ -123,7 +187,7 @@ export function useDynamicDashboardMetrics() {
           id: m.id,
           type: 'material' as const,
           description: `Material "${m.name}" updated (${m.quantity} ${m.unit})`,
-          timestamp: m.updated_at || m.created_at
+          timestamp: m.created_at
         })) || []
       ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5)
 
@@ -138,7 +202,10 @@ export function useDynamicDashboardMetrics() {
         averageProjectDuration,
         energyConsumed,
         wasteReduction,
-        recentActivity
+        recentActivity,
+        activeProjectsList,
+        stockAlerts,
+        recentPassports
       })
 
     } catch (error) {

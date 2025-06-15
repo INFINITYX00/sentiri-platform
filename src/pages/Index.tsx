@@ -8,6 +8,7 @@ import { MaterialPassport } from "@/components/passport/MaterialPassport";
 import { BOMManager } from "@/components/bom/BOMManager";
 import { CarbonTracker } from "@/components/carbon/CarbonTracker";
 import { AIInsights } from "@/components/insights/AIInsights";
+import { ProjectsManager } from "@/components/projects/ProjectsManager";
 
 const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -16,6 +17,8 @@ const Index = () => {
     switch (activeView) {
       case 'dashboard':
         return <DashboardOverview />;
+      case 'projects':
+        return <ProjectsManager />;
       case 'stock':
         return <StockManagement />;
       case 'passport':
@@ -33,7 +36,7 @@ const Index = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-gray-50/30">
         <AppSidebar activeView={activeView} setActiveView={setActiveView} />
         <main className="flex-1 overflow-auto">
           <div className={`min-h-full ${activeView === 'dashboard' ? '' : 'p-6'}`}>
