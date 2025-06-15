@@ -76,8 +76,7 @@ export function ProjectsManager() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Section */}
-      <div className="px-8 py-6">
+      <div className="page-header">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Projects</h1>
@@ -90,7 +89,7 @@ export function ProjectsManager() {
         </div>
       </div>
 
-      <div className="px-8 py-4 space-y-6">
+      <div className="page-container">
         {/* Create Project Form */}
         {showCreateForm && (
           <Card>
