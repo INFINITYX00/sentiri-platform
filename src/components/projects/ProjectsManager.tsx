@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -121,8 +122,9 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
 
   return (
     <div className="min-h-screen app-background">
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="space-y-6">
+      <div className="px-8 py-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header Section - Now inside max-width container */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold">Projects</h1>

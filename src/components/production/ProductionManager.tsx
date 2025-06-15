@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -213,28 +214,27 @@ export function ProductionManager({
 
   // Original standalone production manager view
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen app-background">
       <div className="px-8 py-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Production</h1>
-            <p className="text-muted-foreground">Manage manufacturing and track progress</p>
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header Section - Now inside container */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Production</h1>
+              <p className="text-muted-foreground">Manage manufacturing and track progress</p>
+            </div>
+            {selectedProject && (
+              <Button variant="outline" onClick={() => setSelectedProject(null)} className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Production
+              </Button>
+            )}
           </div>
-          {selectedProject && (
-            <Button variant="outline" onClick={() => setSelectedProject(null)} className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Production
-            </Button>
-          )}
-        </div>
-      </div>
 
-      <div className="px-8 py-4">
-        <div className="max-w-7xl mx-auto space-y-6 ml-4">
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {productionStats.map((stat) => (
-              <Card key={stat.label} className="hover:shadow-lg transition-all duration-200">
+              <Card key={stat.label} className="professional-card hover:shadow-lg transition-all duration-200">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -251,7 +251,7 @@ export function ProductionManager({
           {!currentProjectId ? (
             <>
               {/* Ready for Production */}
-              <Card>
+              <Card className="professional-card">
                 <CardHeader>
                   <CardTitle>Projects Ready for Production</CardTitle>
                 </CardHeader>
@@ -311,7 +311,7 @@ export function ProductionManager({
 
               {/* In Production */}
               {inProduction.length > 0 && (
-                <Card>
+                <Card className="professional-card">
                   <CardHeader>
                     <CardTitle>Currently in Production</CardTitle>
                   </CardHeader>
