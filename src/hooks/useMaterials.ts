@@ -34,29 +34,29 @@ export function useMaterials() {
           console.log('Material already exists, skipping duplicate')
           return prev
         }
-        const updated = [payload.new as Material, ...prev]
-        console.log('Updated materials list length after insert:', updated.length)
-        return updated
+        const newMaterials = [payload.new as Material, ...prev]
+        console.log('Updated materials list length after insert:', newMaterials.length)
+        return newMaterials
       })
     } 
     
     if (payload.eventType === 'UPDATE') {
       console.log('Updating material via real-time:', payload.new)
       setMaterials(prev => {
-        const updated = prev.map(m => 
-          m.id === payload.new.id ? payload.new as Material : m
+        const newMaterials = prev.map(m => 
+          m.id === payload.new.id ? { ...payload.new } as Material : m
         )
-        console.log('Updated materials list after update, count:', updated.length)
-        return updated
+        console.log('Updated materials list after update, count:', newMaterials.length)
+        return newMaterials
       })
     }
     
     if (payload.eventType === 'DELETE') {
       console.log('Removing material via real-time:', payload.old)
       setMaterials(prev => {
-        const updated = prev.filter(m => m.id !== payload.old.id)
-        console.log('Updated materials list length after delete:', updated.length)
-        return updated
+        const newMaterials = prev.filter(m => m.id !== payload.old.id)
+        console.log('Updated materials list length after delete:', newMaterials.length)
+        return newMaterials
       })
     }
   }, [setMaterials])
@@ -141,7 +141,7 @@ export function useMaterials() {
         channelRef.current = null
       }
     }
-  }, []) // Remove all dependencies to prevent recreation
+  }, [handleRealtimeEvent, handleSubscriptionStatus, fetchMaterials])
 
   return {
     materials,
