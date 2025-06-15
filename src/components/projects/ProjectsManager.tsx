@@ -75,7 +75,7 @@ export function ProjectsManager() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ml-8">
       <div className="page-header">
         <div className="flex justify-between items-center">
           <div>
