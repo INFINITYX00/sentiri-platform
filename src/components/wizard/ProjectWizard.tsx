@@ -46,8 +46,16 @@ export function ProjectWizard() {
   const [isGeneratingPassport, setIsGeneratingPassport] = useState(false)
   const [showPassportDetail, setShowPassportDetail] = useState(false)
   const [isSelectingProject, setIsSelectingProject] = useState(false)
-  const [bomCompleted, setBomCompleted] = useState(false)
   const [isUpdatingProject, setIsUpdatingProject] = useState(false)
+  
+  // Local state tracking for immediate UI feedback
+  const [localCompletionState, setLocalCompletionState] = useState({
+    bomCompleted: false,
+    productionPlanningCompleted: false,
+    manufacturingStarted: false,
+    manufacturingCompleted: false,
+    qualityControlCompleted: false
+  })
   
   const { projects, updateProject, refreshProjects } = useProjects()
   const { generateProductPassport, productPassports } = useProductPassports()
@@ -97,7 +105,7 @@ export function ProjectWizard() {
   const getProjectSteps = (): WizardStep[] => {
     const project = selectedProject ? projects.find(p => p.id === selectedProject) : null
     
-    console.log('Getting project steps for project:', project?.name, 'status:', project?.status, 'bomCompleted:', bomCompleted)
+    console.log('Getting project steps for project:', project?.name, 'status:', project?.status, 'localState:', localCompletionState)
     
     // Check if all manufacturing stages are completed
     const allStagesCompleted = stages.length > 0 && stages.every(stage => stage.status === 'completed' && stage.progress === 100)
@@ -116,8 +124,8 @@ export function ProjectWizard() {
         title: 'BOM Creation',
         description: 'Design your Bill of Materials',
         icon: FileText,
-        status: bomCompleted || (project && ['design', 'in_progress', 'completed'].includes(project.status)) ? 'completed' : 
-               project && currentStep === 1 ? 'current' : 'upcoming',
+        status: localCompletionState.bomCompleted ? 'completed' : 
+               project && currentStep >= 1 ? 'current' : 'upcoming',
         allowAccess: !!project
       },
       {
@@ -125,18 +133,18 @@ export function ProjectWizard() {
         title: 'Production Planning',
         description: 'Plan manufacturing stages',
         icon: Workflow,
-        status: project?.status === 'in_progress' || project?.status === 'completed' ? 'completed' :
-               (bomCompleted || project?.status === 'design') && currentStep === 2 ? 'current' : 'upcoming',
-        allowAccess: bomCompleted || (project && ['design', 'in_progress', 'completed'].includes(project.status))
+        status: localCompletionState.productionPlanningCompleted ? 'completed' :
+               localCompletionState.bomCompleted && currentStep >= 2 ? 'current' : 'upcoming',
+        allowAccess: localCompletionState.bomCompleted || (project && ['design', 'in_progress', 'completed'].includes(project.status))
       },
       {
         id: 'manufacturing',
         title: 'Manufacturing',
         description: 'Execute production stages',
         icon: Factory,
-        status: allStagesCompleted ? 'completed' :
-               project?.status === 'in_progress' && currentStep === 3 ? 'current' : 'upcoming',
-        allowAccess: project?.status === 'in_progress' || project?.status === 'completed' || allStagesCompleted
+        status: localCompletionState.manufacturingCompleted || allStagesCompleted ? 'completed' :
+               localCompletionState.manufacturingStarted && currentStep >= 3 ? 'current' : 'upcoming',
+        allowAccess: localCompletionState.productionPlanningCompleted || project?.status === 'in_progress' || project?.status === 'completed' || allStagesCompleted
       },
       {
         id: 'quality-control',
@@ -144,8 +152,8 @@ export function ProjectWizard() {
         description: 'Final inspection and testing',
         icon: ClipboardCheck,
         status: generatedPassportId ? 'completed' :
-               allStagesCompleted && currentStep === 4 ? 'current' : 'upcoming',
-        allowAccess: allStagesCompleted
+               (localCompletionState.manufacturingCompleted || allStagesCompleted) && currentStep >= 4 ? 'current' : 'upcoming',
+        allowAccess: localCompletionState.manufacturingCompleted || allStagesCompleted
       },
       {
         id: 'product-passport',
@@ -160,17 +168,30 @@ export function ProjectWizard() {
 
   const steps = getProjectSteps()
 
-  // Effect to listen for project status changes and update bomCompleted state
+  // Effect to sync local state with project status
   useEffect(() => {
     if (selectedProject) {
       const project = projects.find(p => p.id === selectedProject)
       if (project) {
-        console.log('Project status changed:', project.status)
-        // Update bomCompleted state based on project status
+        console.log('Syncing local state with project status:', project.status)
+        
+        // Sync completion states based on project status
+        const newState = { ...localCompletionState }
+        
         if (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed') {
-          console.log('Setting bomCompleted to true based on project status')
-          setBomCompleted(true)
+          newState.bomCompleted = true
         }
+        
+        if (project.status === 'in_progress' || project.status === 'completed') {
+          newState.productionPlanningCompleted = true
+          newState.manufacturingStarted = true
+        }
+        
+        if (project.status === 'completed') {
+          newState.manufacturingCompleted = true
+        }
+        
+        setLocalCompletionState(newState)
       }
     }
   }, [selectedProject, projects])
@@ -256,21 +277,22 @@ export function ProjectWizard() {
         return
       }
 
-      // Check if BOM is already completed
-      if (project.status === 'design' || project.status === 'in_progress' || project.status === 'completed') {
-        console.log('Setting bomCompleted to true based on project status during selection')
-        setBomCompleted(true)
+      // Initialize local completion state based on project status
+      const initialState = {
+        bomCompleted: ['design', 'in_progress', 'completed'].includes(project.status),
+        productionPlanningCompleted: ['in_progress', 'completed'].includes(project.status),
+        manufacturingStarted: ['in_progress', 'completed'].includes(project.status),
+        manufacturingCompleted: project.status === 'completed',
+        qualityControlCompleted: false
       }
+      setLocalCompletionState(initialState)
 
       // Smart auto-progression based on project status
-      let targetStep = 0
-      let progressMessage = ""
+      let targetStep = 1 // Always start at BOM Creation after project selection
+      let progressMessage = `${project.name} is selected. Starting with BOM Creation.`
 
+      // Override for advanced project statuses
       switch (project.status) {
-        case 'planning':
-          targetStep = 1 // BOM Creation
-          progressMessage = `${project.name} is active. Moving to BOM Creation.`
-          break
         case 'design':
           targetStep = 2 // Production Planning
           progressMessage = `${project.name} is active. Moving to Production Planning.`
@@ -283,9 +305,6 @@ export function ProjectWizard() {
           targetStep = 4 // Quality Control
           progressMessage = `${project.name} is active. Moving to Quality Control.`
           break
-        default:
-          targetStep = 1 // Default to BOM Creation for unknown status
-          progressMessage = `${project.name} is active. Moving to BOM Creation.`
       }
 
       setCurrentStep(targetStep)
@@ -309,9 +328,14 @@ export function ProjectWizard() {
 
   const handleBOMComplete = async () => {
     if (selectedProject && !isUpdatingProject) {
-      console.log('BOM completed, updating project status to design')
-      setBomCompleted(true)
+      console.log('BOM completed, updating local state and project status')
+      
+      // Update local state immediately for UI feedback
+      setLocalCompletionState(prev => ({ ...prev, bomCompleted: true }))
+      
+      // Update project status in background
       await debouncedUpdateProject(selectedProject, { status: 'design' })
+      
       toast({
         title: "BOM Complete",
         description: "Bill of Materials completed successfully. You can now proceed to Production Planning.",
@@ -321,7 +345,25 @@ export function ProjectWizard() {
 
   const handleProductionStart = async () => {
     if (selectedProject) {
+      console.log('Production started, updating local state')
+      
+      // Update local state immediately
+      setLocalCompletionState(prev => ({ 
+        ...prev, 
+        productionPlanningCompleted: true,
+        manufacturingStarted: true 
+      }))
+      
+      // Move to manufacturing step
       setCurrentStep(3)
+      
+      // Update project status in background
+      await debouncedUpdateProject(selectedProject, { status: 'in_progress' })
+      
+      toast({
+        title: "Production Started",
+        description: "Manufacturing phase has begun.",
+      })
     }
   }
 
@@ -329,8 +371,14 @@ export function ProjectWizard() {
     if (selectedProject && !isUpdatingProject) {
       const allStagesCompleted = stages.every(stage => stage.status === 'completed' && stage.progress === 100)
       if (allStagesCompleted) {
-        console.log('All manufacturing stages completed, updating project status')
+        console.log('All manufacturing stages completed, updating local state and project status')
+        
+        // Update local state immediately
+        setLocalCompletionState(prev => ({ ...prev, manufacturingCompleted: true }))
+        
+        // Update project status in background
         await debouncedUpdateProject(selectedProject, { status: 'completed', progress: 100 })
+        
         setCurrentStep(4)
         toast({
           title: "Manufacturing Complete",
@@ -391,6 +439,9 @@ export function ProjectWizard() {
         if (productImageUrl) {
           console.log('Product image URL:', productImageUrl)
         }
+
+        // Update local state immediately
+        setLocalCompletionState(prev => ({ ...prev, qualityControlCompleted: true }))
 
         setGeneratedPassportId(passport.id)
         setCurrentStep(5)
@@ -458,12 +509,6 @@ export function ProjectWizard() {
     console.log('Current step status:', currentStepData.status, 'Next step access:', nextStep?.allowAccess)
     
     if (!nextStep) return false
-    
-    // Special case for BOM Creation step - enable next if BOM is completed
-    if (currentStep === 1 && bomCompleted) {
-      console.log('BOM completed, allowing advance to next step')
-      return true
-    }
     
     return nextStep.allowAccess
   }
@@ -574,7 +619,13 @@ export function ProjectWizard() {
                     console.log('Resetting wizard state')
                     setSelectedProject(null)
                     setGeneratedPassportId(null)
-                    setBomCompleted(false)
+                    setLocalCompletionState({
+                      bomCompleted: false,
+                      productionPlanningCompleted: false,
+                      manufacturingStarted: false,
+                      manufacturingCompleted: false,
+                      qualityControlCompleted: false
+                    })
                     setCurrentStep(0)
                     setShowPassportDetail(false)
                   }}
