@@ -30,7 +30,7 @@ export const workspaceMenuItems: WorkspaceMenuItem[] = [
   },
   {
     title: "Projects",
-    url: "bom",
+    url: "projects",
     icon: ShoppingCart,
     items: []
   },
