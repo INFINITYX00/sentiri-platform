@@ -9,11 +9,9 @@ import {
   Trash2, 
   Edit,
   DollarSign, 
-  Database,
   Sparkles,
   Boxes,
   Users,
-  Brain,
   AlertTriangle
 } from "lucide-react"
 import { Material } from "@/lib/supabase"
@@ -223,14 +221,9 @@ export function MaterialStockCard({
               </div>
 
               {(material.carbon_source || material.ai_carbon_source) && (
-                <div className="flex items-center gap-2">
-                  {material.ai_carbon_source ? (
-                    <Brain className="h-3 w-3 text-blue-600 flex-shrink-0" />
-                  ) : (
-                    <Database className="h-3 w-3 text-green-600 flex-shrink-0" />
-                  )}
-                  <span className="text-sm text-muted-foreground">Data Source:</span>
-                  <span className={`font-medium text-sm ${material.ai_carbon_source ? 'text-blue-600' : 'text-green-600'} truncate`}>
+                <div className="flex items-start gap-2">
+                  <span className="text-sm text-muted-foreground flex-shrink-0">Data Source:</span>
+                  <span className={`font-medium text-sm ${material.ai_carbon_source ? 'text-blue-600' : 'text-green-600'} break-words`}>
                     {material.ai_carbon_source || material.carbon_source}
                   </span>
                 </div>
