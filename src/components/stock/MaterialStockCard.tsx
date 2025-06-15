@@ -223,16 +223,14 @@ export function MaterialStockCard({
               </div>
 
               {(material.carbon_source || material.ai_carbon_source) && (
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-1">
-                    {material.ai_carbon_source ? (
-                      <Brain className="h-3 w-3 text-blue-600" />
-                    ) : (
-                      <Database className="h-3 w-3 text-green-600" />
-                    )}
-                    <span className="text-sm text-muted-foreground">Data Source</span>
-                  </div>
-                  <span className={`font-medium text-sm ${material.ai_carbon_source ? 'text-blue-600' : 'text-green-600'}`}>
+                <div className="flex items-center gap-2">
+                  {material.ai_carbon_source ? (
+                    <Brain className="h-3 w-3 text-blue-600 flex-shrink-0" />
+                  ) : (
+                    <Database className="h-3 w-3 text-green-600 flex-shrink-0" />
+                  )}
+                  <span className="text-sm text-muted-foreground">Data Source:</span>
+                  <span className={`font-medium text-sm ${material.ai_carbon_source ? 'text-blue-600' : 'text-green-600'} truncate`}>
                     {material.ai_carbon_source || material.carbon_source}
                   </span>
                 </div>
