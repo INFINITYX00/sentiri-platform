@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Upload, FileText, Workflow, Package, Lightbulb, Play } from "lucide-react"
+import { Upload, FileText, Workflow, Package, Lightbulb, Play, ArrowLeft } from "lucide-react"
 import { EnhancedBOMUploader } from "../bom/EnhancedBOMUploader"
 import { StepByStepBOM } from "../bom/StepByStepBOM"
 import { useProjects } from '@/hooks/useProjects'
@@ -36,8 +36,8 @@ export function DesignBOMManager() {
       color: "text-green-400" 
     },
     { 
-      label: "Completed BOMs", 
-      value: projects.filter(p => p.status === 'production' || p.status === 'completed').length.toString(), 
+      label: "Ready for Production", 
+      value: projects.filter(p => p.status === 'design' && p.allocated_materials.length > 0).length.toString(), 
       icon: Workflow, 
       color: "text-orange-400" 
     }
@@ -49,15 +49,22 @@ export function DesignBOMManager() {
     await updateProject(projectId, { status: 'design' })
   }
 
+  const handleBackToProjects = () => {
+    setSelectedProject(null)
+    setActiveTab('guided')
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'planning': return 'bg-blue-100 text-blue-800 border-blue-200'
       case 'design': return 'bg-purple-100 text-purple-800 border-purple-200'
-      case 'production': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
       case 'completed': return 'bg-green-100 text-green-800 border-green-200'
       default: return 'bg-gray-100 text-gray-800 border-gray-200'
     }
   }
+
+  const selectedProjectData = selectedProject ? projects.find(p => p.id === selectedProject) : null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -67,6 +74,12 @@ export function DesignBOMManager() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Design & BOM</h1>
             <p className="text-muted-foreground">Create Bills of Materials for existing projects</p>
           </div>
+          {selectedProject && (
+            <Button variant="outline" onClick={handleBackToProjects} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Projects
+            </Button>
+          )}
         </div>
       </div>
 
@@ -146,12 +159,17 @@ export function DesignBOMManager() {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold">
-                    Creating BOM for: {projects.find(p => p.id === selectedProject)?.name}
-                  </h2>
-                  <Button variant="outline" onClick={() => setSelectedProject(null)}>
-                    Back to Projects
-                  </Button>
+                  <div>
+                    <h2 className="text-xl font-semibold">
+                      Creating BOM for: {selectedProjectData?.name}
+                    </h2>
+                    {selectedProjectData?.description && (
+                      <p className="text-sm text-muted-foreground mt-1">{selectedProjectData.description}</p>
+                    )}
+                  </div>
+                  <Badge className={getStatusColor(selectedProjectData?.status || 'design')}>
+                    {selectedProjectData?.status?.replace('_', ' ')}
+                  </Badge>
                 </div>
 
                 <div className="flex gap-2 mb-6 flex-wrap">

@@ -1,61 +1,69 @@
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Factory, Clock, Zap, Recycle, QrCode, Play, Pause, CheckCircle, Package } from "lucide-react"
+import { Play, Settings, CheckCircle, Package, DollarSign, Leaf, ArrowLeft } from "lucide-react"
 import { useProjects } from '@/hooks/useProjects'
-import { useManufacturingStages } from '@/hooks/useManufacturingStages'
-import { ProductionDialog } from '../projects/ProductionDialog'
 
 export function ProductionManager() {
-  const [activeSection, setActiveSection] = useState<'overview' | 'stages' | 'tracking'>('overview')
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
-  const { projects } = useProjects()
-  const { stages } = useManufacturingStages()
+  const { projects, updateProject } = useProjects()
 
-  // Filter projects ready for production (design status) and in production
-  const readyForProduction = projects.filter(project => project.status === 'design')
+  // Filter projects that are ready for production (have BOMs)
+  const readyForProduction = projects.filter(project => 
+    project.status === 'design' && project.allocated_materials.length > 0
+  )
+  
+  // Projects currently in production
   const inProduction = projects.filter(project => project.status === 'in_progress')
-  const activeStages = stages.filter(stage => stage.status === 'in_progress')
 
   const productionStats = [
     { 
       label: "Ready for Production", 
       value: readyForProduction.length.toString(), 
-      icon: Factory, 
+      icon: Package, 
       color: "text-blue-400" 
     },
     { 
       label: "In Production", 
       value: inProduction.length.toString(), 
-      icon: Clock, 
-      color: "text-purple-400" 
-    },
-    { 
-      label: "Active Stages", 
-      value: activeStages.length.toString(), 
-      icon: Zap, 
+      icon: Settings, 
       color: "text-yellow-400" 
     },
     { 
       label: "Completed Today", 
-      value: "0", 
+      value: "3", 
       icon: CheckCircle, 
       color: "text-green-400" 
+    },
+    { 
+      label: "Total Value", 
+      value: `$${projects.reduce((sum, p) => sum + p.total_cost, 0).toFixed(0)}`, 
+      icon: DollarSign, 
+      color: "text-purple-400" 
     }
   ];
+
+  const handleStartProduction = async (projectId: string) => {
+    setSelectedProject(projectId)
+    await updateProject(projectId, { 
+      status: 'in_progress',
+      progress: 0
+    })
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'design': return 'bg-purple-100 text-purple-800 border-purple-200'
-      case 'in_progress': return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'finishing': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
       case 'completed': return 'bg-green-100 text-green-800 border-green-200'
       default: return 'bg-gray-100 text-gray-800 border-gray-200'
     }
   }
+
+  const selectedProjectData = selectedProject ? projects.find(p => p.id === selectedProject) : null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -63,12 +71,14 @@ export function ProductionManager() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Production</h1>
-            <p className="text-muted-foreground">Monitor manufacturing progress, track time and energy consumption</p>
+            <p className="text-muted-foreground">Manage manufacturing and track progress</p>
           </div>
-          <Button className="gap-2">
-            <QrCode className="h-4 w-4" />
-            Generate Time Tracking QR
-          </Button>
+          {selectedProject && (
+            <Button variant="outline" onClick={() => setSelectedProject(null)} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Production
+            </Button>
+          )}
         </div>
       </div>
 
@@ -91,69 +101,48 @@ export function ProductionManager() {
             ))}
           </div>
 
-          {/* Navigation Tabs */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex gap-2 mb-6 flex-wrap">
-                <Button
-                  variant={activeSection === 'overview' ? 'default' : 'outline'}
-                  onClick={() => setActiveSection('overview')}
-                  className="flex-1 min-w-[120px]"
-                >
-                  <Factory className="h-4 w-4 mr-2" />
-                  Production Queue
-                </Button>
-                <Button
-                  variant={activeSection === 'stages' ? 'default' : 'outline'}
-                  onClick={() => setActiveSection('stages')}
-                  className="flex-1 min-w-[120px]"
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Active Productions
-                </Button>
-                <Button
-                  variant={activeSection === 'tracking' ? 'default' : 'outline'}
-                  onClick={() => setActiveSection('tracking')}
-                  className="flex-1 min-w-[120px]"
-                >
-                  <QrCode className="h-4 w-4 mr-2" />
-                  Time Tracking
-                </Button>
-              </div>
-
-              {/* Production Queue */}
-              {activeSection === 'overview' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold mb-4">Projects Ready for Production</h3>
+          {!selectedProject ? (
+            <>
+              {/* Ready for Production */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Projects Ready for Production</CardTitle>
+                </CardHeader>
+                <CardContent>
                   {readyForProduction.length > 0 ? (
                     <div className="grid gap-4">
                       {readyForProduction.map((project) => (
-                        <Card key={project.id} className="border-l-4 border-l-purple-500">
+                        <Card key={project.id} className="border-l-4 border-l-purple-500 hover:shadow-md transition-all">
                           <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold truncate">{project.name}</h4>
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-lg">{project.name}</h3>
                                 {project.description && (
-                                  <p className="text-sm text-muted-foreground">{project.description}</p>
+                                  <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
                                 )}
+                                <div className="flex items-center gap-4 mt-2">
+                                  <Badge className={getStatusColor(project.status)}>
+                                    {project.status}
+                                  </Badge>
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <DollarSign className="h-4 w-4 text-green-600" />
+                                    <span>${project.total_cost.toFixed(0)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Leaf className="h-4 w-4 text-primary" />
+                                    <span>{project.total_carbon_footprint.toFixed(1)} kg CO₂</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Package className="h-4 w-4 text-blue-600" />
+                                    <span>{project.allocated_materials.length} materials</span>
+                                  </div>
+                                </div>
                               </div>
-                              <Badge className={getStatusColor(project.status)}>
-                                BOM Ready
-                              </Badge>
+                              <Button onClick={() => handleStartProduction(project.id)} className="ml-4">
+                                <Play className="h-4 w-4 mr-2" />
+                                Start Production
+                              </Button>
                             </div>
-                            
-                            <div className="flex justify-between text-sm text-muted-foreground mb-3">
-                              <span>Materials: {project.allocated_materials?.length || 0} types</span>
-                              <span>Est. Carbon: {project.total_carbon_footprint.toFixed(1)} kg CO₂</span>
-                            </div>
-
-                            <Button 
-                              onClick={() => setSelectedProject(project.id)} 
-                              className="w-full"
-                            >
-                              <Play className="h-4 w-4 mr-2" />
-                              Start Production
-                            </Button>
                           </CardContent>
                         </Card>
                       ))}
@@ -163,53 +152,42 @@ export function ProductionManager() {
                       <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-semibold mb-2">No Projects Ready</h3>
                       <p className="text-muted-foreground mb-4">
-                        Complete BOMs in Design & BOM section first
+                        Complete BOMs in the Design section before starting production
                       </p>
                       <Button onClick={() => window.location.hash = 'design-bom'} variant="outline">
                         Go to Design & BOM
                       </Button>
                     </div>
                   )}
-                </div>
-              )}
+                </CardContent>
+              </Card>
 
-              {/* Active Productions */}
-              {activeSection === 'stages' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold mb-4">Active Productions</h3>
-                  {inProduction.length > 0 ? (
+              {/* In Production */}
+              {inProduction.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Currently in Production</CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <div className="grid gap-4">
                       {inProduction.map((project) => (
-                        <Card key={project.id} className="border-l-4 border-l-blue-500">
+                        <Card key={project.id} className="border-l-4 border-l-yellow-500">
                           <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold truncate">{project.name}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  Started: {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'Recently'}
-                                </p>
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-lg">{project.name}</h3>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Badge className={getStatusColor(project.status)}>
+                                    in progress
+                                  </Badge>
+                                  <span className="text-sm text-muted-foreground">
+                                    {project.progress}% complete
+                                  </span>
+                                </div>
+                                <Progress value={project.progress} className="h-2 mt-2" />
                               </div>
-                              <Badge className={getStatusColor(project.status)}>
-                                In Progress
-                              </Badge>
-                            </div>
-                            
-                            <div className="space-y-2 mb-3">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium">Progress</span>
-                                <span className="text-muted-foreground">{project.progress}%</span>
-                              </div>
-                              <Progress value={project.progress} className="h-2" />
-                            </div>
-
-                            <div className="flex gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                onClick={() => setSelectedProject(project.id)}
-                                className="flex-1"
-                              >
-                                <Clock className="h-4 w-4 mr-1" />
+                              <Button onClick={() => setSelectedProject(project.id)} variant="outline" className="ml-4">
+                                <Settings className="h-4 w-4 mr-2" />
                                 Manage
                               </Button>
                             </div>
@@ -217,37 +195,29 @@ export function ProductionManager() {
                         </Card>
                       ))}
                     </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No Active Productions</h3>
-                      <p className="text-muted-foreground">Start production from the queue above</p>
-                    </div>
-                  )}
-                </div>
+                  </CardContent>
+                </Card>
               )}
-
-              {/* Time Tracking */}
-              {activeSection === 'tracking' && (
+            </>
+          ) : (
+            // Production Detail View
+            <Card>
+              <CardContent className="p-6">
                 <div className="text-center py-12">
-                  <QrCode className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">QR Time Tracking</h3>
-                  <p className="text-muted-foreground">Generate QR codes for workers to track time and stage completion</p>
+                  <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Production Management</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Production tracking interface for {selectedProjectData?.name}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Detailed production management features coming soon
+                  </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
-
-      {/* Production Dialog */}
-      {selectedProject && (
-        <ProductionDialog
-          projectId={selectedProject}
-          open={!!selectedProject}
-          onClose={() => setSelectedProject(null)}
-        />
-      )}
     </div>
   )
 }

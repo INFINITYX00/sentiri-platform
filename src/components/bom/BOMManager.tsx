@@ -8,6 +8,7 @@ import { StepByStepBOM } from "./StepByStepBOM";
 
 export function BOMManager() {
   const [activeTab, setActiveTab] = useState<'guided' | 'upload'>('guided');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const bomStats = [
     { label: "Active BOMs", value: "12", icon: FileText, color: "text-blue-400" },
@@ -42,33 +43,47 @@ export function BOMManager() {
         ))}
       </div>
 
-      {/* Navigation Tabs */}
-      <Card className="sentiri-card">
-        <CardContent className="p-6">
-          <div className="flex gap-2 mb-6 flex-wrap">
-            <Button
-              variant={activeTab === 'guided' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('guided')}
-              className="flex-1 min-w-[120px]"
-            >
-              <Workflow className="h-4 w-4 mr-2" />
-              Guided Setup
+      {!selectedProjectId ? (
+        <Card className="sentiri-card">
+          <CardContent className="p-6 text-center">
+            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Project Selected</h3>
+            <p className="text-muted-foreground mb-4">
+              Please go to the Design & BOM section to select a project and create a BOM
+            </p>
+            <Button onClick={() => window.location.hash = 'design-bom'}>
+              Go to Design & BOM
             </Button>
-            <Button
-              variant={activeTab === 'upload' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('upload')}
-              className="flex-1 min-w-[120px]"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Advanced BOM
-            </Button>
-          </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="sentiri-card">
+          <CardContent className="p-6">
+            <div className="flex gap-2 mb-6 flex-wrap">
+              <Button
+                variant={activeTab === 'guided' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('guided')}
+                className="flex-1 min-w-[120px]"
+              >
+                <Workflow className="h-4 w-4 mr-2" />
+                Guided Setup
+              </Button>
+              <Button
+                variant={activeTab === 'upload' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('upload')}
+                className="flex-1 min-w-[120px]"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Advanced BOM
+              </Button>
+            </div>
 
-          {/* Tab Content */}
-          {activeTab === 'guided' && <StepByStepBOM />}
-          {activeTab === 'upload' && <EnhancedBOMUploader />}
-        </CardContent>
-      </Card>
+            {/* Tab Content */}
+            {activeTab === 'guided' && <StepByStepBOM projectId={selectedProjectId} />}
+            {activeTab === 'upload' && <EnhancedBOMUploader projectId={selectedProjectId} />}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
