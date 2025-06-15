@@ -74,8 +74,9 @@ export function useMaterials() {
                 console.log('Material already exists, skipping duplicate')
                 return prev
               }
-              const newMaterial = { ...payload.new } as Material
-              const newMaterials = [newMaterial, ...prev]
+              // Force completely new array with new object references
+              const newMaterial = JSON.parse(JSON.stringify(payload.new)) as Material
+              const newMaterials = [newMaterial, ...prev.map(m => ({ ...m }))]
               console.log('Updated materials list length after insert:', newMaterials.length)
               console.log('New materials array:', newMaterials.map(m => ({ id: m.id, name: m.name, updated_at: m.updated_at })))
               return newMaterials
@@ -85,12 +86,14 @@ export function useMaterials() {
           if (payload.eventType === 'UPDATE') {
             console.log('Updating material via real-time:', payload.new)
             setMaterialsRef.current(prev => {
-              const updatedMaterial = { ...payload.new } as Material
+              // Force completely new object references
+              const updatedMaterial = JSON.parse(JSON.stringify(payload.new)) as Material
               const newMaterials = prev.map(m => 
-                m.id === payload.new.id ? updatedMaterial : m
+                m.id === payload.new.id ? updatedMaterial : { ...m }
               )
               console.log('Updated materials list after update, count:', newMaterials.length)
               console.log('Updated materials array:', newMaterials.map(m => ({ id: m.id, name: m.name, updated_at: m.updated_at })))
+              console.log('🔄 FORCING RE-RENDER - Materials state updated')
               return newMaterials
             })
           }
@@ -153,7 +156,7 @@ export function useMaterials() {
 
   // Debug effect to track materials changes
   useEffect(() => {
-    console.log('Materials state changed:', materials.length, materials.map(m => ({ id: m.id, name: m.name, updated_at: m.updated_at })))
+    console.log('🎯 Materials state changed in useMaterials:', materials.length, materials.map(m => ({ id: m.id, name: m.name, updated_at: m.updated_at })))
   }, [materials])
 
   return {

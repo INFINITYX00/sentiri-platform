@@ -3,7 +3,7 @@ import { QRCodeViewer } from "@/components/qr/QRCodeViewer";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useStockAllocations } from "@/hooks/useStockAllocations";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Package, Loader2 } from "lucide-react";
 import { MaterialStockCard } from "./MaterialStockCard";
 import { AddMaterialDialog } from "./AddMaterialDialog";
@@ -33,7 +33,12 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [materialToEdit, setMaterialToEdit] = useState<Material | null>(null);
 
-  console.log('StockGrid rendering with materials:', materials.length, materials);
+  console.log('🎯 StockGrid rendering with materials:', materials.length, materials);
+
+  // Debug effect to track when StockGrid re-renders
+  useEffect(() => {
+    console.log('📊 StockGrid re-rendered with materials count:', materials.length)
+  }, [materials])
 
   const filteredItems = materials.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -110,12 +115,14 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredItems.map((item) => {
+        {filteredItems.map((item, index) => {
           const allocation = allocations.find(a => a.material_id === item.id);
+          
+          console.log(`🔍 Rendering card ${index + 1}/${filteredItems.length}:`, { id: item.id, name: item.name, updated_at: item.updated_at });
           
           return (
             <MaterialStockCard
-              key={item.id}
+              key={`${item.id}-${item.updated_at}-${index}`}
               material={item}
               allocation={allocation}
               onViewQR={handleViewQR}
