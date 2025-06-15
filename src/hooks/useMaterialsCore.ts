@@ -1,55 +1,11 @@
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 
 export function useMaterialsCore() {
-  const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
-  const channelRef = useRef<any>(null)
-
-  const fetchMaterials = useCallback(async () => {
-    console.log('fetchMaterials called - starting fetch')
-    setLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('materials')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error in fetchMaterials:', error)
-        throw error
-      }
-      console.log('Materials fetched successfully:', data?.length || 0, 'materials')
-      
-      // Force completely new object references with fresh timestamps
-      const freshTimestamp = Date.now()
-      const freshMaterials = data ? data.map(material => ({
-        ...material,
-        __freshRef: freshTimestamp
-      })) : []
-      
-      console.log('✅ fetchMaterials: Applied fresh refs to all materials:', freshMaterials.map(m => ({
-        id: m.id,
-        name: m.name,
-        __freshRef: (m as any).__freshRef
-      })))
-      
-      setMaterials(freshMaterials)
-    } catch (error) {
-      console.error('Error fetching materials:', error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch materials",
-        variant: "destructive"
-      })
-    } finally {
-      setLoading(false)
-      console.log('fetchMaterials completed')
-    }
-  }, [toast])
 
   const updateMaterial = useCallback(async (id: string, updates: Partial<Material>) => {
     console.log('updateMaterial called for ID:', id, 'with updates:', updates)
@@ -116,13 +72,8 @@ export function useMaterialsCore() {
   }, [toast])
 
   return {
-    materials,
-    setMaterials,
     loading,
-    setLoading,
-    fetchMaterials,
     updateMaterial,
-    deleteMaterial,
-    channelRef
+    deleteMaterial
   }
 }

@@ -3,8 +3,9 @@ import { QRCodeViewer } from "@/components/qr/QRCodeViewer";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useStockAllocations } from "@/hooks/useStockAllocations";
-import { useState, useEffect } from "react";
-import { Package, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Package, Loader2, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { MaterialStockCard } from "./MaterialStockCard";
 import { AddMaterialDialog } from "./AddMaterialDialog";
 import {
@@ -24,7 +25,7 @@ interface StockGridProps {
 }
 
 export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
-  const { materials, loading, regenerateQRCode, deleteMaterial } = useMaterials();
+  const { materials, loading, regenerateQRCode, deleteMaterial, refreshMaterials, subscriptionStatus } = useMaterials();
   const { allocations } = useStockAllocations();
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [qrViewerOpen, setQrViewerOpen] = useState(false);
@@ -32,23 +33,11 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [materialToEdit, setMaterialToEdit] = useState<Material | null>(null);
-  const [forceRefreshKey, setForceRefreshKey] = useState(Date.now());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Debug: Log materials received by StockGrid
-  console.log('🎯 StockGrid received materials from hook:', materials.length, materials.map(m => ({ 
-    id: m.id, 
-    name: m.name, 
-    updated_at: m.updated_at,
-    __freshRef: (m as any).__freshRef
-  })));
+  console.log('🎯 StockGrid - materials count:', materials.length, 'subscription:', subscriptionStatus);
 
-  // Force re-render when materials change
-  useEffect(() => {
-    console.log('📊 StockGrid materials changed, forcing re-render. Count:', materials.length)
-    setForceRefreshKey(Date.now());
-  }, [materials])
-
-  // Direct filtering without useMemo to ensure fresh data on every render
+  // Filter materials based on search and type
   const filteredItems = materials.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (item.origin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -61,12 +50,14 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
     return matchesSearch && matchesType;
   });
 
-  console.log('🔍 Filtered items after direct filter:', filteredItems.length, filteredItems.map(item => ({ 
-    id: item.id, 
-    name: item.name, 
-    updated_at: item.updated_at,
-    __freshRef: (item as any).__freshRef
-  })));
+  console.log('🔍 Filtered items count:', filteredItems.length);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    console.log('🔄 Manual refresh triggered');
+    await refreshMaterials();
+    setIsRefreshing(false);
+  };
 
   if (loading) {
     return (
@@ -97,6 +88,20 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
             Try adjusting your search or filter criteria.
           </p>
         )}
+        <div className="mt-4 flex justify-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <div className="text-xs text-muted-foreground flex items-center">
+            Status: {subscriptionStatus}
+          </div>
+        </div>
       </div>
     );
   }
@@ -130,24 +135,34 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
 
   return (
     <>
-      <div key={`grid-${forceRefreshKey}`} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredItems.map((item, index) => {
+      {/* Header with refresh button */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="text-sm text-muted-foreground">
+          Showing {filteredItems.length} of {materials.length} materials
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-xs text-muted-foreground">
+            Real-time: {subscriptionStatus}
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredItems.map((item) => {
           const allocation = allocations.find(a => a.material_id === item.id);
-          
-          // Use multiple factors for unique key generation to force re-render
-          const cardKey = `${item.id}-${item.updated_at}-${forceRefreshKey}-${index}-${(item as any).__freshRef || 'no-ref'}`;
-          console.log(`🔍 Rendering card ${index + 1}/${filteredItems.length}:`, { 
-            id: item.id, 
-            name: item.name, 
-            updated_at: item.updated_at,
-            key: cardKey,
-            forceRefreshKey,
-            __freshRef: (item as any).__freshRef
-          });
           
           return (
             <MaterialStockCard
-              key={cardKey}
+              key={`${item.id}-${item.updated_at}`}
               material={item}
               allocation={allocation}
               onViewQR={handleViewQR}
@@ -199,7 +214,7 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
             >
               Delete
             </AlertDialogAction>
-          </AlertDialogFooter>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
