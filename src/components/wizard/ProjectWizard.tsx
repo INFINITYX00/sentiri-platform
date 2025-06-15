@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -27,6 +26,7 @@ import { QualityControlStep } from './steps/QualityControlStep'
 import { ProductPassportStep } from './steps/ProductPassportStep'
 import { ProductPassportDetailView } from '@/components/passport/ProductPassportDetailView'
 import { useToast } from '@/hooks/use-toast'
+import { supabase } from '@/integrations/supabase/client'
 
 interface WizardStep {
   id: string
@@ -49,6 +49,30 @@ export function ProjectWizard() {
   const { generateProductPassport, productPassports } = useProductPassports()
   const { stages, fetchStages } = useManufacturingStages()
   const { toast } = useToast()
+
+  // Direct database query function to fetch project by ID
+  const fetchProjectById = async (projectId: string) => {
+    try {
+      console.log('ProjectWizard: Fetching project directly from database:', projectId)
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', projectId)
+        .eq('deleted', false)
+        .single()
+
+      if (error) {
+        console.error('ProjectWizard: Database query error:', error)
+        return null
+      }
+
+      console.log('ProjectWizard: Project found in database:', data?.name)
+      return data
+    } catch (error) {
+      console.error('ProjectWizard: Error fetching project from database:', error)
+      return null
+    }
+  }
 
   const getProjectSteps = (): WizardStep[] => {
     const project = selectedProject ? projects.find(p => p.id === selectedProject) : null
@@ -135,50 +159,31 @@ export function ProjectWizard() {
     console.log('ProjectWizard: Selecting project:', projectId)
     
     try {
-      // Force refresh projects to ensure latest data
-      console.log('ProjectWizard: Refreshing projects list...')
-      await refreshProjects()
+      // First, try to get the project directly from the database
+      let project = await fetchProjectById(projectId)
       
-      // Add a small delay to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 200))
-      
-      // Check current projects state and log for debugging
-      console.log('ProjectWizard: Current projects in state:', projects.map(p => ({ id: p.id, name: p.name })))
-      
-      // Try to find the project with additional debugging
-      let project = projects.find(p => p.id === projectId)
-      let retryCount = 0
-      const maxRetries = 5 // Increased retries
-      
-      while (!project && retryCount < maxRetries) {
-        console.log(`ProjectWizard: Project not found, retrying... (${retryCount + 1}/${maxRetries})`)
-        console.log(`ProjectWizard: Looking for project ID: ${projectId}`)
-        console.log(`ProjectWizard: Available project IDs: ${projects.map(p => p.id).join(', ')}`)
-        
-        await new Promise(resolve => setTimeout(resolve, 500)) // Increased delay
-        await refreshProjects()
-        project = projects.find(p => p.id === projectId)
-        retryCount++
-      }
-      
+      // If not found in database, refresh local state and try local state
       if (!project) {
-        console.error('ProjectWizard: Project not found after retries:', projectId)
-        console.error('ProjectWizard: Available projects:', projects)
-        
-        // Try one final refresh with longer delay
-        console.log('ProjectWizard: Attempting final refresh...')
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        console.log('ProjectWizard: Project not found in database, refreshing local state...')
         await refreshProjects()
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
         project = projects.find(p => p.id === projectId)
         
         if (!project) {
-          toast({
-            title: "Error",
-            description: "Project not found. The project may have been created but not yet synchronized. Please try refreshing the page.",
-            variant: "destructive"
-          })
-          return
+          // Try database one more time
+          project = await fetchProjectById(projectId)
         }
+      }
+      
+      if (!project) {
+        console.error('ProjectWizard: Project not found:', projectId)
+        toast({
+          title: "Error",
+          description: "Project not found. The project may have been deleted or there was an error during creation.",
+          variant: "destructive"
+        })
+        return
       }
 
       console.log('ProjectWizard: Project found successfully:', project.name, 'Status:', project.status)
