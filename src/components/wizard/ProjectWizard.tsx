@@ -56,7 +56,7 @@ export function ProjectWizard() {
     qualityControlCompleted: false
   })
   
-  const { projects, updateProject, refreshProjects } = useProjects()
+  const { projects, updateProject, refreshProjects, fetchProjectById } = useProjects()
   const { generateProductPassport, productPassports } = useProductPassports()
   const { stages, fetchStages } = useManufacturingStages()
   const { toast } = useToast()
@@ -130,8 +130,13 @@ export function ProjectWizard() {
     
     console.log('Getting project steps for project:', project?.name, 'status:', project?.status, 'localState:', localCompletionState)
     
-    // Check if all manufacturing stages are completed
+    // Check if all manufacturing stages are completed more reliably
     const allStagesCompleted = stages.length > 0 && stages.every(stage => stage.status === 'completed' && stage.progress === 100)
+    console.log('🏭 Manufacturing stages check:', {
+      stagesCount: stages.length,
+      allCompleted: allStagesCompleted,
+      stageStatuses: stages.map(s => ({ name: s.name, status: s.status, progress: s.progress }))
+    })
     
     return [
       {
@@ -165,7 +170,7 @@ export function ProjectWizard() {
         title: 'Manufacturing',
         description: 'Execute production stages',
         icon: Factory,
-        status: localCompletionState.manufacturingCompleted || allStagesCompleted ? 'completed' :
+        status: allStagesCompleted ? 'completed' :
                localCompletionState.manufacturingStarted && currentStep >= 3 ? 'current' : 'upcoming',
         allowAccess: localCompletionState.productionPlanningCompleted || project?.status === 'in_progress' || project?.status === 'completed' || allStagesCompleted
       },
@@ -175,8 +180,8 @@ export function ProjectWizard() {
         description: 'Final inspection and testing',
         icon: ClipboardCheck,
         status: generatedPassportId ? 'completed' :
-               (localCompletionState.manufacturingCompleted || allStagesCompleted) && currentStep >= 4 ? 'current' : 'upcoming',
-        allowAccess: localCompletionState.manufacturingCompleted || allStagesCompleted
+               allStagesCompleted && currentStep >= 4 ? 'current' : 'upcoming',
+        allowAccess: allStagesCompleted
       },
       {
         id: 'product-passport',
@@ -261,19 +266,9 @@ export function ProjectWizard() {
     setIsSelectingProject(true)
     console.log('ProjectWizard: Selecting project:', projectId)
     try {
-      // First, try to get the project directly from the database
-      let project = await fetchFreshProjectData(projectId)
-      // If not found in database, refresh local state and try local state
-      if (!project) {
-        console.log('ProjectWizard: Project not found in database, refreshing local state...')
-        await refreshProjects()
-        await new Promise(resolve => setTimeout(resolve, 500))
-        project = projects.find(p => p.id === projectId)
-        if (!project) {
-          // Try database one more time
-          project = await fetchFreshProjectData(projectId)
-        }
-      }
+      // Always use fetchProjectById for reliability
+      let project = await fetchProjectById(projectId)
+      
       if (!project) {
         console.error('ProjectWizard: Project not found:', projectId)
         toast({
@@ -283,6 +278,7 @@ export function ProjectWizard() {
         })
         return
       }
+      
       console.log('ProjectWizard: Project found successfully:', project.name, 'Status:', project.status)
       setSelectedProject(projectId)
       
@@ -391,9 +387,25 @@ export function ProjectWizard() {
 
   const handleManufacturingComplete = async () => {
     if (selectedProject && !isUpdatingProject) {
-      const allStagesCompleted = stages.every(stage => stage.status === 'completed' && stage.progress === 100)
+      console.log('🏭 Manufacturing completion triggered')
+      
+      // Force refresh stages to get latest data
+      await fetchStages(selectedProject)
+      
+      // Wait a bit for state to update
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Check if all stages are actually completed
+      const allStagesCompleted = stages.length > 0 && stages.every(stage => stage.status === 'completed' && stage.progress === 100)
+      
+      console.log('🏭 Manufacturing completion check:', {
+        stagesCount: stages.length,
+        allCompleted: allStagesCompleted,
+        stageDetails: stages.map(s => ({ name: s.name, status: s.status, progress: s.progress }))
+      })
+      
       if (allStagesCompleted) {
-        console.log('All manufacturing stages completed, updating local state and project status')
+        console.log('✅ All manufacturing stages completed, updating project')
         
         // Update local state immediately
         setLocalCompletionState(prev => ({ ...prev, manufacturingCompleted: true }))
@@ -401,10 +413,19 @@ export function ProjectWizard() {
         // Update project status in background
         await debouncedUpdateProject(selectedProject, { status: 'completed', progress: 100 })
         
+        // Auto-advance to quality control
         setCurrentStep(4)
+        
         toast({
           title: "Manufacturing Complete",
-          description: "All manufacturing stages have been completed successfully!"
+          description: "All manufacturing stages have been completed successfully! Moving to Quality Control."
+        })
+      } else {
+        console.log('⚠️ Not all manufacturing stages are completed yet')
+        toast({
+          title: "Manufacturing In Progress",
+          description: "Complete all manufacturing stages before proceeding to Quality Control.",
+          variant: "default"
         })
       }
     }
@@ -429,11 +450,11 @@ export function ProjectWizard() {
     try {
       console.log('🔄 Step 1: Fetching fresh project data from database...')
       
-      // Always fetch fresh project data to avoid race conditions
-      const freshProject = await fetchFreshProjectData(selectedProject)
+      // Always fetch fresh project data using the enhanced function
+      const freshProject = await fetchProjectById(selectedProject)
       
       if (!freshProject) {
-        console.error('❌ Project not found in database:', selectedProject)
+        console.error('❌ Project not found after fetch attempt:', selectedProject)
         toast({
           title: "Error",
           description: "Project not found in database. Please refresh the page and try again.",

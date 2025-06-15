@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,11 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
       let timeoutId: NodeJS.Timeout;
       return (stages: ManufacturingStage[]) => {
         clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => onStageUpdate(stages), 300);
+        timeoutId = setTimeout(() => {
+          console.log('🔔 Manufacturing stages updated, notifying parent:', stages.length, 'stages')
+          console.log('🔍 Stage completion status:', stages.map(s => ({ name: s.name, status: s.status, progress: s.progress })))
+          onStageUpdate(stages)
+        }, 300);
       };
     })(),
     [onStageUpdate]
@@ -52,6 +57,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
   // Fetch stages only when projectId changes
   useEffect(() => {
     if (projectId) {
+      console.log('🔄 ManufacturingStages: Fetching stages for project:', projectId)
       fetchStages(projectId);
     }
   }, [projectId, fetchStages]);
@@ -123,6 +129,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
   }, []);
 
   const handleStartStage = useCallback(async (stage: ManufacturingStage) => {
+    console.log('🚀 Starting stage:', stage.name)
     await updateStage(stage.id, {
       status: 'in_progress',
       start_date: new Date().toISOString().split('T')[0]
@@ -130,6 +137,7 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
   }, [updateStage]);
 
   const handleCompleteStage = useCallback(async (stage: ManufacturingStage) => {
+    console.log('✅ Completing stage:', stage.name)
     await updateStage(stage.id, {
       status: 'completed',
       progress: 100,
@@ -139,6 +147,8 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
 
   const handleProgressUpdate = useCallback(async (stage: ManufacturingStage, progress: number) => {
     const newProgress = Math.min(100, Math.max(0, progress));
+    console.log('📈 Updating stage progress:', stage.name, 'to', newProgress + '%')
+    
     await updateStage(stage.id, {
       progress: newProgress,
       status: newProgress === 100 ? 'completed' : 'in_progress'
@@ -253,6 +263,9 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
           <CardTitle className="flex items-center space-x-2">
             <Hammer className="h-5 w-5 text-primary" />
             <span>Manufacturing Timeline</span>
+            <Badge variant="outline" className="ml-2">
+              {stages.filter(s => s.status === 'completed').length} / {stages.length} Complete
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
