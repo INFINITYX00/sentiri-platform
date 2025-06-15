@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ClipboardCheck, Award, Upload, Image } from "lucide-react"
+import { ClipboardCheck, Award, Image } from "lucide-react"
 import { MaterialImageUpload } from '@/components/stock/MaterialImageUpload'
 
 interface QualityControlStepProps {
@@ -19,19 +19,6 @@ export function QualityControlStep({
   onQualityControlComplete 
 }: QualityControlStepProps) {
   const [productImageUrl, setProductImageUrl] = useState<string | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
-
-  const handleImageUpload = async (file: File) => {
-    setIsUploading(true)
-    try {
-      // Use the existing MaterialImageUpload component's upload logic
-      // This will be handled by the MaterialImageUpload component
-    } catch (error) {
-      console.error('Error uploading product image:', error)
-    } finally {
-      setIsUploading(false)
-    }
-  }
 
   const handleComplete = async () => {
     await onQualityControlComplete(productImageUrl || undefined)
@@ -60,8 +47,8 @@ export function QualityControlStep({
             </p>
             <MaterialImageUpload
               onImageUpload={(url) => setProductImageUrl(url)}
-              currentImageUrl={productImageUrl}
-              isUploading={isUploading}
+              imageUrl={productImageUrl || undefined}
+              onImageRemove={() => setProductImageUrl(null)}
             />
           </div>
         </CardContent>
@@ -71,7 +58,7 @@ export function QualityControlStep({
         <Button 
           className="mt-4"
           onClick={handleComplete}
-          disabled={isGeneratingPassport || isUploading}
+          disabled={isGeneratingPassport}
           size="lg"
         >
           {isGeneratingPassport ? (
