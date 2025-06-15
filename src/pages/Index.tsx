@@ -47,7 +47,7 @@ const Index = () => {
 
   const handleProjectSelect = (projectId: string) => {
     setSelectedProjectId(projectId);
-    setActiveView('design-bom');
+    setActiveView('wizard');
   };
 
   const renderActiveView = () => {
