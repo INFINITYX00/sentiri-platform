@@ -75,12 +75,12 @@ export function ProjectsManager() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="page-container">
       {/* Header Section */}
-      <div className="px-8 py-6">
+      <div className="page-header">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Projects</h1>
+            <h1 className="page-title">Projects</h1>
             <p className="text-muted-foreground">Manage manufacturing projects and track progress</p>
           </div>
           <Button onClick={() => setShowCreateForm(!showCreateForm)} className="gap-2">
@@ -91,11 +91,11 @@ export function ProjectsManager() {
       </div>
 
       {/* Main Content Area */}
-      <div className="px-8 py-4">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="grid-section">
+        <div className="space-y-6">
           {/* Create Project Form */}
           {showCreateForm && (
-            <div className="bg-white rounded-lg border shadow-sm p-4">
+            <div className="section-container">
               <Card className="border-none shadow-none">
                 <CardHeader>
                   <CardTitle className="text-lg">Create New Project</CardTitle>
