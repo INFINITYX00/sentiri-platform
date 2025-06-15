@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -75,7 +74,7 @@ export function ProjectsManager() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-8">
+    <div className="min-h-screen bg-gray-50 ml-12 pl-6">
       <div className="page-header">
         <div className="flex justify-between items-center">
           <div>
