@@ -1,9 +1,8 @@
-
 import { QRCodeViewer } from "@/components/qr/QRCodeViewer";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
 import { useStockAllocations } from "@/hooks/useStockAllocations";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Package, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MaterialStockCard } from "./MaterialStockCard";
@@ -26,7 +25,7 @@ interface StockGridProps {
 
 export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   const { materials, loading, regenerateQRCode, deleteMaterial, refreshMaterials, subscriptionStatus } = useMaterials();
-  const { allocations } = useStockAllocations();
+  const { allocations, refreshAllocations } = useStockAllocations();
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [qrViewerOpen, setQrViewerOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -36,6 +35,12 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   console.log('🎯 StockGrid - materials count:', materials.length, 'subscription:', subscriptionStatus);
+
+  // Listen for project changes to refresh allocations
+  useEffect(() => {
+    const interval = setInterval(refreshAllocations, 5000); // Refresh every 5 seconds
+    return () => clearInterval(interval);
+  }, [refreshAllocations]);
 
   // Filter materials based on search and type
   const filteredItems = materials.filter(item => {
@@ -55,7 +60,7 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     console.log('🔄 Manual refresh triggered');
-    await refreshMaterials();
+    await Promise.all([refreshMaterials(), refreshAllocations()]);
     setIsRefreshing(false);
   };
 

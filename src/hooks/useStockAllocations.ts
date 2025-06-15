@@ -26,8 +26,9 @@ export function useStockAllocations() {
           material_id,
           quantity_required,
           quantity_consumed,
-          project:projects(id, name)
+          project:projects!inner(id, name, deleted)
         `)
+        .eq('project.deleted', false) // Only include active projects
 
       if (error) throw error
 

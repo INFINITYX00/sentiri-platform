@@ -12,6 +12,7 @@ interface Project {
   progress: number
   total_cost: number
   start_date: string
+  deleted?: boolean
 }
 
 interface ActiveProjectsWidgetProps {
@@ -19,6 +20,9 @@ interface ActiveProjectsWidgetProps {
 }
 
 export function ActiveProjectsWidget({ projects }: ActiveProjectsWidgetProps) {
+  // Filter out deleted projects
+  const activeProjects = projects.filter(project => !project.deleted);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'planning': return 'bg-blue-100 text-blue-800'
@@ -30,9 +34,9 @@ export function ActiveProjectsWidget({ projects }: ActiveProjectsWidgetProps) {
   return (
     <DashboardWidget title="Active Projects" icon={<Factory className="h-4 w-4" />}>
       <div className="space-y-3">
-        {projects.length > 0 ? (
+        {activeProjects.length > 0 ? (
           <>
-            {projects.map((project) => (
+            {activeProjects.map((project) => (
               <div key={project.id} className="space-y-2 p-3 border rounded-lg">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-medium truncate">{project.name}</h4>

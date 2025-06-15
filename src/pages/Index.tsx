@@ -14,6 +14,7 @@ import { ProjectWizard } from "@/components/wizard/ProjectWizard";
 
 const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   // Handle hash-based navigation
   useEffect(() => {
@@ -44,6 +45,11 @@ const Index = () => {
     }
   }, [activeView]);
 
+  const handleProjectSelect = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setActiveView('design-bom');
+  };
+
   const renderActiveView = () => {
     switch (activeView) {
       case 'dashboard':
@@ -53,9 +59,18 @@ const Index = () => {
       case 'stock':
         return <StockManagement />;
       case 'projects':
-        return <ProjectsManager />;
+        return <ProjectsManager onProjectSelect={handleProjectSelect} />;
       case 'design-bom':
-        return <DesignBOMManager />;
+        return selectedProjectId ? (
+          <DesignBOMManager 
+            projectId={selectedProjectId} 
+            onBOMComplete={() => setActiveView('production')}
+          />
+        ) : (
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground">Please select a project first</p>
+          </div>
+        );
       case 'production':
         return <ProductionManager />;
       case 'passport':
