@@ -21,11 +21,19 @@ export async function generateQRCode(data: string): Promise<string> {
 
 export function parseQRCode(qrData: string): { type: string; id: string } | null {
   try {
-    // Handle web URLs (new format)
+    // Handle web URLs for materials (existing)
     if (qrData.includes('/material/')) {
       const materialId = qrData.split('/material/')[1];
       if (materialId) {
         return { type: 'material', id: materialId };
+      }
+    }
+    
+    // Handle web URLs for product passports (new)
+    if (qrData.includes('/product/')) {
+      const productId = qrData.split('/product/')[1];
+      if (productId) {
+        return { type: 'product', id: productId };
       }
     }
     
@@ -48,13 +56,19 @@ export function parseQRCode(qrData: string): { type: string; id: string } | null
   }
 }
 
-// Generate QR data for materials - now creates web links
+// Generate QR data for materials - creates web links
 export function createMaterialQRData(materialId: string): string {
   const baseUrl = window.location.origin;
   return `${baseUrl}/material/${materialId}`;
 }
 
-// Generate QR data for material passports
+// Generate QR data for product passports - creates web links
+export function createProductPassportQRData(passportId: string): string {
+  const baseUrl = window.location.origin;
+  return `${baseUrl}/product/${passportId}`;
+}
+
+// Generate QR data for material passports (legacy)
 export function createPassportQRData(passportId: string): string {
   return `passport:${passportId}`
 }
@@ -64,7 +78,7 @@ export function generateSimpleQRCode(materialId: string): string {
   return `QR${materialId.slice(-6).toUpperCase()}`;
 }
 
-// New function: Generate complete QR package for material
+// Generate complete QR package for material
 export async function generateCompleteQRPackage(materialId: string): Promise<{
   qrData: string;
   qrCodeDataURL: string;
@@ -81,6 +95,31 @@ export async function generateCompleteQRPackage(materialId: string): Promise<{
   const qrCodeDataURL = await generateQRCode(qrData);
   
   console.log('QR code generated successfully');
+  
+  return {
+    qrData,
+    qrCodeDataURL,
+    simpleCode
+  };
+}
+
+// Generate complete QR package for product passport
+export async function generateProductPassportQRPackage(passportId: string): Promise<{
+  qrData: string;
+  qrCodeDataURL: string;
+  simpleCode: string;
+}> {
+  console.log('Generating complete QR package for product passport:', passportId);
+  
+  const qrData = createProductPassportQRData(passportId);
+  const simpleCode = generateSimpleQRCode(passportId);
+  
+  console.log('Product QR data:', qrData);
+  console.log('Simple code:', simpleCode);
+  
+  const qrCodeDataURL = await generateQRCode(qrData);
+  
+  console.log('Product QR code generated successfully');
   
   return {
     qrData,

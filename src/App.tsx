@@ -8,6 +8,7 @@ import { useState } from "react";
 import { MaterialsProvider } from "@/contexts/MaterialsContext";
 import Index from "./pages/Index";
 import MaterialDetail from "./pages/MaterialDetail";
+import ProductPassportDetail from "./pages/ProductPassportDetail";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
@@ -31,6 +32,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/material/:id" element={<MaterialDetail />} />
+              <Route path="/product/:id" element={<ProductPassportDetail />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

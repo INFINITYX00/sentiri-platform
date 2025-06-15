@@ -41,7 +41,20 @@ export function QRScanner({ isOpen, onClose, onMaterialFound }: QRScannerProps) 
         }
       }
 
-      // If not found by ID, try searching by QR code URL
+      // Handle product passport URLs - redirect to product page
+      if (parsed && parsed.type === 'product') {
+        toast({
+          title: "Product Passport Found!",
+          description: `Redirecting to product passport: ${parsed.id}`,
+        });
+        
+        // Redirect to product passport page
+        window.location.href = `/product/${parsed.id}`;
+        onClose();
+        return;
+      }
+
+      // If not found by ID, try searching by QR code URL for materials
       if (!material && qrCode.includes('/material/')) {
         const materialId = qrCode.split('/material/')[1];
         if (materialId) {
@@ -54,6 +67,22 @@ export function QRScanner({ isOpen, onClose, onMaterialFound }: QRScannerProps) 
           if (!error && data) {
             material = data;
           }
+        }
+      }
+
+      // Check if it's a product passport URL and redirect
+      if (!material && qrCode.includes('/product/')) {
+        const productId = qrCode.split('/product/')[1];
+        if (productId) {
+          toast({
+            title: "Product Passport Found!",
+            description: `Redirecting to product passport: ${productId}`,
+          });
+          
+          // Redirect to product passport page
+          window.location.href = `/product/${productId}`;
+          onClose();
+          return;
         }
       }
 
@@ -96,8 +125,8 @@ export function QRScanner({ isOpen, onClose, onMaterialFound }: QRScannerProps) 
         onClose();
       } else {
         toast({
-          title: "Material Not Found",
-          description: `No material found for QR code: ${qrCode}`,
+          title: "Item Not Found",
+          description: `No material or product passport found for QR code: ${qrCode}`,
           variant: "destructive"
         });
       }
@@ -105,7 +134,7 @@ export function QRScanner({ isOpen, onClose, onMaterialFound }: QRScannerProps) 
       console.error('Error searching material:', error);
       toast({
         title: "Search Error",
-        description: "Failed to search for material",
+        description: "Failed to search for material or product passport",
         variant: "destructive"
       });
     } finally {

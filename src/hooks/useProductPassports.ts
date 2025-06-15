@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
-import { generateCompleteQRPackage } from '@/utils/qrGenerator'
+import { generateProductPassportQRPackage } from '@/utils/qrGenerator'
 import { uploadFile } from '@/utils/fileUpload'
 
 export interface ProductPassport {
@@ -142,7 +142,7 @@ export function useProductPassports() {
       
       try {
         console.log('📱 Generating QR code for product passport...')
-        const qrPackage = await generateCompleteQRPackage(tempId)
+        const qrPackage = await generateProductPassportQRPackage(tempId)
         qrData = qrPackage.qrData
         console.log('✅ QR data generated:', qrData)
         
@@ -227,7 +227,7 @@ export function useProductPassports() {
         total_carbon_footprint: finalCarbonFootprint,
         qr_code: qrData,
         qr_image_url: qrImageUrl,
-        image_url: productImageUrl, // Store image in the correct field
+        image_url: productImageUrl,
         specifications: enhancedSpecifications
       })
       
@@ -243,7 +243,7 @@ export function useProductPassports() {
           total_carbon_footprint: finalCarbonFootprint,
           qr_code: qrData,
           qr_image_url: qrImageUrl,
-          image_url: productImageUrl, // Store image in the correct field
+          image_url: productImageUrl,
           specifications: enhancedSpecifications,
           production_date: new Date().toISOString()
         }])
