@@ -56,11 +56,9 @@ export function useMaterials() {
         (payload) => {
           console.log('Real-time update received:', payload.eventType, payload)
           
-          setMaterials(prev => {
-            console.log('Current materials count before update:', prev.length)
-            
-            if (payload.eventType === 'INSERT') {
-              console.log('Adding new material via real-time:', payload.new)
+          if (payload.eventType === 'INSERT') {
+            console.log('Adding new material via real-time:', payload.new)
+            setMaterials(prev => {
               const exists = prev.some(m => m.id === payload.new.id)
               if (exists) {
                 console.log('Material already exists, skipping duplicate')
@@ -69,26 +67,28 @@ export function useMaterials() {
               const updated = [payload.new as Material, ...prev]
               console.log('Updated materials list length after insert:', updated.length)
               return updated
-            } 
-            
-            if (payload.eventType === 'UPDATE') {
-              console.log('Updating material via real-time:', payload.new)
+            })
+          } 
+          
+          if (payload.eventType === 'UPDATE') {
+            console.log('Updating material via real-time:', payload.new)
+            setMaterials(prev => {
               const updated = prev.map(m => 
                 m.id === payload.new.id ? payload.new as Material : m
               )
               console.log('Updated materials list after update, count:', updated.length)
               return updated
-            }
-            
-            if (payload.eventType === 'DELETE') {
-              console.log('Removing material via real-time:', payload.old)
+            })
+          }
+          
+          if (payload.eventType === 'DELETE') {
+            console.log('Removing material via real-time:', payload.old)
+            setMaterials(prev => {
               const updated = prev.filter(m => m.id !== payload.old.id)
               console.log('Updated materials list length after delete:', updated.length)
               return updated
-            }
-            
-            return prev
-          })
+            })
+          }
         }
       )
 
@@ -135,7 +135,7 @@ export function useMaterials() {
         channelRef.current = null
       }
     }
-  }, []) // Keep empty dependency array to run only once
+  }, [fetchMaterials, setMaterials]) // Add dependencies to ensure fresh references
 
   return {
     materials,
