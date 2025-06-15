@@ -1,4 +1,3 @@
-
 import { QRCodeViewer } from "@/components/qr/QRCodeViewer";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
@@ -109,7 +108,7 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6" key={`materials-${materials.length}-${Date.now()}`}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" key={`materials-${materials.length}-${Date.now()}`}>
         {filteredItems.map((item) => {
           const allocation = allocations.find(a => a.material_id === item.id);
           

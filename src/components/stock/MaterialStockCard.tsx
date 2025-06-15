@@ -221,9 +221,9 @@ export function MaterialStockCard({
               </div>
 
               {(material.carbon_source || material.ai_carbon_source) && (
-                <div className="flex items-start gap-2">
-                  <span className="text-sm text-muted-foreground flex-shrink-0">Data Source:</span>
-                  <span className={`font-medium text-sm ${material.ai_carbon_source ? 'text-blue-600' : 'text-green-600'} break-words`}>
+                <div className="space-y-1">
+                  <span className="text-sm text-muted-foreground">Data Source:</span>
+                  <span className={`font-medium text-sm ${material.ai_carbon_source ? 'text-blue-600' : 'text-green-600'} leading-tight`}>
                     {material.ai_carbon_source || material.carbon_source}
                   </span>
                 </div>
