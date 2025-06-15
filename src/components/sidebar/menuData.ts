@@ -8,6 +8,7 @@ import {
   Leaf,
   Workflow,
   Factory,
+  Sparkles,
 } from "lucide-react";
 import { MenuItem, WorkspaceMenuItem } from "./types";
 
@@ -16,6 +17,12 @@ export const workspaceMenuItems: WorkspaceMenuItem[] = [
     title: "Dashboard",
     url: "dashboard",
     icon: Home,
+    items: []
+  },
+  {
+    title: "Project Wizard",
+    url: "wizard",
+    icon: Sparkles,
     items: []
   },
   {

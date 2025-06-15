@@ -2,41 +2,52 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Plus, Package, Calendar, DollarSign, Leaf, FileText, Settings, Clock, CheckCircle } from "lucide-react"
+import { Plus, Package, Calendar, DollarSign, Leaf, CheckCircle } from "lucide-react"
 import { useProjects } from '@/hooks/useProjects'
 import { ProjectMaterialsDialog } from './ProjectMaterialsDialog'
+import { ProductionDialog } from './ProductionDialog'
 
-export function ProjectsManager() {
-  const { projects, loading, addProject } = useProjects()
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [selectedProject, setSelectedProject] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
+interface ProjectsManagerProps {
+  onProjectSelect?: (projectId: string) => void
+}
+
+export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [newProject, setNewProject] = useState({
     name: '',
     description: '',
-    start_date: ''
+    status: 'planning',
+    progress: 0,
+    total_cost: 0,
+    total_carbon_footprint: 0,
+    allocated_materials: []
   })
 
+  const { projects, loading, addProject } = useProjects()
+
   const handleCreateProject = async () => {
-    if (!formData.name.trim()) return
+    if (!newProject.name.trim()) return
 
-    const result = await addProject({
-      name: formData.name,
-      description: formData.description,
-      status: 'planning',
-      progress: 0,
-      total_cost: 0,
-      total_carbon_footprint: 0,
-      start_date: formData.start_date || undefined,
-      allocated_materials: []
-    })
-
-    if (result) {
-      setFormData({ name: '', description: '', start_date: '' })
-      setShowCreateForm(false)
+    const created = await addProject(newProject)
+    if (created) {
+      setIsCreateDialogOpen(false)
+      setNewProject({
+        name: '',
+        description: '',
+        status: 'planning',
+        progress: 0,
+        total_cost: 0,
+        total_carbon_footprint: 0,
+        allocated_materials: []
+      })
+      if (onProjectSelect) {
+        onProjectSelect(created.id)
+      }
     }
   }
 
@@ -52,39 +63,8 @@ export function ProjectsManager() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'planning': return <Clock className="h-3 w-3" />
-      case 'design': return <FileText className="h-3 w-3" />
-      case 'in_progress': return <Settings className="h-3 w-3" />
-      case 'completed': return <CheckCircle className="h-3 w-3" />
-      default: return null
-    }
-  }
-
-  const getNextAction = (project: any) => {
-    switch (project.status) {
-      case 'planning':
-        return 'Create BOM'
-      case 'design':
-        return 'Start Production'
-      case 'in_progress':
-        return 'View Progress'
-      case 'completed':
-        return 'View Results'
-      default:
-        return 'Manage'
-    }
-  }
-
-  const getNextActionLink = (project: any) => {
-    switch (project.status) {
-      case 'planning':
-        return 'design-bom'
-      case 'design':
-        return 'production'
-      case 'in_progress':
-        return 'production'
-      default:
-        return null
+      case 'completed': return CheckCircle
+      default: return Package
     }
   }
 
@@ -96,15 +76,9 @@ export function ProjectsManager() {
       color: "text-blue-400" 
     },
     { 
-      label: "In Planning", 
-      value: projects.filter(p => p.status === 'planning').length.toString(), 
-      icon: Clock, 
-      color: "text-purple-400" 
-    },
-    { 
-      label: "In Production", 
+      label: "In Progress", 
       value: projects.filter(p => p.status === 'in_progress').length.toString(), 
-      icon: Settings, 
+      icon: Calendar, 
       color: "text-yellow-400" 
     },
     { 
@@ -112,189 +86,152 @@ export function ProjectsManager() {
       value: projects.filter(p => p.status === 'completed').length.toString(), 
       icon: CheckCircle, 
       color: "text-green-400" 
+    },
+    { 
+      label: "Total Value", 
+      value: `$${projects.reduce((sum, p) => sum + p.total_cost, 0).toFixed(0)}`, 
+      icon: DollarSign, 
+      color: "text-purple-400" 
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="px-8 py-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Projects</h1>
-            <p className="text-muted-foreground">Create and manage manufacturing projects</p>
-          </div>
-          <Button onClick={() => setShowCreateForm(!showCreateForm)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Project
-          </Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Projects</h1>
+          <p className="text-muted-foreground mt-1">Manage your furniture manufacturing projects</p>
         </div>
-      </div>
-
-      <div className="px-8 py-4">
-        <div className="max-w-7xl mx-auto space-y-6 ml-4">
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {projectStats.map((stat) => (
-              <Card key={stat.label} className="hover:shadow-lg transition-all duration-200">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">{stat.label}</p>
-                      <p className="text-2xl font-bold">{stat.value}</p>
-                    </div>
-                    <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Create Project Form */}
-          {showCreateForm && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Create New Project</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              New Project
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Project</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Project Name</Label>
                 <Input
-                  placeholder="Project name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  id="name"
+                  value={newProject.name}
+                  onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                  placeholder="Enter project name"
                 />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
                 <Textarea
-                  placeholder="Project description (optional)"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  rows={3}
+                  id="description"
+                  value={newProject.description}
+                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                  placeholder="Describe your project"
                 />
-                <Input
-                  type="date"
-                  placeholder="Start date"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
-                />
-                <div className="flex gap-2">
-                  <Button onClick={handleCreateProject} disabled={!formData.name.trim()}>
-                    Create Project
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowCreateForm(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Projects Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <Card key={project.id} className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg truncate">{project.name}</CardTitle>
-                      {project.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{project.description}</p>
-                      )}
-                    </div>
-                    <Badge className={`${getStatusColor(project.status)} ml-2 flex items-center gap-1`}>
-                      {getStatusIcon(project.status)}
-                      {project.status.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Progress Bar */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">Progress</span>
-                      <span className="text-muted-foreground">{project.progress}%</span>
-                    </div>
-                    <Progress value={project.progress} className="h-2" />
-                  </div>
-
-                  {/* Project Stats */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <DollarSign className="h-4 w-4 text-green-600" />
-                      <div>
-                        <p className="font-medium">${project.total_cost.toFixed(0)}</p>
-                        <p className="text-xs text-muted-foreground">Total Cost</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Leaf className="h-4 w-4 text-primary" />
-                      <div>
-                        <p className="font-medium">{project.total_carbon_footprint.toFixed(1)} kg</p>
-                        <p className="text-xs text-muted-foreground">CO₂ Impact</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {project.start_date && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>Started {new Date(project.start_date).toLocaleDateString()}</span>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelectedProject(project.id)}
-                      className="flex-1"
-                    >
-                      <Package className="h-4 w-4 mr-1" />
-                      Materials
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        const link = getNextActionLink(project);
-                        if (link) {
-                          window.location.hash = link;
-                        }
-                      }}
-                      className="flex-1"
-                      variant={project.status === 'completed' ? 'secondary' : 'default'}
-                      disabled={project.status === 'completed'}
-                    >
-                      {getNextAction(project)}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            {projects.length === 0 && !loading && (
-              <Card className="col-span-full border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Package className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
-                  <p className="text-muted-foreground text-center mb-4">
-                    Create your first project to start your manufacturing journey
-                  </p>
-                  <Button onClick={() => setShowCreateForm(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Project
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
+              </div>
+              <Button onClick={handleCreateProject} className="w-full">
+                Create Project
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Materials Dialog */}
-      {selectedProject && (
-        <ProjectMaterialsDialog
-          projectId={selectedProject}
-          open={!!selectedProject}
-          onClose={() => setSelectedProject(null)}
-        />
-      )}
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {projectStats.map((stat) => (
+          <Card key={stat.label}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                </div>
+                <stat.icon className={`h-6 w-6 ${stat.color}`} />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Projects Grid */}
+      <div className="grid gap-4">
+        {loading ? (
+          <div className="text-center py-12">
+            <p>Loading projects...</p>
+          </div>
+        ) : projects.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Projects Yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Create your first project to start manufacturing
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          projects.map((project) => {
+            const StatusIcon = getStatusIcon(project.status)
+            return (
+              <Card key={project.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <StatusIcon className="h-5 w-5 text-primary" />
+                        <h3 className="text-xl font-semibold">{project.name}</h3>
+                        <Badge className={getStatusColor(project.status)}>
+                          {project.status.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      
+                      {project.description && (
+                        <p className="text-muted-foreground mb-4">{project.description}</p>
+                      )}
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-blue-600" />
+                          <span>{project.allocated_materials.length} materials</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-green-600" />
+                          <span>${project.total_cost.toFixed(0)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Leaf className="h-4 w-4 text-primary" />
+                          <span>{project.total_carbon_footprint.toFixed(1)} kg CO₂</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-purple-600" />
+                          <span>{project.progress}% complete</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 ml-4">
+                      {onProjectSelect && (
+                        <Button 
+                          variant="outline" 
+                          onClick={() => onProjectSelect(project.id)}
+                        >
+                          Select
+                        </Button>
+                      )}
+                      <ProjectMaterialsDialog projectId={project.id} />
+                      <ProductionDialog project={project} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })
+        )}
+      </div>
     </div>
   )
 }

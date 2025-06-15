@@ -6,10 +6,13 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Play, Settings, CheckCircle, Package, DollarSign, Leaf, ArrowLeft } from "lucide-react"
 import { useProjects } from '@/hooks/useProjects'
+import { useManufacturingStages } from '@/hooks/useManufacturingStages'
+import { ManufacturingStages } from '@/components/project/ManufacturingStages'
 
 export function ProductionManager() {
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
   const { projects, updateProject } = useProjects()
+  const { createDefaultStages } = useManufacturingStages()
 
   // Filter projects that are ready for production (have BOMs)
   const readyForProduction = projects.filter(project => 
@@ -52,6 +55,8 @@ export function ProductionManager() {
       status: 'in_progress',
       progress: 0
     })
+    // Create default manufacturing stages for the project
+    await createDefaultStages(projectId)
   }
 
   const getStatusColor = (status: string) => {
@@ -64,6 +69,19 @@ export function ProductionManager() {
   }
 
   const selectedProjectData = selectedProject ? projects.find(p => p.id === selectedProject) : null
+
+  const handleStageUpdate = async (stages: any[]) => {
+    if (!selectedProject) return
+    
+    // Calculate overall progress from stages
+    const overallProgress = stages.reduce((sum, stage) => sum + stage.progress, 0) / stages.length
+    
+    // Update project progress
+    await updateProject(selectedProject, { 
+      progress: Math.round(overallProgress),
+      status: overallProgress === 100 ? 'completed' : 'in_progress'
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -200,21 +218,11 @@ export function ProductionManager() {
               )}
             </>
           ) : (
-            // Production Detail View
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center py-12">
-                  <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Production Management</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Production tracking interface for {selectedProjectData?.name}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Detailed production management features coming soon
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            // Production Detail View with Manufacturing Stages
+            <ManufacturingStages 
+              projectId={selectedProject} 
+              onStageUpdate={handleStageUpdate}
+            />
           )}
         </div>
       </div>

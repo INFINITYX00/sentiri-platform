@@ -10,6 +10,7 @@ import { AIInsights } from "@/components/insights/AIInsights";
 import { ProjectsManager } from "@/components/projects/ProjectsManager";
 import { DesignBOMManager } from "@/components/design/DesignBOMManager";
 import { ProductionManager } from "@/components/production/ProductionManager";
+import { ProjectWizard } from "@/components/wizard/ProjectWizard";
 
 const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -47,6 +48,8 @@ const Index = () => {
     switch (activeView) {
       case 'dashboard':
         return <DashboardOverview />;
+      case 'wizard':
+        return <ProjectWizard />;
       case 'stock':
         return <StockManagement />;
       case 'projects':
