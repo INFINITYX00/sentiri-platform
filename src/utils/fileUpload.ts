@@ -13,11 +13,14 @@ export const uploadFile = async (
   folder?: string
 ): Promise<UploadResult> => {
   try {
+    console.log(`📤 Starting file upload: ${file.name} to ${bucket}/${folder || ''}`);
+    console.log(`📊 File details: size=${file.size} bytes, type=${file.type}`);
+
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = folder ? `${folder}/${fileName}` : fileName;
 
-    console.log(`Uploading ${file.name} to ${bucket}/${filePath}`);
+    console.log(`🎯 Upload path: ${bucket}/${filePath}`);
 
     const { error: uploadError } = await supabase.storage
       .from(bucket)
@@ -27,7 +30,11 @@ export const uploadFile = async (
       });
 
     if (uploadError) {
-      console.error('Upload error:', uploadError);
+      console.error('❌ Upload error:', uploadError);
+      console.error('Upload error details:', {
+        message: uploadError.message,
+        statusCode: uploadError.statusCode
+      });
       return {
         url: null,
         path: null,
@@ -35,9 +42,13 @@ export const uploadFile = async (
       };
     }
 
+    console.log('✅ File uploaded successfully, getting public URL...');
+
     const { data } = supabase.storage
       .from(bucket)
       .getPublicUrl(filePath);
+
+    console.log('✅ Public URL generated:', data.publicUrl);
 
     return {
       url: data.publicUrl,
@@ -45,7 +56,11 @@ export const uploadFile = async (
       error: null
     };
   } catch (error) {
-    console.error('File upload failed:', error);
+    console.error('💥 File upload failed with exception:', error);
+    console.error('Exception details:', {
+      message: error.message,
+      stack: error.stack
+    });
     return {
       url: null,
       path: null,

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -125,7 +124,7 @@ export function ProjectWizard() {
         description: 'Design your Bill of Materials',
         icon: FileText,
         status: localCompletionState.bomCompleted ? 'completed' : 
-               project && currentStep >= 1 ? 'current' : 'upcoming',
+               project ? 'current' : 'upcoming', // Fixed: Show current immediately when project is selected
         allowAccess: !!project
       },
       {
@@ -391,24 +390,41 @@ export function ProjectWizard() {
   const handleQualityControlComplete = async (productImageUrl?: string) => {
     if (!selectedProject) {
       console.error('No project selected for quality control completion')
+      toast({
+        title: "Error",
+        description: "No project selected. Please select a project first.",
+        variant: "destructive"
+      })
       return
     }
 
     const project = projects.find(p => p.id === selectedProject)
     if (!project) {
       console.error('Project not found for quality control completion')
+      toast({
+        title: "Error",
+        description: "Project not found. Please refresh and try again.",
+        variant: "destructive"
+      })
       return
     }
 
     setIsGeneratingPassport(true)
+    console.log('=== STARTING PRODUCT PASSPORT GENERATION ===')
+    console.log('Project:', project.name, 'ID:', project.id)
+    console.log('Product image URL:', productImageUrl)
+    
     try {
-      console.log('Starting product passport generation for project:', project.name)
-      
+      console.log('Step 1: Preparing project materials...')
       const projectMaterials = project.allocated_materials || []
+      console.log('Project materials:', projectMaterials)
+      
       const materialsData = projectMaterials.map(materialId => {
         return { id: materialId, name: 'Material', type: 'Unknown', quantity: 1, unit: 'unit', carbon_footprint: 0 }
       })
+      console.log('Materials data prepared:', materialsData)
 
+      console.log('Step 2: Preparing manufacturing stages...')
       const manufacturingStages = stages.map(stage => ({
         name: stage.name,
         estimated_hours: stage.estimated_hours,
@@ -416,7 +432,9 @@ export function ProjectWizard() {
         energy_consumed: stage.actual_energy,
         completed_date: stage.completed_date
       }))
+      console.log('Manufacturing stages prepared:', manufacturingStages)
 
+      console.log('Step 3: Calling generateProductPassport...')
       const passport = await generateProductPassport(
         selectedProject,
         project.name,
@@ -434,10 +452,11 @@ export function ProjectWizard() {
         }
       )
 
+      console.log('Step 4: Checking passport generation result...')
       if (passport) {
-        console.log('Product passport generated successfully:', passport.id)
+        console.log('✅ Product passport generated successfully:', passport.id)
         if (productImageUrl) {
-          console.log('Product image URL:', productImageUrl)
+          console.log('✅ Product image URL included:', productImageUrl)
         }
 
         // Update local state immediately
@@ -450,16 +469,25 @@ export function ProjectWizard() {
           description: "Product passport generated successfully!"
         })
       } else {
-        throw new Error('Failed to generate product passport')
+        console.error('❌ Product passport generation returned null/undefined')
+        throw new Error('Product passport generation returned no result')
       }
     } catch (error) {
-      console.error('Error generating product passport:', error)
+      console.error('❌ ERROR IN PRODUCT PASSPORT GENERATION:', error)
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause
+      })
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       toast({
-        title: "Error",
-        description: `Failed to generate product passport: ${error.message || 'Unknown error'}`,
+        title: "Product Passport Generation Failed",
+        description: `Error: ${errorMessage}. Please check the console for details and try again.`,
         variant: "destructive"
       })
     } finally {
+      console.log('=== PRODUCT PASSPORT GENERATION COMPLETED ===')
       setIsGeneratingPassport(false)
     }
   }
