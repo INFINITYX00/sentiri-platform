@@ -28,45 +28,88 @@ export function StockManagement() {
         </div>
       </div>
 
-      {/* Main Content with proper spacing */}
+      {/* Main Content Area */}
       <div className="px-8 py-4">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Compact Filter Section */}
-          <div className="bg-white/90 backdrop-blur-sm border border-emerald-100 rounded-lg p-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search materials..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Stock Grid - Left Side (2/3 width) */}
+            <div className="flex-1 lg:flex-[2]">
+              <StockGrid 
+                searchQuery={searchQuery} 
+                selectedType={selectedType} 
+              />
+            </div>
+
+            {/* Filter Sidebar - Right Side (1/3 width) */}
+            <div className="w-full lg:w-80 lg:flex-none">
+              <div className="sticky top-6">
+                <div className="bg-white rounded-lg border border-emerald-100 shadow-sm p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-foreground">Filters</h3>
+                  
+                  <div className="space-y-4">
+                    {/* Search Input */}
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                        Search Materials
+                      </label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by name, origin, or type..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Type Filter */}
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                        Material Type
+                      </label>
+                      <Select value={selectedType} onValueChange={setSelectedType}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Filter by type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Types</SelectItem>
+                          <SelectItem value="wood">Wood</SelectItem>
+                          <SelectItem value="reclaimed_wood">Reclaimed Wood</SelectItem>
+                          <SelectItem value="metal">Metal</SelectItem>
+                          <SelectItem value="plastic">Plastic</SelectItem>
+                          <SelectItem value="fabric">Fabric</SelectItem>
+                          <SelectItem value="glass">Glass</SelectItem>
+                          <SelectItem value="ceramic">Ceramic</SelectItem>
+                          <SelectItem value="composite">Composite</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="pt-4 border-t border-muted">
+                      <h4 className="text-sm font-medium text-muted-foreground mb-3">Quick Stats</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Total Materials:</span>
+                          <span className="font-medium">—</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Low Stock:</span>
+                          <span className="font-medium text-orange-600">—</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Out of Stock:</span>
+                          <span className="font-medium text-red-600">—</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filter by type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="wood">Wood</SelectItem>
-                  <SelectItem value="reclaimed_wood">Reclaimed Wood</SelectItem>
-                  <SelectItem value="metal">Metal</SelectItem>
-                  <SelectItem value="plastic">Plastic</SelectItem>
-                  <SelectItem value="fabric">Fabric</SelectItem>
-                  <SelectItem value="glass">Glass</SelectItem>
-                  <SelectItem value="ceramic">Ceramic</SelectItem>
-                  <SelectItem value="composite">Composite</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
-
-          <StockGrid 
-            searchQuery={searchQuery} 
-            selectedType={selectedType} 
-          />
         </div>
       </div>
 
