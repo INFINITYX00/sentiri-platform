@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -37,7 +38,7 @@ const Index = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar activeView={activeView} setActiveView={setActiveView} />
-        <main className="flex-1 overflow-auto ml-24">
+        <main className="flex-1 overflow-auto ml-6">
           {renderActiveView()}
         </main>
       </div>
