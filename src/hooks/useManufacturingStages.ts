@@ -1,7 +1,7 @@
 
-import { useState, useEffect, useCallback } from 'react'
+
+import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useToast } from '@/hooks/use-toast'
 
 export interface ManufacturingStage {
   id: string
@@ -25,7 +25,6 @@ export interface ManufacturingStage {
 export function useManufacturingStages() {
   const [stages, setStages] = useState<ManufacturingStage[]>([])
   const [loading, setLoading] = useState(false)
-  const { toast } = useToast()
 
   const fetchStages = useCallback(async (projectId?: string) => {
     if (!projectId) {
@@ -45,15 +44,10 @@ export function useManufacturingStages() {
       setStages(data || [])
     } catch (error) {
       console.error('Error fetching manufacturing stages:', error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch manufacturing stages",
-        variant: "destructive"
-      })
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [])
 
   const addStage = useCallback(async (stageData: Omit<ManufacturingStage, 'id' | 'created_at' | 'updated_at'>) => {
     try {
@@ -66,22 +60,12 @@ export function useManufacturingStages() {
       if (error) throw error
 
       setStages(prev => [...prev, data])
-      toast({
-        title: "Success",
-        description: "Manufacturing stage added successfully",
-      })
-
       return data
     } catch (error) {
       console.error('Error adding manufacturing stage:', error)
-      toast({
-        title: "Error",
-        description: "Failed to add manufacturing stage",
-        variant: "destructive"
-      })
       return null
     }
-  }, [toast])
+  }, [])
 
   const updateStage = useCallback(async (id: string, updates: Partial<ManufacturingStage>) => {
     try {
@@ -95,22 +79,12 @@ export function useManufacturingStages() {
       if (error) throw error
 
       setStages(prev => prev.map(stage => stage.id === id ? data : stage))
-      toast({
-        title: "Success",
-        description: "Manufacturing stage updated successfully",
-      })
-
       return data
     } catch (error) {
       console.error('Error updating manufacturing stage:', error)
-      toast({
-        title: "Error",
-        description: "Failed to update manufacturing stage",
-        variant: "destructive"
-      })
       return null
     }
-  }, [toast])
+  }, [])
 
   const createDefaultStages = useCallback(async (projectId: string) => {
     const defaultStages = [
