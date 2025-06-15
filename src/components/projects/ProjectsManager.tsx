@@ -80,7 +80,7 @@ export function ProjectsManager() {
       <div className="px-8 py-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold">Projects</h2>
+            <h1 className="text-3xl font-bold">Projects</h1>
             <p className="text-muted-foreground mt-1">Manage manufacturing projects and track progress</p>
           </div>
           <Button onClick={() => setShowCreateForm(!showCreateForm)} className="shadow-sm">
