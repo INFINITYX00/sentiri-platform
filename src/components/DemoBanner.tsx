@@ -19,10 +19,7 @@ export const DemoBanner = () => {
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleDismiss(); }}>
-      <DialogContent
-        className="max-w-xs md:max-w-md p-4 md:p-6 rounded-lg flex flex-col items-center gap-3 bg-gradient-to-br from-blue-600 to-purple-600 text-white border-0 shadow-2xl"
-        showClose={false}
-      >
+      <DialogContent className="max-w-xs md:max-w-md p-4 md:p-6 rounded-lg flex flex-col items-center gap-3 bg-gradient-to-br from-blue-600 to-purple-600 text-white border-0 shadow-2xl">
         <button
           aria-label="Dismiss"
           onClick={handleDismiss}
@@ -52,4 +49,3 @@ export const DemoBanner = () => {
     </Dialog>
   );
 };
-
