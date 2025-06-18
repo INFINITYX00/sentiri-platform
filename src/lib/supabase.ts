@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/integrations/supabase/types'
 
@@ -36,6 +37,7 @@ export interface Material {
   ai_carbon_confidence?: number
   ai_carbon_source?: string
   ai_carbon_updated_at?: string
+  company_id?: string // Added for multi-tenancy
   created_at: string
   updated_at: string
 }
@@ -60,6 +62,7 @@ export interface MaterialPassport {
   origin: Record<string, any>
   carbon_data: Record<string, any>
   sustainability: Record<string, any>
+  company_id?: string
   created_at: string
 }
 
@@ -72,6 +75,7 @@ export interface BOM {
     carbon_impact: number
   }>
   total_carbon: number
+  company_id?: string
   created_at: string
 }
 
@@ -86,6 +90,7 @@ export interface Project {
   start_date?: string
   completion_date?: string
   allocated_materials: string[]
+  company_id?: string
   created_at: string
 }
 
@@ -113,6 +118,38 @@ export interface ProductPassport {
   image_url?: string
   specifications: Record<string, any>
   production_date: string
+  company_id?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Company {
+  id: string
+  name: string
+  slug: string
+  email: string
+  phone?: string
+  address?: string
+  subscription_status: string
+  subscription_tier: string
+  subscription_end?: string
+  stripe_customer_id?: string
+  trial_ends_at?: string
+  max_materials: number
+  max_projects: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Profile {
+  id: string
+  user_id: string
+  company_id: string
+  email: string
+  first_name?: string
+  last_name?: string
+  role: string
+  avatar_url?: string
   created_at: string
   updated_at: string
 }

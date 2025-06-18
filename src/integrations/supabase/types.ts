@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       boms: {
         Row: {
+          company_id: string | null
           created_at: string | null
           id: string
           materials: Json | null
@@ -18,6 +19,7 @@ export type Database = {
           total_carbon: number | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string | null
           id?: string
           materials?: Json | null
@@ -25,11 +27,74 @@ export type Database = {
           total_carbon?: number | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string | null
           id?: string
           materials?: Json | null
           name?: string
           total_carbon?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boms_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string
+          id: string
+          max_materials: number | null
+          max_projects: number | null
+          name: string
+          phone: string | null
+          slug: string
+          stripe_customer_id: string | null
+          subscription_end: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          max_materials?: number | null
+          max_projects?: number | null
+          name: string
+          phone?: string | null
+          slug: string
+          stripe_customer_id?: string | null
+          subscription_end?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          max_materials?: number | null
+          max_projects?: number | null
+          name?: string
+          phone?: string | null
+          slug?: string
+          stripe_customer_id?: string | null
+          subscription_end?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -38,6 +103,7 @@ export type Database = {
           applied: boolean
           carbon_reduction: number
           category: string
+          company_id: string | null
           created_at: string
           description: string
           id: string
@@ -51,6 +117,7 @@ export type Database = {
           applied?: boolean
           carbon_reduction?: number
           category: string
+          company_id?: string | null
           created_at?: string
           description: string
           id?: string
@@ -64,6 +131,7 @@ export type Database = {
           applied?: boolean
           carbon_reduction?: number
           category?: string
+          company_id?: string | null
           created_at?: string
           description?: string
           id?: string
@@ -73,11 +141,20 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "design_suggestions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       energy_records: {
         Row: {
           carbon_factor: number
+          company_id: string | null
           created_at: string
           efficiency: number
           energy_consumed: number
@@ -90,6 +167,7 @@ export type Database = {
         }
         Insert: {
           carbon_factor: number
+          company_id?: string | null
           created_at?: string
           efficiency: number
           energy_consumed: number
@@ -102,6 +180,7 @@ export type Database = {
         }
         Update: {
           carbon_factor?: number
+          company_id?: string | null
           created_at?: string
           efficiency?: number
           energy_consumed?: number
@@ -113,6 +192,13 @@ export type Database = {
           project_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "energy_records_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "energy_records_project_id_fkey"
             columns: ["project_id"]
@@ -126,6 +212,7 @@ export type Database = {
         Row: {
           actual_energy: number
           actual_hours: number
+          company_id: string | null
           completed_date: string | null
           created_at: string
           energy_estimate: number
@@ -144,6 +231,7 @@ export type Database = {
         Insert: {
           actual_energy?: number
           actual_hours?: number
+          company_id?: string | null
           completed_date?: string | null
           created_at?: string
           energy_estimate?: number
@@ -162,6 +250,7 @@ export type Database = {
         Update: {
           actual_energy?: number
           actual_hours?: number
+          company_id?: string | null
           completed_date?: string | null
           created_at?: string
           energy_estimate?: number
@@ -179,6 +268,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "manufacturing_stages_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "manufacturing_stages_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -190,6 +286,7 @@ export type Database = {
       material_passports: {
         Row: {
           carbon_data: Json | null
+          company_id: string | null
           created_at: string | null
           id: string
           material_id: string | null
@@ -199,6 +296,7 @@ export type Database = {
         }
         Insert: {
           carbon_data?: Json | null
+          company_id?: string | null
           created_at?: string | null
           id?: string
           material_id?: string | null
@@ -208,6 +306,7 @@ export type Database = {
         }
         Update: {
           carbon_data?: Json | null
+          company_id?: string | null
           created_at?: string | null
           id?: string
           material_id?: string | null
@@ -216,6 +315,13 @@ export type Database = {
           sustainability?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "material_passports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "material_passports_material_id_fkey"
             columns: ["material_id"]
@@ -271,6 +377,7 @@ export type Database = {
           ai_carbon_updated_at: string | null
           carbon_footprint: number
           carbon_source: string | null
+          company_id: string | null
           cost_per_unit: number | null
           created_at: string | null
           density: number | null
@@ -301,6 +408,7 @@ export type Database = {
           ai_carbon_updated_at?: string | null
           carbon_footprint?: number
           carbon_source?: string | null
+          company_id?: string | null
           cost_per_unit?: number | null
           created_at?: string | null
           density?: number | null
@@ -331,6 +439,7 @@ export type Database = {
           ai_carbon_updated_at?: string | null
           carbon_footprint?: number
           carbon_source?: string | null
+          company_id?: string | null
           cost_per_unit?: number | null
           created_at?: string | null
           density?: number | null
@@ -355,10 +464,19 @@ export type Database = {
           weight?: number | null
           width?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "materials_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_passports: {
         Row: {
+          company_id: string | null
           created_at: string
           id: string
           image_url: string | null
@@ -374,6 +492,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -389,6 +508,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -405,6 +525,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "product_passports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "product_passports_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -413,9 +540,57 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          company_id: string
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          company_id: string
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          company_id?: string
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           allocated_materials: string[] | null
+          company_id: string | null
           completion_date: string | null
           created_at: string | null
           deleted: boolean
@@ -431,6 +606,7 @@ export type Database = {
         }
         Insert: {
           allocated_materials?: string[] | null
+          company_id?: string | null
           completion_date?: string | null
           created_at?: string | null
           deleted?: boolean
@@ -446,6 +622,7 @@ export type Database = {
         }
         Update: {
           allocated_materials?: string[] | null
+          company_id?: string | null
           completion_date?: string | null
           created_at?: string | null
           deleted?: boolean
@@ -459,7 +636,15 @@ export type Database = {
           total_cost?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects_materials: {
         Row: {
@@ -517,6 +702,7 @@ export type Database = {
           actual_arrival: string | null
           carbon_offset: boolean
           carrier: string
+          company_id: string | null
           created_at: string
           destination: string
           estimated_arrival: string
@@ -530,6 +716,7 @@ export type Database = {
           actual_arrival?: string | null
           carbon_offset?: boolean
           carrier: string
+          company_id?: string | null
           created_at?: string
           destination: string
           estimated_arrival: string
@@ -543,6 +730,7 @@ export type Database = {
           actual_arrival?: string | null
           carbon_offset?: boolean
           carrier?: string
+          company_id?: string | null
           created_at?: string
           destination?: string
           estimated_arrival?: string
@@ -552,12 +740,68 @@ export type Database = {
           tracking_number?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shipments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscribers: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_id: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_id?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_id?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscribers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       takeback_items: {
         Row: {
           assessment_notes: string | null
           carbon_saved: number
+          company_id: string | null
           created_at: string
           customer_name: string
           id: string
@@ -572,6 +816,7 @@ export type Database = {
         Insert: {
           assessment_notes?: string | null
           carbon_saved?: number
+          company_id?: string | null
           created_at?: string
           customer_name: string
           id?: string
@@ -586,6 +831,7 @@ export type Database = {
         Update: {
           assessment_notes?: string | null
           carbon_saved?: number
+          company_id?: string | null
           created_at?: string
           customer_name?: string
           id?: string
@@ -597,10 +843,19 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "takeback_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       time_entries: {
         Row: {
+          company_id: string | null
           cost: number
           created_at: string
           duration: number
@@ -613,6 +868,7 @@ export type Database = {
           worker: string
         }
         Insert: {
+          company_id?: string | null
           cost: number
           created_at?: string
           duration: number
@@ -625,6 +881,7 @@ export type Database = {
           worker: string
         }
         Update: {
+          company_id?: string | null
           cost?: number
           created_at?: string
           duration?: number
@@ -638,6 +895,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "time_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "time_entries_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -649,6 +913,7 @@ export type Database = {
       transport_routes: {
         Row: {
           carbon_impact: number
+          company_id: string | null
           created_at: string
           date: string
           destination: string
@@ -659,6 +924,7 @@ export type Database = {
         }
         Insert: {
           carbon_impact: number
+          company_id?: string | null
           created_at?: string
           date: string
           destination: string
@@ -669,6 +935,7 @@ export type Database = {
         }
         Update: {
           carbon_impact?: number
+          company_id?: string | null
           created_at?: string
           date?: string
           destination?: string
@@ -677,14 +944,25 @@ export type Database = {
           origin?: string
           transport_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transport_routes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_company_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

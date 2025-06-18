@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -23,9 +22,12 @@ import { RecentPassportsWidget } from "./RecentPassportsWidget";
 import { QuickActionsWidget } from "./QuickActionsWidget";
 import { ManufacturingStatusWidget } from "./ManufacturingStatusWidget";
 import { DashboardWidget } from "./DashboardWidget";
+import { UserMenu } from "@/components/auth/UserMenu";
+import { useCompanyData } from "@/hooks/useCompanyData";
 
 export function DashboardOverview() {
   const { metrics, loading, refreshMetrics } = useDynamicDashboardMetrics();
+  const { company, subscription } = useCompanyData();
 
   if (loading) {
     return (
@@ -34,7 +36,10 @@ export function DashboardOverview() {
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">Dashboard Overview</h2>
-              <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+              <div className="flex items-center gap-4">
+                <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                <UserMenu />
+              </div>
             </div>
           </div>
         </div>
@@ -64,19 +69,46 @@ export function DashboardOverview() {
           {/* Header Section - Now inside container */}
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold">Dashboard</h1>
+              <div className="flex items-center gap-4">
+                <h1 className="text-3xl font-bold">Dashboard</h1>
+                {subscription.isTrial && (
+                  <Badge variant="outline" className="bg-blue-50">
+                    Trial Account
+                  </Badge>
+                )}
+              </div>
               <p className="text-muted-foreground">
-                Real-time insights into your manufacturing operations
+                {company?.name} • Real-time insights into your manufacturing operations
                 <span className="ml-2 text-xs">
                   Last updated: {new Date(metrics.lastUpdated).toLocaleTimeString()}
                 </span>
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={refreshMetrics}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" onClick={refreshMetrics}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <UserMenu />
+            </div>
           </div>
+
+          {/* Subscription Status Alert */}
+          {subscription.trialExpired && (
+            <Card className="border-orange-200 bg-orange-50">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-orange-800">Trial Expired</p>
+                    <p className="text-sm text-orange-600">
+                      Upgrade to continue using all features
+                    </p>
+                  </div>
+                  <Button size="sm">Upgrade Now</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Key Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

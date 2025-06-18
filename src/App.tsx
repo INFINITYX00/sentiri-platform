@@ -6,13 +6,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState } from "react";
 import { MaterialsProvider } from "@/contexts/MaterialsContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import MaterialDetail from "./pages/MaterialDetail";
 import ProductPassportDetail from "./pages/ProductPassportDetail";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
-  // Create QueryClient inside the component to ensure React context is available
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
@@ -25,19 +26,32 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <MaterialsProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/material/:id" element={<MaterialDetail />} />
-              <Route path="/product/:id" element={<ProductPassportDetail />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </MaterialsProvider>
+        <AuthProvider>
+          <MaterialsProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <Index />
+                  </ProtectedRoute>
+                } />
+                <Route path="/material/:id" element={
+                  <ProtectedRoute>
+                    <MaterialDetail />
+                  </ProtectedRoute>
+                } />
+                <Route path="/product/:id" element={
+                  <ProtectedRoute>
+                    <ProductPassportDetail />
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </MaterialsProvider>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

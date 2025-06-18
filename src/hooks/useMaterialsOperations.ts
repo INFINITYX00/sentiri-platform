@@ -1,15 +1,20 @@
-
 import { generateCompleteQRPackage } from '@/utils/qrGenerator'
 import { uploadFile } from '@/utils/fileUpload'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
+import { useCompanyData } from '@/hooks/useCompanyData'
 
 export function useMaterialsOperations() {
   const { toast } = useToast()
+  const { companyId } = useCompanyData()
 
-  const addMaterial = async (materialData: Omit<Material, 'id' | 'created_at' | 'updated_at' | 'qr_code' | 'qr_image_url'>) => {
+  const addMaterial = async (materialData: Omit<Material, 'id' | 'created_at' | 'updated_at' | 'qr_code' | 'qr_image_url' | 'company_id'>) => {
     try {
       console.log('Starting material creation with data:', materialData);
+      
+      if (!companyId) {
+        throw new Error('No company ID found. Please ensure you are logged in.');
+      }
       
       if (!materialData.name || !materialData.type || !materialData.quantity || !materialData.unit) {
         throw new Error('Missing required fields: name, type, quantity, or unit');
@@ -77,6 +82,7 @@ export function useMaterialsOperations() {
         image_url: materialData.image_url || null,
         qr_code: qrData,
         qr_image_url: qrImageUrl,
+        company_id: companyId, // Add company_id for multi-tenancy
         ai_carbon_confidence: materialData.ai_carbon_confidence || null,
         ai_carbon_source: materialData.ai_carbon_source || null,
         ai_carbon_updated_at: materialData.ai_carbon_updated_at || null,
