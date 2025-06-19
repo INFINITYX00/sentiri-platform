@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Factory } from 'lucide-react';
+import { Loader2, Factory, RefreshCw } from 'lucide-react';
 
 export function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -15,7 +15,8 @@ export function AuthPage() {
   const [companyName, setCompanyName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const { signIn, signUp } = useAuth();
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false);
+  const { signIn, signUp, resendConfirmation } = useAuth();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,8 +28,8 @@ export function AuthPage() {
     
     try {
       const { error } = await signIn(email, password);
-      if (!error) {
-        // Success is handled by the signIn function
+      if (error && error.message.includes('Email not confirmed')) {
+        setShowResendConfirmation(true);
       }
     } finally {
       setIsLoading(false);
@@ -46,8 +47,19 @@ export function AuthPage() {
     try {
       const { error } = await signUp(email, password, companyName, firstName, lastName);
       if (!error) {
-        // Success is handled by the signUp function
+        setShowResendConfirmation(true);
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) return;
+    
+    setIsLoading(true);
+    try {
+      await resendConfirmation(email);
     } finally {
       setIsLoading(false);
     }
@@ -63,6 +75,36 @@ export function AuthPage() {
           <h1 className="text-3xl font-bold text-gray-900">Manufacturing Hub</h1>
           <p className="text-gray-600 mt-2">Digital Product Passport Platform for Manufacturers</p>
         </div>
+
+        {showResendConfirmation && (
+          <Card className="mb-4">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <p className="text-sm text-gray-600">
+                  Need to verify your email? Click below to resend the confirmation link.
+                </p>
+                <Button 
+                  onClick={handleResendConfirmation}
+                  disabled={isLoading || !email}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Resend Confirmation Email
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Tabs defaultValue="signin" className="w-full">
           <TabsList className="grid w-full grid-cols-2">

@@ -37,6 +37,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  resendConfirmation: (email: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -89,6 +90,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Handle URL fragments for auth errors
+    const handleAuthError = () => {
+      const urlParams = new URLSearchParams(window.location.hash.substring(1));
+      const error = urlParams.get('error');
+      const errorDescription = urlParams.get('error_description');
+      
+      if (error) {
+        let message = 'Authentication error occurred';
+        if (error === 'access_denied' && errorDescription?.includes('expired')) {
+          message = 'Email verification link has expired. Please request a new one.';
+        }
+        toast({
+          title: "Authentication Error",
+          description: message,
+          variant: "destructive"
+        });
+        // Clean up the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    };
+
+    handleAuthError();
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -96,11 +120,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
+        if (session?.user && event === 'SIGNED_IN') {
+          // Check if this is a new user who needs profile setup
+          const pendingSignup = localStorage.getItem('pendingSignup');
+          if (pendingSignup) {
+            try {
+              const signupData = JSON.parse(pendingSignup);
+              if (signupData.userId === session.user.id) {
+                await createCompanyAndProfile(
+                  session.user.id,
+                  signupData.email,
+                  signupData.companyName,
+                  signupData.firstName,
+                  signupData.lastName
+                );
+              }
+            } catch (error) {
+              console.error('Error completing signup:', error);
+            }
+          }
+          
           setTimeout(() => {
             fetchProfile(session.user.id);
           }, 0);
-        } else {
+        } else if (!session) {
           setProfile(null);
           setCompany(null);
         }
@@ -121,69 +164,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, companyName: string, firstName?: string, lastName?: string) => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl
-        }
-      });
-
-      if (error) {
-        console.error('Signup error:', error);
-        toast({
-          title: "Sign up failed",
-          description: error.message,
-          variant: "destructive"
-        });
-        return { error };
-      }
-
-      if (data.user && !data.user.email_confirmed_at) {
-        // User needs to confirm email first
-        toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link. Please check your email and click the link to activate your account.",
-        });
-        
-        // We'll create the company and profile after email confirmation
-        // Store the signup data temporarily (in a real app, you might want to use a more secure method)
-        localStorage.setItem('pendingSignup', JSON.stringify({
-          userId: data.user.id,
-          email,
-          firstName,
-          lastName,
-          companyName
-        }));
-        
-        return { error: null };
-      }
-
-      // If email is already confirmed (shouldn't happen in normal flow)
-      await createCompanyAndProfile(data.user.id, email, companyName, firstName, lastName);
-      return { error: null };
-
-    } catch (error) {
-      console.error('Signup error:', error);
-      toast({
-        title: "Sign up failed",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive"
-      });
-      return { error };
-    }
-  };
-
   const createCompanyAndProfile = async (userId: string, email: string, companyName: string, firstName?: string, lastName?: string) => {
     try {
-      // Use the service role or admin privileges to create company
       const companySlug = companyName.toLowerCase().replace(/[^a-z0-9]/g, '-');
       
-      // Create company using the service role
+      // Create company
       const { data: companyData, error: companyError } = await supabase
         .from('companies')
         .insert([{
@@ -232,37 +217,92 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Check for pending signup completion when user confirms email
-  useEffect(() => {
-    const handleEmailConfirmation = async () => {
-      if (user && user.email_confirmed_at) {
-        const pendingSignup = localStorage.getItem('pendingSignup');
-        if (pendingSignup) {
-          try {
-            const signupData = JSON.parse(pendingSignup);
-            if (signupData.userId === user.id) {
-              await createCompanyAndProfile(
-                user.id,
-                signupData.email,
-                signupData.companyName,
-                signupData.firstName,
-                signupData.lastName
-              );
-            }
-          } catch (error) {
-            console.error('Error completing signup:', error);
-            toast({
-              title: "Setup incomplete",
-              description: "There was an issue setting up your account. Please contact support.",
-              variant: "destructive"
-            });
-          }
+  const resendConfirmation = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
         }
-      }
-    };
+      });
 
-    handleEmailConfirmation();
-  }, [user]);
+      if (error) {
+        console.error('Resend confirmation error:', error);
+        toast({
+          title: "Failed to resend confirmation",
+          description: error.message,
+          variant: "destructive"
+        });
+        return { error };
+      }
+
+      toast({
+        title: "Confirmation email sent",
+        description: "Please check your email for a new confirmation link.",
+      });
+
+      return { error: null };
+    } catch (error) {
+      console.error('Resend confirmation error:', error);
+      return { error };
+    }
+  };
+
+  const signUp = async (email: string, password: string, companyName: string, firstName?: string, lastName?: string) => {
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
+      });
+
+      if (error) {
+        console.error('Signup error:', error);
+        toast({
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive"
+        });
+        return { error };
+      }
+
+      if (data.user && !data.user.email_confirmed_at) {
+        // Store signup data for later
+        localStorage.setItem('pendingSignup', JSON.stringify({
+          userId: data.user.id,
+          email,
+          firstName,
+          lastName,
+          companyName
+        }));
+        
+        toast({
+          title: "Please verify your email",
+          description: "We've sent you a confirmation link. Check your email and click the link to complete your registration.",
+        });
+        
+        return { error: null };
+      }
+
+      // If email is already confirmed
+      await createCompanyAndProfile(data.user.id, email, companyName, firstName, lastName);
+      return { error: null };
+
+    } catch (error) {
+      console.error('Signup error:', error);
+      toast({
+        title: "Sign up failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+      return { error };
+    }
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -273,9 +313,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Signin error:', error);
+        
+        let errorMessage = error.message;
+        if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Please check your email and click the confirmation link before signing in.';
+        } else if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        }
+        
         toast({
           title: "Sign in failed",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive"
         });
         return { error };
@@ -305,6 +353,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(null);
       setProfile(null);
       setCompany(null);
+      localStorage.removeItem('pendingSignup');
       toast({
         title: "Signed out successfully",
       });
@@ -322,7 +371,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     signOut,
-    refreshProfile
+    refreshProfile,
+    resendConfirmation
   };
 
   return (
