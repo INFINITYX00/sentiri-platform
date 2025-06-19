@@ -1,3 +1,4 @@
+
 import { generateCompleteQRPackage } from '@/utils/qrGenerator'
 import { uploadFile } from '@/utils/fileUpload'
 import { supabase, type Material } from '@/lib/supabase'
