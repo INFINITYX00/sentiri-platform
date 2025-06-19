@@ -19,10 +19,17 @@ export function AuthPage() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
-      await signIn(email, password);
+      const { error } = await signIn(email, password);
+      if (!error) {
+        // Success is handled by the signIn function
+      }
     } finally {
       setIsLoading(false);
     }
@@ -30,10 +37,17 @@ export function AuthPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password || !companyName) {
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
-      await signUp(email, password, companyName, firstName, lastName);
+      const { error } = await signUp(email, password, companyName, firstName, lastName);
+      if (!error) {
+        // Success is handled by the signUp function
+      }
     } finally {
       setIsLoading(false);
     }
@@ -75,6 +89,7 @@ export function AuthPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -86,6 +101,7 @@ export function AuthPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
@@ -121,6 +137,7 @@ export function AuthPage() {
                         placeholder="John"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
+                        disabled={isLoading}
                       />
                     </div>
                     <div className="space-y-2">
@@ -130,6 +147,7 @@ export function AuthPage() {
                         placeholder="Doe"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -141,6 +159,7 @@ export function AuthPage() {
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -152,6 +171,7 @@ export function AuthPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -164,6 +184,7 @@ export function AuthPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={6}
+                      disabled={isLoading}
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
