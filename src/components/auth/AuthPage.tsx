@@ -121,7 +121,7 @@ export function AuthPage() {
             <img 
               src="/lovable-uploads/805bbb0c-f2f3-4bc3-9cbf-9db7ba08736a.png" 
               alt="Sentiri"
-              className="h-16"
+              className="h-24"
             />
           </div>
         </div>
@@ -154,164 +154,176 @@ export function AuthPage() {
           </div>
         )}
 
-        <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
+        <div className="shadow-input mx-auto w-full max-w-md rounded-2xl bg-white p-8 dark:bg-black">
+          <Tabs defaultValue="signin" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100 dark:bg-zinc-800 rounded-lg p-1">
+              <TabsTrigger 
+                value="signin"
+                className="rounded-md data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm dark:data-[state=active]:bg-zinc-900 dark:data-[state=active]:text-white transition-all"
+              >
+                Sign In
+              </TabsTrigger>
+              <TabsTrigger 
+                value="signup"
+                className="rounded-md data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm dark:data-[state=active]:bg-zinc-900 dark:data-[state=active]:text-white transition-all"
+              >
+                Sign Up
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="signin">
-            <div className="shadow-input mx-auto w-full max-w-md rounded-2xl bg-white p-8 dark:bg-black">
-              <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-200">
-                Welcome Back
-              </h2>
-              <p className="mt-2 max-w-sm text-sm text-neutral-600 dark:text-neutral-300">
-                Sign in to your account
-              </p>
-
-              <form className="my-8" onSubmit={handleSignIn}>
-                <LabelInputContainer className="mb-4">
-                  <StyledLabel htmlFor="signin-email">Email Address</StyledLabel>
-                  <StyledInput
-                    id="signin-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </LabelInputContainer>
-
-                <LabelInputContainer className="mb-8">
-                  <StyledLabel htmlFor="signin-password">Password</StyledLabel>
-                  <StyledInput
-                    id="signin-password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </LabelInputContainer>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="group/btn relative block h-10 w-full rounded-md bg-gradient-to-br from-black to-neutral-600 font-medium text-white shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:bg-zinc-800 dark:from-zinc-900 dark:to-zinc-900 dark:shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset] disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                      Signing In...
-                    </>
-                  ) : (
-                    'Sign In →'
-                  )}
-                  <BottomGradient />
-                </button>
-              </form>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="signup">
-            <div className="shadow-input mx-auto w-full max-w-md rounded-2xl bg-white p-8 dark:bg-black">
-              <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-200">
-                Start Your Free Trial
-              </h2>
-              <p className="mt-2 max-w-sm text-sm text-neutral-600 dark:text-neutral-300">
-                Create your company account and get 14 days free
-              </p>
-
-              <form className="my-8" onSubmit={handleSignUp}>
-                <div className="mb-4 flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2">
-                  <LabelInputContainer>
-                    <StyledLabel htmlFor="firstName">First name</StyledLabel>
-                    <StyledInput
-                      id="firstName"
-                      placeholder="John"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </LabelInputContainer>
-                  <LabelInputContainer>
-                    <StyledLabel htmlFor="lastName">Last name</StyledLabel>
-                    <StyledInput
-                      id="lastName"
-                      placeholder="Doe"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </LabelInputContainer>
-                </div>
-
-                <LabelInputContainer className="mb-4">
-                  <StyledLabel htmlFor="companyName">Company Name</StyledLabel>
-                  <StyledInput
-                    id="companyName"
-                    placeholder="Your Manufacturing Company"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </LabelInputContainer>
-
-                <LabelInputContainer className="mb-4">
-                  <StyledLabel htmlFor="signup-email">Email Address</StyledLabel>
-                  <StyledInput
-                    id="signup-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </LabelInputContainer>
-
-                <LabelInputContainer className="mb-8">
-                  <StyledLabel htmlFor="signup-password">Password</StyledLabel>
-                  <StyledInput
-                    id="signup-password"
-                    type="password"
-                    placeholder="Create a strong password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    disabled={isLoading}
-                  />
-                </LabelInputContainer>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="group/btn relative block h-10 w-full rounded-md bg-gradient-to-br from-black to-neutral-600 font-medium text-white shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:bg-zinc-800 dark:from-zinc-900 dark:to-zinc-900 dark:shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset] disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    'Start Free Trial →'
-                  )}
-                  <BottomGradient />
-                </button>
-
-                <p className="text-xs text-neutral-500 text-center mt-4">
-                  14-day free trial • No credit card required
+            <TabsContent value="signin">
+              <div>
+                <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-200">
+                  Welcome Back
+                </h2>
+                <p className="mt-2 max-w-sm text-sm text-neutral-600 dark:text-neutral-300">
+                  Sign in to your account
                 </p>
-              </form>
-            </div>
-          </TabsContent>
-        </Tabs>
+
+                <form className="my-8" onSubmit={handleSignIn}>
+                  <LabelInputContainer className="mb-4">
+                    <StyledLabel htmlFor="signin-email">Email Address</StyledLabel>
+                    <StyledInput
+                      id="signin-email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={isLoading}
+                    />
+                  </LabelInputContainer>
+
+                  <LabelInputContainer className="mb-8">
+                    <StyledLabel htmlFor="signin-password">Password</StyledLabel>
+                    <StyledInput
+                      id="signin-password"
+                      type="password"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={isLoading}
+                    />
+                  </LabelInputContainer>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="group/btn relative block h-10 w-full rounded-md bg-gradient-to-br from-black to-neutral-600 font-medium text-white shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:bg-zinc-800 dark:from-zinc-900 dark:to-zinc-900 dark:shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset] disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                        Signing In...
+                      </>
+                    ) : (
+                      'Sign In →'
+                    )}
+                    <BottomGradient />
+                  </button>
+                </form>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="signup">
+              <div>
+                <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-200">
+                  Start Your Free Trial
+                </h2>
+                <p className="mt-2 max-w-sm text-sm text-neutral-600 dark:text-neutral-300">
+                  Create your company account and get 14 days free
+                </p>
+
+                <form className="my-8" onSubmit={handleSignUp}>
+                  <div className="mb-4 flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2">
+                    <LabelInputContainer>
+                      <StyledLabel htmlFor="firstName">First name</StyledLabel>
+                      <StyledInput
+                        id="firstName"
+                        placeholder="John"
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </LabelInputContainer>
+                    <LabelInputContainer>
+                      <StyledLabel htmlFor="lastName">Last name</StyledLabel>
+                      <StyledInput
+                        id="lastName"
+                        placeholder="Doe"
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </LabelInputContainer>
+                  </div>
+
+                  <LabelInputContainer className="mb-4">
+                    <StyledLabel htmlFor="companyName">Company Name</StyledLabel>
+                    <StyledInput
+                      id="companyName"
+                      placeholder="Your Manufacturing Company"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      required
+                      disabled={isLoading}
+                    />
+                  </LabelInputContainer>
+
+                  <LabelInputContainer className="mb-4">
+                    <StyledLabel htmlFor="signup-email">Email Address</StyledLabel>
+                    <StyledInput
+                      id="signup-email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={isLoading}
+                    />
+                  </LabelInputContainer>
+
+                  <LabelInputContainer className="mb-8">
+                    <StyledLabel htmlFor="signup-password">Password</StyledLabel>
+                    <StyledInput
+                      id="signup-password"
+                      type="password"
+                      placeholder="Create a strong password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      disabled={isLoading}
+                    />
+                  </LabelInputContainer>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="group/btn relative block h-10 w-full rounded-md bg-gradient-to-br from-black to-neutral-600 font-medium text-white shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:bg-zinc-800 dark:from-zinc-900 dark:to-zinc-900 dark:shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset] disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                        Creating Account...
+                      </>
+                    ) : (
+                      'Start Free Trial →'
+                    )}
+                    <BottomGradient />
+                  </button>
+
+                  <p className="text-xs text-neutral-500 text-center mt-4">
+                    14-day free trial • No credit card required
+                  </p>
+                </form>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );
