@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Factory, RefreshCw, Github } from 'lucide-react';
+import { Loader2, RefreshCw, Github } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const LabelInputContainer = ({
@@ -114,14 +114,16 @@ export function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <Factory className="h-12 w-12 text-primary" />
+            <img 
+              src="/lovable-uploads/805bbb0c-f2f3-4bc3-9cbf-9db7ba08736a.png" 
+              alt="Sentiri"
+              className="h-16"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Manufacturing Hub</h1>
-          <p className="text-gray-600 mt-2">Digital Product Passport Platform for Manufacturers</p>
         </div>
 
         {showResendConfirmation && (
@@ -164,7 +166,7 @@ export function AuthPage() {
                 Welcome Back
               </h2>
               <p className="mt-2 max-w-sm text-sm text-neutral-600 dark:text-neutral-300">
-                Sign in to your manufacturing account
+                Sign in to your account
               </p>
 
               <form className="my-8" onSubmit={handleSignIn}>
