@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
+import { useCompanyData } from '@/hooks/useCompanyData'
 
 interface MaterialsContextType {
   materials: Material[]
@@ -17,16 +18,25 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [subscriptionStatus, setSubscriptionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected')
   const { toast } = useToast()
+  const { companyId } = useCompanyData()
   const channelRef = useRef<any>(null)
   const isSubscribedRef = useRef(false)
 
   const fetchMaterials = useCallback(async () => {
-    console.log('🔄 MaterialsProvider: Fetching materials from database')
+    if (!companyId) {
+      console.log('🔄 MaterialsProvider: No company ID, skipping material fetch')
+      setMaterials([])
+      setLoading(false)
+      return
+    }
+
+    console.log('🔄 MaterialsProvider: Fetching materials for company:', companyId)
     setLoading(true)
     try {
       const { data, error } = await supabase
         .from('materials')
         .select('*')
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -34,7 +44,7 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
         throw error
       }
 
-      console.log('✅ MaterialsProvider: Fetched', data?.length || 0, 'materials')
+      console.log('✅ MaterialsProvider: Fetched', data?.length || 0, 'materials for company')
       setMaterials(data || [])
     } catch (error) {
       console.error('❌ MaterialsProvider: Error fetching materials:', error)
@@ -47,109 +57,103 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [companyId, toast])
 
-  // Setup real-time subscription - only once per provider instance
-  useEffect(() => {
-    // Prevent multiple subscriptions
-    if (isSubscribedRef.current) {
-      console.log('🚫 MaterialsProvider: Subscription already active, skipping')
+  const setupRealtimeSubscription = useCallback(() => {
+    if (!companyId) {
+      console.log('🔄 MaterialsProvider: No company ID, skipping realtime setup')
       return
     }
 
-    console.log('🚀 MaterialsProvider: Setting up real-time subscription')
-    setSubscriptionStatus('connecting')
-
-    // Initial fetch
-    fetchMaterials()
-
-    // Clean up any existing channel
-    if (channelRef.current) {
-      console.log('🧹 MaterialsProvider: Cleaning up existing channel')
-      supabase.removeChannel(channelRef.current)
-      channelRef.current = null
+    if (isSubscribedRef.current) {
+      console.log('🔄 MaterialsProvider: Already subscribed to realtime, skipping')
+      return
     }
 
-    // Create a unique channel
-    const channelName = `materials-global-${Date.now()}`
-    console.log('📡 MaterialsProvider: Creating channel:', channelName)
+    console.log('🔄 MaterialsProvider: Setting up realtime subscription for company:', companyId)
+    setSubscriptionStatus('connecting')
 
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'materials'
-        },
-        (payload: any) => {
-          console.log('📨 MaterialsProvider: Real-time update:', payload.eventType, payload)
-          
-          if (payload.eventType === 'INSERT') {
-            console.log('➕ MaterialsProvider: Adding new material')
-            setMaterials(prev => {
-              const exists = prev.some(m => m.id === payload.new.id)
-              if (exists) {
-                console.log('⚠️ Material already exists, skipping duplicate')
-                return prev
-              }
-              return [payload.new as Material, ...prev]
-            })
-          }
-          
-          if (payload.eventType === 'UPDATE') {
-            console.log('✏️ MaterialsProvider: Updating material')
-            setMaterials(prev => prev.map(m => 
-              m.id === payload.new.id ? payload.new as Material : m
-            ))
-          }
-          
-          if (payload.eventType === 'DELETE') {
-            console.log('🗑️ MaterialsProvider: Removing material')
-            setMaterials(prev => prev.filter(m => m.id !== payload.old.id))
-          }
-        }
-      )
-
-    channelRef.current = channel
-    isSubscribedRef.current = true
-
-    channel.subscribe((status: string, err?: any) => {
-      console.log('📡 MaterialsProvider: Subscription status:', status)
-      if (err) {
-        console.error('❌ MaterialsProvider: Subscription error:', err)
-        setSubscriptionStatus('error')
-      } else if (status === 'SUBSCRIBED') {
-        console.log('✅ MaterialsProvider: Real-time subscription active')
-        setSubscriptionStatus('connected')
-      } else if (status === 'CLOSED') {
-        console.log('📪 MaterialsProvider: Subscription closed')
-        setSubscriptionStatus('disconnected')
-        isSubscribedRef.current = false
-      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        console.error('💥 MaterialsProvider: Connection issues, will retry')
-        setSubscriptionStatus('error')
-        setTimeout(() => {
-          console.log('🔄 MaterialsProvider: Retrying connection...')
-          fetchMaterials()
-        }, 2000)
-      }
-    })
-
-    // Cleanup function
-    return () => {
-      console.log('🧹 MaterialsProvider: Cleaning up subscription')
+    try {
+      // Clean up existing channel
       if (channelRef.current) {
+        console.log('🧹 MaterialsProvider: Cleaning up existing channel')
         supabase.removeChannel(channelRef.current)
         channelRef.current = null
       }
-      isSubscribedRef.current = false
-      setSubscriptionStatus('disconnected')
-    }
-  }, [fetchMaterials]) // Only depend on fetchMaterials
 
-  const value: MaterialsContextType = {
+      // Create new channel for company-specific materials
+      const channel = supabase
+        .channel('materials-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'materials',
+            filter: `company_id=eq.${companyId}`
+          },
+          (payload) => {
+            console.log('📡 MaterialsProvider: Realtime update received:', payload)
+            
+            switch (payload.eventType) {
+              case 'INSERT':
+                setMaterials(current => [payload.new as Material, ...current])
+                break
+              case 'UPDATE':
+                setMaterials(current => 
+                  current.map(material => 
+                    material.id === payload.new.id ? payload.new as Material : material
+                  )
+                )
+                break
+              case 'DELETE':
+                setMaterials(current => 
+                  current.filter(material => material.id !== payload.old.id)
+                )
+                break
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('📡 MaterialsProvider: Subscription status:', status)
+          if (status === 'SUBSCRIBED') {
+            setSubscriptionStatus('connected')
+            isSubscribedRef.current = true
+          } else if (status === 'CHANNEL_ERROR') {
+            setSubscriptionStatus('error')
+            isSubscribedRef.current = false
+          }
+        })
+
+      channelRef.current = channel
+    } catch (error) {
+      console.error('❌ MaterialsProvider: Error setting up realtime:', error)
+      setSubscriptionStatus('error')
+    }
+  }, [companyId])
+
+  // Fetch materials when company changes
+  useEffect(() => {
+    fetchMaterials()
+  }, [fetchMaterials])
+
+  // Setup realtime when company is available
+  useEffect(() => {
+    if (companyId) {
+      setupRealtimeSubscription()
+    }
+
+    return () => {
+      if (channelRef.current) {
+        console.log('🧹 MaterialsProvider: Cleaning up subscription on unmount')
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+        isSubscribedRef.current = false
+      }
+    }
+  }, [companyId, setupRealtimeSubscription])
+
+  const value = {
     materials,
     loading,
     refreshMaterials: fetchMaterials,
