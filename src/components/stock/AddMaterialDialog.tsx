@@ -1,277 +1,218 @@
 
-import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import React, { useState } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
-import { useMaterials } from '@/hooks/useMaterials'
-import { Material } from '@/lib/supabase'
-import { MaterialImageUpload } from './MaterialImageUpload'
+import { Plus } from "lucide-react"
+import { useMaterialsOperations } from '@/hooks/useMaterialsOperations'
 import { BasicInformationForm } from './forms/BasicInformationForm'
 import { QuantityForm } from './forms/QuantityForm'
 import { DimensionsForm } from './forms/DimensionsForm'
 import { CarbonDataForm } from './forms/CarbonDataForm'
-import { Loader2, Edit, QrCode } from 'lucide-react'
 
-interface AddMaterialDialogProps {
-  open: boolean
-  onClose: () => void
-  materialToEdit?: Material | null
+interface MaterialFormData {
+  name: string
+  type: string
+  specific_material: string
+  origin: string
+  quantity: number
+  unit: string
+  unit_count: number
+  carbon_footprint: number
+  carbon_source: string
+  cost_per_unit: number
+  description: string
+  image_url: string
+  length: number | null
+  width: number | null
+  thickness: number | null
+  dimension_unit: string
+  density: number | null
+  ai_carbon_confidence: number | null
+  ai_carbon_source: string
+  ai_carbon_updated_at: string
 }
 
-export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterialDialogProps) {
-  const { addMaterial, updateMaterial } = useMaterials()
-  const { toast } = useToast()
-  const [loading, setLoading] = useState(false)
-  const [aiCarbonData, setAiCarbonData] = useState<any>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    type: '',
-    specific_material: '',
-    origin: '',
-    quantity: 0,
-    unit: '',
-    unit_count: 1,
-    carbon_factor: 0,
-    carbon_footprint: 0,
-    carbon_source: '',
-    cost_per_unit: 0,
-    description: '',
-    dimensions: '',
-    length: 0,
-    width: 0,
-    thickness: 0,
-    dimension_unit: 'mm',
-    density: 500,
-    image_url: ''
-  })
+const initialFormData: MaterialFormData = {
+  name: '',
+  type: '',
+  specific_material: '',
+  origin: '',
+  quantity: 0,
+  unit: 'pieces',
+  unit_count: 1,
+  carbon_footprint: 0,
+  carbon_source: 'estimated',
+  cost_per_unit: 0,
+  description: '',
+  image_url: '',
+  length: null,
+  width: null,
+  thickness: null,
+  dimension_unit: 'mm',
+  density: null,
+  ai_carbon_confidence: null,
+  ai_carbon_source: '',
+  ai_carbon_updated_at: ''
+}
 
-  const isEditing = !!materialToEdit
+export function AddMaterialDialog() {
+  const [open, setOpen] = useState(false)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [formData, setFormData] = useState<MaterialFormData>(initialFormData)
+  const { addMaterial, loading } = useMaterialsOperations()
 
-  // Populate form when editing
-  useEffect(() => {
-    if (materialToEdit) {
-      setFormData({
-        name: materialToEdit.name || '',
-        type: materialToEdit.type || '',
-        specific_material: materialToEdit.specific_material || '',
-        origin: materialToEdit.origin || '',
-        quantity: materialToEdit.quantity || 0,
-        unit: materialToEdit.unit || '',
-        unit_count: materialToEdit.unit_count || 1,
-        carbon_factor: 0, // We'll calculate this from total/weight
-        carbon_footprint: materialToEdit.carbon_footprint || 0,
-        carbon_source: materialToEdit.carbon_source || '',
-        cost_per_unit: materialToEdit.cost_per_unit || 0,
-        description: materialToEdit.description || '',
-        dimensions: materialToEdit.dimensions || '',
-        length: materialToEdit.length || 0,
-        width: materialToEdit.width || 0,
-        thickness: materialToEdit.thickness || 0,
-        dimension_unit: materialToEdit.dimension_unit || 'mm',
-        density: materialToEdit.density || 500,
-        image_url: materialToEdit.image_url || ''
-      })
-    }
-  }, [materialToEdit])
-
-  const calculateWeight = () => {
-    if (formData.length && formData.width && formData.thickness && formData.density) {
-      let volumeInM3 = 0
-      switch (formData.dimension_unit) {
-        case 'mm':
-          volumeInM3 = (formData.length * formData.width * formData.thickness) / 1000000000
-          break
-        case 'cm':
-          volumeInM3 = (formData.length * formData.width * formData.thickness) / 1000000
-          break
-        case 'm':
-          volumeInM3 = formData.length * formData.width * formData.thickness
-          break
-        default:
-          volumeInM3 = (formData.length * formData.width * formData.thickness) / 1000000000
-      }
-      
-      const totalVolume = volumeInM3 * formData.unit_count
-      return totalVolume * formData.density
-    }
-    return 0
+  const handleNext = () => {
+    setCurrentStep(prev => Math.min(prev + 1, 4))
   }
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      type: '',
-      specific_material: '',
-      origin: '',
-      quantity: 0,
-      unit: '',
-      unit_count: 1,
-      carbon_factor: 0,
-      carbon_footprint: 0,
-      carbon_source: '',
-      cost_per_unit: 0,
-      description: '',
-      dimensions: '',
-      length: 0,
-      width: 0,
-      thickness: 0,
-      dimension_unit: 'mm',
-      density: 500,
-      image_url: ''
-    })
-    setAiCarbonData(null)
+  const handlePrevious = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    try {
-      if (!formData.name || !formData.type || !formData.quantity || !formData.unit) {
-        toast({
-          title: "Error",
-          description: "Please fill in all required fields.",
-          variant: "destructive"
-        })
-        return
-      }
-
-      let dimensionsString = formData.dimensions
-      if (formData.length && formData.width && formData.thickness) {
-        dimensionsString = `${formData.length}×${formData.width}×${formData.thickness}${formData.dimension_unit}`
-      }
-
-      const materialData = {
-        name: formData.name,
-        type: formData.type,
-        specific_material: formData.specific_material || undefined,
-        origin: formData.origin || undefined,
-        quantity: formData.quantity,
-        unit: formData.unit,
-        unit_count: formData.unit_count,
-        carbon_footprint: formData.carbon_footprint,
-        carbon_source: formData.carbon_source || undefined,
-        cost_per_unit: formData.cost_per_unit,
-        description: formData.description || undefined,
-        dimensions: dimensionsString || undefined,
-        length: formData.length || undefined,
-        width: formData.width || undefined,
-        thickness: formData.thickness || undefined,
-        dimension_unit: formData.dimension_unit || undefined,
-        density: formData.density,
-        image_url: formData.image_url || undefined,
-        ai_carbon_confidence: aiCarbonData?.confidence || undefined,
-        ai_carbon_source: aiCarbonData?.source || undefined,
-        ai_carbon_updated_at: aiCarbonData ? new Date().toISOString() : undefined
-      }
-
-      if (isEditing && materialToEdit) {
-        await updateMaterial(materialToEdit.id, materialData)
-        toast({
-          title: "Success",
-          description: "Material updated successfully!",
-        })
-      } else {
-        await addMaterial(materialData)
-        toast({
-          title: "Success",
-          description: "Material added successfully with QR code generated!",
-        })
-      }
-
-      resetForm()
-      onClose()
-    } catch (error) {
-      console.error("Error saving material:", error)
-      toast({
-        title: "Error",
-        description: `Failed to ${isEditing ? 'update' : 'add'} material.`,
-        variant: "destructive"
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleFormDataChange = (updates: Partial<typeof formData>) => {
+  const handleFormChange = (updates: Partial<MaterialFormData>) => {
     setFormData(prev => ({ ...prev, ...updates }))
   }
 
-  const handleTypeSelected = (carbonFactor: number, density: number) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      carbon_factor: carbonFactor,
-      density: density
-    }))
+  const handleSubmit = async () => {
+    try {
+      // Generate a basic QR code string for the material
+      const qrCode = `material:${Date.now()}`
+      
+      const materialData = {
+        ...formData,
+        qr_code: qrCode // Include the required qr_code field
+      }
+      
+      const result = await addMaterial(materialData)
+      if (result) {
+        setOpen(false)
+        setCurrentStep(1)
+        setFormData(initialFormData)
+      }
+    } catch (error) {
+      console.error('Error submitting material:', error)
+    }
   }
 
-  const handleClose = () => {
-    resetForm()
-    onClose()
+  const canProceed = () => {
+    switch (currentStep) {
+      case 1:
+        return formData.name.trim() && formData.type.trim()
+      case 2:
+        return formData.quantity > 0 && formData.unit.trim()
+      case 3:
+        return true // Dimensions are optional
+      case 4:
+        return true // Carbon data has defaults
+      default:
+        return false
+    }
   }
 
-  const calculatedWeight = calculateWeight()
+  const resetForm = () => {
+    setFormData(initialFormData)
+    setCurrentStep(1)
+  }
 
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {isEditing ? <Edit className="h-5 w-5" /> : <QrCode className="h-5 w-5" />}
-            {isEditing ? 'Edit Material' : 'Add New Material'}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <MaterialImageUpload
-            imageUrl={formData.image_url}
-            onImageUpload={(url) => handleFormDataChange({ image_url: url })}
-            onImageRemove={() => handleFormDataChange({ image_url: '' })}
-          />
-
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
           <BasicInformationForm
             formData={formData}
-            onFormDataChange={handleFormDataChange}
-            onTypeSelected={handleTypeSelected}
+            onChange={handleFormChange}
           />
-
+        )
+      case 2:
+        return (
           <QuantityForm
             formData={formData}
-            onFormDataChange={handleFormDataChange}
+            onChange={handleFormChange}
           />
-
+        )
+      case 3:
+        return (
           <DimensionsForm
             formData={formData}
-            onFormDataChange={handleFormDataChange}
-            calculatedWeight={calculatedWeight}
+            onChange={handleFormChange}
           />
-
+        )
+      case 4:
+        return (
           <CarbonDataForm
             formData={formData}
-            onFormDataChange={handleFormDataChange}
-            calculatedWeight={calculatedWeight}
-            onAiDataReceived={setAiCarbonData}
+            onChange={handleFormChange}
           />
+        )
+      default:
+        return null
+    }
+  }
 
-          <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={handleClose} className="flex-1">
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  {isEditing ? 'Updating...' : 'Adding...'}
-                </>
-              ) : (
-                <>
-                  {isEditing ? <Edit className="h-4 w-4 mr-2" /> : <QrCode className="h-4 w-4 mr-2" />}
-                  {isEditing ? 'Update Material' : 'Add Material'}
-                </>
-              )}
-            </Button>
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button onClick={resetForm}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Material
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add New Material - Step {currentStep} of 4</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Progress indicator */}
+          <div className="flex justify-between items-center">
+            {[1, 2, 3, 4].map((step) => (
+              <div
+                key={step}
+                className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                  step === currentStep
+                    ? 'bg-primary text-primary-foreground'
+                    : step < currentStep
+                    ? 'bg-primary/20 text-primary'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {step}
+              </div>
+            ))}
           </div>
-        </form>
+
+          {/* Form content */}
+          {renderStep()}
+
+          {/* Navigation buttons */}
+          <div className="flex justify-between gap-4">
+            <Button
+              variant="outline"
+              onClick={handlePrevious}
+              disabled={currentStep === 1}
+            >
+              Previous
+            </Button>
+
+            <div className="flex gap-2">
+              {currentStep < 4 ? (
+                <Button
+                  onClick={handleNext}
+                  disabled={!canProceed()}
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading || !canProceed()}
+                >
+                  {loading ? 'Adding...' : 'Add Material'}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )

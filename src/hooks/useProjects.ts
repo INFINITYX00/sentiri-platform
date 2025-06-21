@@ -1,8 +1,45 @@
 
 import { useState, useEffect } from 'react'
-import { supabase, type Project } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { useCompanyData } from '@/hooks/useCompanyData'
+
+export type Project = {
+  id: string
+  name: string
+  description?: string
+  status: string
+  progress: number
+  total_cost: number
+  total_carbon_footprint: number
+  start_date?: string
+  completion_date?: string
+  allocated_materials: string[]
+  deleted: boolean
+  created_at: string
+  updated_at: string
+  company_id?: string
+}
+
+export type ProjectMaterial = {
+  id: string
+  project_id: string
+  material_id: string
+  quantity_required: number
+  cost_per_unit: number
+  total_cost: number
+  quantity_consumed: number
+  created_at: string
+  updated_at: string
+  material?: {
+    id: string
+    name: string
+    type: string
+    unit: string
+    quantity: number
+    carbon_footprint: number
+  }
+}
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -36,6 +73,49 @@ export function useProjects() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchProjectById = async (projectId: string): Promise<Project | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', projectId)
+        .eq('company_id', companyId)
+        .eq('deleted', false)
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error fetching project by ID:', error)
+      return null
+    }
+  }
+
+  const getProjectMaterials = async (projectId: string): Promise<ProjectMaterial[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('projects_materials')
+        .select(`
+          *,
+          material:materials(
+            id,
+            name,
+            type,
+            unit,
+            quantity,
+            carbon_footprint
+          )
+        `)
+        .eq('project_id', projectId)
+
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      console.error('Error fetching project materials:', error)
+      return []
     }
   }
 
@@ -74,6 +154,45 @@ export function useProjects() {
       toast({
         title: "Error",
         description: "Failed to add project",
+        variant: "destructive"
+      })
+      return null
+    }
+  }
+
+  const addMaterialToProject = async (
+    projectId: string,
+    materialId: string,
+    quantityRequired: number,
+    costPerUnit: number
+  ) => {
+    try {
+      const totalCost = quantityRequired * costPerUnit
+
+      const { data, error } = await supabase
+        .from('projects_materials')
+        .insert([{
+          project_id: projectId,
+          material_id: materialId,
+          quantity_required: quantityRequired,
+          cost_per_unit: costPerUnit,
+          total_cost: totalCost
+        }])
+        .select()
+
+      if (error) throw error
+
+      toast({
+        title: "Success",
+        description: "Material added to project successfully",
+      })
+
+      return data[0]
+    } catch (error) {
+      console.error('Error adding material to project:', error)
+      toast({
+        title: "Error",
+        description: "Failed to add material to project",
         variant: "destructive"
       })
       return null
@@ -147,8 +266,11 @@ export function useProjects() {
     projects,
     loading,
     addProject,
+    addMaterialToProject,
+    getProjectMaterials,
     updateProject,
     deleteProject,
+    fetchProjectById,
     refreshProjects: fetchProjects
   }
 }
