@@ -1,10 +1,10 @@
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useCompanyData } from '@/hooks/useCompanyData'
 
-export type Project = {
+export interface Project {
   id: string
   name: string
   description?: string
@@ -15,20 +15,20 @@ export type Project = {
   start_date?: string
   completion_date?: string
   allocated_materials: string[]
-  deleted: boolean
+  company_id?: string
   created_at: string
   updated_at: string
-  company_id?: string
+  deleted: boolean
 }
 
-export type ProjectMaterial = {
+export interface ProjectMaterial {
   id: string
   project_id: string
   material_id: string
   quantity_required: number
+  quantity_consumed: number
   cost_per_unit: number
   total_cost: number
-  quantity_consumed: number
   created_at: string
   updated_at: string
   material?: {
@@ -37,24 +37,21 @@ export type ProjectMaterial = {
     type: string
     unit: string
     quantity: number
-    carbon_footprint: number
   }
 }
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const { toast } = useToast()
   const { companyId } = useCompanyData()
 
-  const fetchProjects = async () => {
-    if (!companyId) {
-      setProjects([])
-      return
-    }
+  const fetchProjects = useCallback(async () => {
+    if (!companyId) return
 
-    setLoading(true)
     try {
+      console.log('🔄 Fetching projects for company:', companyId)
+      
       const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -62,74 +59,42 @@ export function useProjects() {
         .eq('deleted', false)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Error fetching projects:', error)
+        toast({
+          title: "Error loading projects",
+          description: error.message,
+          variant: "destructive"
+        })
+        return
+      }
+
+      console.log('✅ Projects fetched:', data?.length || 0)
       setProjects(data || [])
     } catch (error) {
-      console.error('Error fetching projects:', error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch projects",
-        variant: "destructive"
-      })
+      console.error('❌ Unexpected error fetching projects:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [companyId, toast])
 
-  const fetchProjectById = async (projectId: string): Promise<Project | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
-        .eq('company_id', companyId)
-        .eq('deleted', false)
-        .single()
-
-      if (error) throw error
-      return data
-    } catch (error) {
-      console.error('Error fetching project by ID:', error)
-      return null
-    }
-  }
-
-  const getProjectMaterials = async (projectId: string): Promise<ProjectMaterial[]> => {
-    try {
-      const { data, error } = await supabase
-        .from('projects_materials')
-        .select(`
-          *,
-          material:materials(
-            id,
-            name,
-            type,
-            unit,
-            quantity,
-            carbon_footprint
-          )
-        `)
-        .eq('project_id', projectId)
-
-      if (error) throw error
-      return data || []
-    } catch (error) {
-      console.error('Error fetching project materials:', error)
-      return []
-    }
-  }
+  useEffect(() => {
+    fetchProjects()
+  }, [fetchProjects])
 
   const addProject = async (projectData: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => {
     if (!companyId) {
       toast({
         title: "Error",
-        description: "No company found. Please ensure you're properly logged in.",
+        description: "Company information not available. Please try logging in again.",
         variant: "destructive"
       })
       return null
     }
 
     try {
+      console.log('🔧 Adding project with company_id:', companyId)
+      
       const projectWithCompany = {
         ...projectData,
         company_id: companyId
@@ -139,24 +104,96 @@ export function useProjects() {
         .from('projects')
         .insert([projectWithCompany])
         .select()
+        .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Error adding project:', error)
+        toast({
+          title: "Error adding project",
+          description: error.message,
+          variant: "destructive"
+        })
+        return null
+      }
 
-      await fetchProjects()
+      console.log('✅ Project added successfully:', data)
       toast({
-        title: "Success",
-        description: "Project added successfully",
+        title: "Project created successfully",
+        description: `${data.name} has been created.`
       })
 
-      return data[0]
+      await fetchProjects()
+      return data
     } catch (error) {
-      console.error('Error adding project:', error)
+      console.error('❌ Unexpected error adding project:', error)
       toast({
-        title: "Error",
-        description: "Failed to add project",
+        title: "Error adding project",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       })
       return null
+    }
+  }
+
+  const updateProject = async (projectId: string, updates: Partial<Project>) => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .update(updates)
+        .eq('id', projectId)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating project:', error)
+        toast({
+          title: "Error updating project",
+          description: error.message,
+          variant: "destructive"
+        })
+        return null
+      }
+
+      toast({
+        title: "Project updated",
+        description: "Project has been updated successfully."
+      })
+
+      await fetchProjects()
+      return data
+    } catch (error) {
+      console.error('Unexpected error updating project:', error)
+      return null
+    }
+  }
+
+  const deleteProject = async (projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ deleted: true })
+        .eq('id', projectId)
+
+      if (error) {
+        console.error('Error deleting project:', error)
+        toast({
+          title: "Error deleting project",
+          description: error.message,
+          variant: "destructive"
+        })
+        return false
+      }
+
+      toast({
+        title: "Project deleted",
+        description: "Project has been moved to trash."
+      })
+
+      await fetchProjects()
+      return true
+    } catch (error) {
+      console.error('Unexpected error deleting project:', error)
+      return false
     }
   }
 
@@ -179,98 +216,62 @@ export function useProjects() {
           total_cost: totalCost
         }])
         .select()
+        .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Error adding material to project:', error)
+        toast({
+          title: "Error adding material",
+          description: error.message,
+          variant: "destructive"
+        })
+        return null
+      }
 
       toast({
-        title: "Success",
-        description: "Material added to project successfully",
+        title: "Material added to project",
+        description: "Material has been successfully added to the project."
       })
 
-      return data[0]
+      return data
     } catch (error) {
-      console.error('Error adding material to project:', error)
-      toast({
-        title: "Error",
-        description: "Failed to add material to project",
-        variant: "destructive"
-      })
+      console.error('Unexpected error adding material to project:', error)
       return null
     }
   }
 
-  const updateProject = async (id: string, updates: Partial<Project>) => {
+  const getProjectMaterials = async (projectId: string): Promise<ProjectMaterial[]> => {
     try {
       const { data, error } = await supabase
-        .from('projects')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .eq('company_id', companyId)
-        .select()
+        .from('projects_materials')
+        .select(`
+          *,
+          material:materials(id, name, type, unit, quantity)
+        `)
+        .eq('project_id', projectId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching project materials:', error)
+        return []
+      }
 
-      await fetchProjects()
-      toast({
-        title: "Success",
-        description: "Project updated successfully",
-      })
-
-      return data[0]
+      return data || []
     } catch (error) {
-      console.error('Error updating project:', error)
-      toast({
-        title: "Error",
-        description: "Failed to update project",
-        variant: "destructive"
-      })
-      return null
+      console.error('Unexpected error fetching project materials:', error)
+      return []
     }
   }
 
-  const deleteProject = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('projects')
-        .update({ deleted: true })
-        .eq('id', id)
-        .eq('company_id', companyId)
-
-      if (error) throw error
-
-      await fetchProjects()
-      toast({
-        title: "Success",
-        description: "Project deleted successfully",
-      })
-
-      return true
-    } catch (error) {
-      console.error('Error deleting project:', error)
-      toast({
-        title: "Error",
-        description: "Failed to delete project",
-        variant: "destructive"
-      })
-      return false
-    }
-  }
-
-  useEffect(() => {
-    if (companyId) {
-      fetchProjects()
-    }
-  }, [companyId])
+  const refreshProjects = fetchProjects
 
   return {
     projects,
     loading,
     addProject,
-    addMaterialToProject,
-    getProjectMaterials,
     updateProject,
     deleteProject,
-    fetchProjectById,
-    refreshProjects: fetchProjects
+    refreshProjects,
+    addMaterialToProject,
+    getProjectMaterials
   }
 }

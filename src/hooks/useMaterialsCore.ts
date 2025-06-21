@@ -1,79 +1,98 @@
 
-import { useState, useCallback } from 'react'
-import { supabase, type Material } from '@/lib/supabase'
+import { useState } from 'react'
+import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { Material } from '@/lib/supabase'
 
 export function useMaterialsCore() {
-  const [loading, setLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
-  const updateMaterial = useCallback(async (id: string, updates: Partial<Material>) => {
-    console.log('updateMaterial called for ID:', id, 'with updates:', updates)
-    setLoading(true)
+  const updateMaterial = async (materialId: string, updates: Partial<Material>) => {
+    setIsLoading(true)
     try {
-      const { error } = await supabase
+      console.log('🔧 Updating material:', materialId, updates)
+      
+      const { data, error } = await supabase
         .from('materials')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id)
+        .update(updates)
+        .eq('id', materialId)
+        .select()
+        .single()
 
       if (error) {
-        console.error('Error in updateMaterial:', error)
-        throw error
+        console.error('❌ Error updating material:', error)
+        toast({
+          title: "Error updating material",
+          description: error.message,
+          variant: "destructive"
+        })
+        return null
       }
 
-      console.log('Material updated successfully in database, real-time should handle UI update')
-      
+      console.log('✅ Material updated successfully:', data)
       toast({
-        title: "Success",
-        description: "Material updated successfully",
+        title: "Material updated",
+        description: `${data.name} has been updated successfully.`
       })
+
+      return data
     } catch (error) {
-      console.error('Error updating material:', error)
+      console.error('❌ Unexpected error updating material:', error)
       toast({
-        title: "Error",
-        description: "Failed to update material",
+        title: "Error updating material",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       })
+      return null
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
-  }, [toast])
+  }
 
-  const deleteMaterial = useCallback(async (id: string) => {
-    console.log('deleteMaterial called for ID:', id)
-    setLoading(true)
+  const deleteMaterial = async (materialId: string) => {
+    setIsLoading(true)
     try {
+      console.log('🗑️ Deleting material:', materialId)
+      
       const { error } = await supabase
         .from('materials')
         .delete()
-        .eq('id', id)
+        .eq('id', materialId)
 
       if (error) {
-        console.error('Error in deleteMaterial:', error)
-        throw error
+        console.error('❌ Error deleting material:', error)
+        toast({
+          title: "Error deleting material",
+          description: error.message,
+          variant: "destructive"
+        })
+        return false
       }
 
-      console.log('Material deleted successfully from database, real-time should handle UI update')
-      
+      console.log('✅ Material deleted successfully')
       toast({
-        title: "Success",
-        description: "Material deleted successfully",
+        title: "Material deleted",
+        description: "Material has been removed from your inventory."
       })
+
+      return true
     } catch (error) {
-      console.error('Error deleting material:', error)
+      console.error('❌ Unexpected error deleting material:', error)
       toast({
-        title: "Error",
-        description: "Failed to delete material",
+        title: "Error deleting material",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       })
+      return false
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
-  }, [toast])
+  }
 
   return {
-    loading,
     updateMaterial,
-    deleteMaterial
+    deleteMaterial,
+    isLoading
   }
 }

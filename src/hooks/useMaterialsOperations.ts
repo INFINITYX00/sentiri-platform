@@ -1,107 +1,141 @@
 
 import { useState } from 'react'
-import { supabase, type Material } from '@/lib/supabase'
+import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { generateQRCode } from '@/utils/qrGenerator'
 import { useCompanyData } from '@/hooks/useCompanyData'
 
 export function useMaterialsOperations() {
-  const [loading, setLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
   const { companyId } = useCompanyData()
 
-  const addMaterial = async (materialData: Omit<Material, 'id' | 'created_at' | 'updated_at'>) => {
+  const addMaterial = async (materialData: any) => {
     if (!companyId) {
       toast({
         title: "Error",
-        description: "No company found. Please ensure you're properly logged in.",
+        description: "Company information not available. Please try logging in again.",
         variant: "destructive"
       })
       return null
     }
 
-    console.log('addMaterial called with data:', materialData)
-    setLoading(true)
+    setIsLoading(true)
     try {
+      console.log('🔧 Adding material with company_id:', companyId)
+      
+      // Generate QR code
+      const qrCode = `MAT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
+      // Add company_id to the material data
       const materialWithCompany = {
         ...materialData,
         company_id: companyId,
-        updated_at: new Date().toISOString()
+        qr_code: qrCode
       }
 
       const { data, error } = await supabase
         .from('materials')
         .insert([materialWithCompany])
         .select()
+        .single()
 
       if (error) {
-        console.error('Error in addMaterial:', error)
-        throw error
+        console.error('❌ Error adding material:', error)
+        toast({
+          title: "Error adding material",
+          description: error.message,
+          variant: "destructive"
+        })
+        return null
       }
 
-      console.log('Material added successfully to database, real-time should handle UI update')
+      console.log('✅ Material added successfully:', data)
       
-      toast({
-        title: "Success",
-        description: "Material added successfully",
-      })
-
-      return data[0]
-    } catch (error) {
-      console.error('Error adding material:', error)
-      toast({
-        title: "Error",
-        description: "Failed to add material",
-        variant: "destructive"
-      })
-      return null
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const generateQRCodeForMaterial = async (materialId: string) => {
-    console.log('generateQRCodeForMaterial called for ID:', materialId)
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-qr-code', {
-        body: { 
-          materialId,
-          companyId 
-        }
-      })
-
-      if (error) {
-        console.error('Error generating QR code:', error)
-        throw error
+      // Generate QR code image
+      try {
+        await generateQRCodeForMaterial(data.id, qrCode)
+      } catch (qrError) {
+        console.warn('⚠️ Failed to generate QR code image:', qrError)
       }
 
-      console.log('QR code generated successfully:', data)
-      
       toast({
-        title: "Success",
-        description: "QR code generated successfully",
+        title: "Material added successfully",
+        description: `${data.name} has been added to your inventory.`
       })
 
       return data
     } catch (error) {
-      console.error('Error generating QR code:', error)
+      console.error('❌ Unexpected error adding material:', error)
       toast({
-        title: "Error",
-        description: "Failed to generate QR code",
+        title: "Error adding material",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       })
       return null
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const generateQRCodeForMaterial = async (materialId: string, qrCode: string) => {
+    try {
+      const qrImageUrl = await generateQRCode(qrCode)
+      
+      const { error } = await supabase
+        .from('materials')
+        .update({ qr_image_url: qrImageUrl })
+        .eq('id', materialId)
+
+      if (error) {
+        console.error('Error updating QR image URL:', error)
+      }
+    } catch (error) {
+      console.error('Error generating QR code:', error)
     }
   }
 
   const regenerateQRCode = async (materialId: string) => {
-    console.log('regenerateQRCode called for ID:', materialId)
-    return await generateQRCodeForMaterial(materialId)
+    try {
+      const newQrCode = `MAT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const qrImageUrl = await generateQRCode(newQrCode)
+      
+      const { error } = await supabase
+        .from('materials')
+        .update({ 
+          qr_code: newQrCode,
+          qr_image_url: qrImageUrl 
+        })
+        .eq('id', materialId)
+
+      if (error) {
+        console.error('Error regenerating QR code:', error)
+        toast({
+          title: "Error",
+          description: "Failed to regenerate QR code",
+          variant: "destructive"
+        })
+        return
+      }
+
+      toast({
+        title: "QR Code Regenerated",
+        description: "A new QR code has been generated for this material."
+      })
+    } catch (error) {
+      console.error('Error regenerating QR code:', error)
+      toast({
+        title: "Error",
+        description: "Failed to regenerate QR code",
+        variant: "destructive"
+      })
+    }
   }
 
   return {
-    loading,
     addMaterial,
     generateQRCodeForMaterial,
-    regenerateQRCode
+    regenerateQRCode,
+    isLoading
   }
 }
