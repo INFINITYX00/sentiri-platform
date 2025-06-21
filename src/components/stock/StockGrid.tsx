@@ -1,3 +1,4 @@
+
 import { QRCodeViewer } from "@/components/qr/QRCodeViewer";
 import { Material } from "@/lib/supabase";
 import { useMaterials } from "@/hooks/useMaterials";
@@ -197,7 +198,6 @@ export function StockGrid({ searchQuery, selectedType }: StockGridProps) {
           setEditDialogOpen(false);
           setMaterialToEdit(null);
         }}
-        materialToEdit={materialToEdit}
       />
 
       {/* Delete Confirmation Dialog */}

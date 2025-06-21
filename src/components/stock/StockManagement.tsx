@@ -10,7 +10,6 @@ import { AddMaterialDialog } from "./AddMaterialDialog";
 export function StockManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
-  const [showAddDialog, setShowAddDialog] = useState(false);
 
   console.log('🏢 StockManagement rendering');
 
@@ -25,10 +24,7 @@ export function StockManagement() {
               <h1 className="text-3xl font-bold">Material Stock</h1>
               <p className="text-muted-foreground">Manage your material inventory and track carbon footprints</p>
             </div>
-            <Button onClick={() => setShowAddDialog(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Material
-            </Button>
+            <AddMaterialDialog />
           </div>
 
           {/* Filter Section - Above the cards */}
@@ -77,11 +73,6 @@ export function StockManagement() {
           />
         </div>
       </div>
-
-      <AddMaterialDialog 
-        open={showAddDialog} 
-        onClose={() => setShowAddDialog(false)}
-      />
     </div>
   );
 }

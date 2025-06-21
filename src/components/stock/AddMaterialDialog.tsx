@@ -18,6 +18,7 @@ interface MaterialFormData {
   unit: string
   unit_count: number
   carbon_footprint: number
+  carbon_factor: number
   carbon_source: string
   cost_per_unit: number
   description: string
@@ -26,6 +27,7 @@ interface MaterialFormData {
   width: number | null
   thickness: number | null
   dimension_unit: string
+  dimensions: string
   density: number | null
   ai_carbon_confidence: number | null
   ai_carbon_source: string
@@ -41,6 +43,7 @@ const initialFormData: MaterialFormData = {
   unit: 'pieces',
   unit_count: 1,
   carbon_footprint: 0,
+  carbon_factor: 0,
   carbon_source: 'estimated',
   cost_per_unit: 0,
   description: '',
@@ -49,17 +52,33 @@ const initialFormData: MaterialFormData = {
   width: null,
   thickness: null,
   dimension_unit: 'mm',
+  dimensions: '',
   density: null,
   ai_carbon_confidence: null,
   ai_carbon_source: '',
   ai_carbon_updated_at: ''
 }
 
-export function AddMaterialDialog() {
-  const [open, setOpen] = useState(false)
+interface AddMaterialDialogProps {
+  open?: boolean
+  onClose?: () => void
+  materialToEdit?: any
+}
+
+export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterialDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<MaterialFormData>(initialFormData)
   const { addMaterial, loading } = useMaterialsOperations()
+
+  const isOpen = open !== undefined ? open : internalOpen
+  const handleOpenChange = (newOpen: boolean) => {
+    if (onClose) {
+      if (!newOpen) onClose()
+    } else {
+      setInternalOpen(newOpen)
+    }
+  }
 
   const handleNext = () => {
     setCurrentStep(prev => Math.min(prev + 1, 4))
@@ -85,7 +104,7 @@ export function AddMaterialDialog() {
       
       const result = await addMaterial(materialData)
       if (result) {
-        setOpen(false)
+        handleOpenChange(false)
         setCurrentStep(1)
         setFormData(initialFormData)
       }
@@ -114,34 +133,87 @@ export function AddMaterialDialog() {
     setCurrentStep(1)
   }
 
+  const calculateWeight = () => {
+    if (formData.length && formData.width && formData.thickness && formData.density) {
+      // Convert dimensions to meters based on unit
+      let lengthM = formData.length
+      let widthM = formData.width
+      let thicknessM = formData.thickness
+
+      switch (formData.dimension_unit) {
+        case 'mm':
+          lengthM = formData.length / 1000
+          widthM = formData.width / 1000
+          thicknessM = formData.thickness / 1000
+          break
+        case 'cm':
+          lengthM = formData.length / 100
+          widthM = formData.width / 100
+          thicknessM = formData.thickness / 100
+          break
+        case 'in':
+          lengthM = formData.length * 0.0254
+          widthM = formData.width * 0.0254
+          thicknessM = formData.thickness * 0.0254
+          break
+        case 'ft':
+          lengthM = formData.length * 0.3048
+          widthM = formData.width * 0.3048
+          thicknessM = formData.thickness * 0.3048
+          break
+      }
+
+      const volumeM3 = lengthM * widthM * thicknessM * formData.unit_count
+      return volumeM3 * formData.density
+    }
+    return 0
+  }
+
+  const handleTypeSelected = (carbonFactor: number, density: number) => {
+    setFormData(prev => ({
+      ...prev,
+      carbon_factor: carbonFactor,
+      density: density
+    }))
+  }
+
+  const handleAiDataReceived = (data: any) => {
+    // Handle AI carbon data
+    console.log('AI data received:', data)
+  }
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
         return (
           <BasicInformationForm
             formData={formData}
-            onChange={handleFormChange}
+            onFormDataChange={handleFormChange}
+            onTypeSelected={handleTypeSelected}
           />
         )
       case 2:
         return (
           <QuantityForm
             formData={formData}
-            onChange={handleFormChange}
+            onFormDataChange={handleFormChange}
           />
         )
       case 3:
         return (
           <DimensionsForm
             formData={formData}
-            onChange={handleFormChange}
+            onFormDataChange={handleFormChange}
+            calculatedWeight={calculateWeight()}
           />
         )
       case 4:
         return (
           <CarbonDataForm
             formData={formData}
-            onChange={handleFormChange}
+            onFormDataChange={handleFormChange}
+            calculatedWeight={calculateWeight()}
+            onAiDataReceived={handleAiDataReceived}
           />
         )
       default:
@@ -149,71 +221,91 @@ export function AddMaterialDialog() {
     }
   }
 
+  const DialogWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (open !== undefined) {
+      // Controlled mode
+      return (
+        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            {children}
+          </DialogContent>
+        </Dialog>
+      )
+    }
+
+    // Uncontrolled mode with trigger
+    return (
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <Button onClick={resetForm}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Material
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {children}
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button onClick={resetForm}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Material
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Add New Material - Step {currentStep} of 4</DialogTitle>
-        </DialogHeader>
+    <DialogWrapper>
+      <DialogHeader>
+        <DialogTitle>Add New Material - Step {currentStep} of 4</DialogTitle>
+      </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Progress indicator */}
-          <div className="flex justify-between items-center">
-            {[1, 2, 3, 4].map((step) => (
-              <div
-                key={step}
-                className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                  step === currentStep
-                    ? 'bg-primary text-primary-foreground'
-                    : step < currentStep
-                    ? 'bg-primary/20 text-primary'
-                    : 'bg-muted text-muted-foreground'
-                }`}
-              >
-                {step}
-              </div>
-            ))}
-          </div>
-
-          {/* Form content */}
-          {renderStep()}
-
-          {/* Navigation buttons */}
-          <div className="flex justify-between gap-4">
-            <Button
-              variant="outline"
-              onClick={handlePrevious}
-              disabled={currentStep === 1}
+      <div className="space-y-6">
+        {/* Progress indicator */}
+        <div className="flex justify-between items-center">
+          {[1, 2, 3, 4].map((step) => (
+            <div
+              key={step}
+              className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                step === currentStep
+                  ? 'bg-primary text-primary-foreground'
+                  : step < currentStep
+                  ? 'bg-primary/20 text-primary'
+                  : 'bg-muted text-muted-foreground'
+              }`}
             >
-              Previous
-            </Button>
-
-            <div className="flex gap-2">
-              {currentStep < 4 ? (
-                <Button
-                  onClick={handleNext}
-                  disabled={!canProceed()}
-                >
-                  Next
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={loading || !canProceed()}
-                >
-                  {loading ? 'Adding...' : 'Add Material'}
-                </Button>
-              )}
+              {step}
             </div>
+          ))}
+        </div>
+
+        {/* Form content */}
+        {renderStep()}
+
+        {/* Navigation buttons */}
+        <div className="flex justify-between gap-4">
+          <Button
+            variant="outline"
+            onClick={handlePrevious}
+            disabled={currentStep === 1}
+          >
+            Previous
+          </Button>
+
+          <div className="flex gap-2">
+            {currentStep < 4 ? (
+              <Button
+                onClick={handleNext}
+                disabled={!canProceed()}
+              >
+                Next
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSubmit}
+                disabled={loading || !canProceed()}
+              >
+                {loading ? 'Adding...' : 'Add Material'}
+              </Button>
+            )}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </DialogWrapper>
   )
 }

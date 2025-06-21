@@ -5,11 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface DimensionsFormProps {
   formData: {
-    length: number
-    width: number
-    thickness: number
+    length: number | null
+    width: number | null
+    thickness: number | null
     dimension_unit: string
-    density: number
+    density: number | null
     dimensions: string
   }
   onFormDataChange: (updates: Partial<any>) => void
@@ -28,8 +28,8 @@ export function DimensionsForm({ formData, onFormDataChange, calculatedWeight }:
             id="length"
             type="number"
             step="0.01"
-            value={formData.length}
-            onChange={(e) => onFormDataChange({ length: parseFloat(e.target.value) || 0 })}
+            value={formData.length || ''}
+            onChange={(e) => onFormDataChange({ length: parseFloat(e.target.value) || null })}
           />
         </div>
         
@@ -39,8 +39,8 @@ export function DimensionsForm({ formData, onFormDataChange, calculatedWeight }:
             id="width"
             type="number"
             step="0.01"
-            value={formData.width}
-            onChange={(e) => onFormDataChange({ width: parseFloat(e.target.value) || 0 })}
+            value={formData.width || ''}
+            onChange={(e) => onFormDataChange({ width: parseFloat(e.target.value) || null })}
           />
         </div>
         
@@ -50,8 +50,8 @@ export function DimensionsForm({ formData, onFormDataChange, calculatedWeight }:
             id="thickness"
             type="number"
             step="0.01"
-            value={formData.thickness}
-            onChange={(e) => onFormDataChange({ thickness: parseFloat(e.target.value) || 0 })}
+            value={formData.thickness || ''}
+            onChange={(e) => onFormDataChange({ thickness: parseFloat(e.target.value) || null })}
           />
         </div>
         
@@ -79,8 +79,8 @@ export function DimensionsForm({ formData, onFormDataChange, calculatedWeight }:
           <Input
             id="density"
             type="number"
-            value={formData.density}
-            onChange={(e) => onFormDataChange({ density: parseFloat(e.target.value) || 500 })}
+            value={formData.density || ''}
+            onChange={(e) => onFormDataChange({ density: parseFloat(e.target.value) || null })}
             placeholder="500"
           />
         </div>

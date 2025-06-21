@@ -30,7 +30,8 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
     progress: 0,
     total_cost: 0,
     total_carbon_footprint: 0,
-    allocated_materials: []
+    allocated_materials: [],
+    deleted: false
   })
 
   const { projects, loading, addProject, refreshProjects } = useProjects()
@@ -50,7 +51,8 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
           progress: 0,
           total_cost: 0,
           total_carbon_footprint: 0,
-          allocated_materials: []
+          allocated_materials: [],
+          deleted: false
         })
         
         // Force refresh the projects list to ensure the new project is available
