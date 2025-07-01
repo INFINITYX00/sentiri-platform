@@ -31,7 +31,9 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
 
   // Convert open prop to boolean explicitly
   const isControlled = open !== undefined
-  const isDialogOpen = isControlled ? (typeof open === 'string' ? open === 'true' : Boolean(open)) : internalOpen
+  const isDialogOpen: boolean = isControlled 
+    ? (typeof open === 'string' ? open === 'true' : Boolean(open)) 
+    : internalOpen
   
   const handleOpenChange = (newOpen: boolean) => {
     if (onClose) {
