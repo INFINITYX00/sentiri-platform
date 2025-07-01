@@ -29,7 +29,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     calculateWeight
   } = useMaterialForm()
 
-  const isOpen = open !== undefined ? open : internalOpen
+  const isOpen = open !== undefined ? Boolean(open) : internalOpen
   const handleOpenChange = (newOpen: boolean) => {
     if (onClose) {
       if (!newOpen) onClose()
