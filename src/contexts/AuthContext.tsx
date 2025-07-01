@@ -52,17 +52,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('🔍 Fetching profile for user:', userId);
+      
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .single();
 
-      if (profileError || !profileData) {
-        console.error('Profile fetch error:', profileError);
+      if (profileError) {
+        console.error('❌ Profile fetch error:', profileError);
+        if (profileError.code === 'PGRST116') {
+          console.log('👤 No profile found, user needs to complete setup');
+          return;
+        }
+        throw profileError;
+      }
+
+      if (!profileData) {
+        console.log('👤 No profile data returned');
         return;
       }
 
+      console.log('✅ Profile fetched:', profileData);
       setProfile(profileData);
 
       // Fetch company data
@@ -72,14 +84,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', profileData.company_id)
         .single();
 
-      if (companyError || !companyData) {
-        console.error('Company fetch error:', companyError);
+      if (companyError) {
+        console.error('❌ Company fetch error:', companyError);
+        throw companyError;
+      }
+
+      if (!companyData) {
+        console.error('❌ No company data found for company_id:', profileData.company_id);
         return;
       }
 
+      console.log('✅ Company fetched:', companyData);
       setCompany(companyData);
     } catch (error) {
-      console.error('Error fetching profile/company:', error);
+      console.error('❌ Error fetching profile/company:', error);
+      setProfile(null);
+      setCompany(null);
     }
   };
 
@@ -116,17 +136,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
+        console.log('🔐 Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user && event === 'SIGNED_IN') {
+        if (session?.user) {
           // Check if this is a new user who needs profile setup
           const pendingSignup = localStorage.getItem('pendingSignup');
-          if (pendingSignup) {
+          if (pendingSignup && event === 'SIGNED_IN') {
             try {
               const signupData = JSON.parse(pendingSignup);
               if (signupData.userId === session.user.id) {
+                console.log('👤 Completing profile setup for new user');
                 await createCompanyAndProfile(
                   session.user.id,
                   signupData.email,
@@ -134,16 +155,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   signupData.firstName,
                   signupData.lastName
                 );
+                localStorage.removeItem('pendingSignup');
               }
             } catch (error) {
-              console.error('Error completing signup:', error);
+              console.error('❌ Error completing signup:', error);
             }
           }
           
+          // Always try to fetch profile after auth
           setTimeout(() => {
             fetchProfile(session.user.id);
-          }, 0);
-        } else if (!session) {
+          }, 100);
+        } else {
           setProfile(null);
           setCompany(null);
         }
@@ -153,6 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('🔐 Initial session check:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -166,9 +190,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const createCompanyAndProfile = async (userId: string, email: string, companyName: string, firstName?: string, lastName?: string) => {
     try {
+      console.log('🏢 Creating company and profile for user:', userId);
+      
       const companySlug = companyName.toLowerCase().replace(/[^a-z0-9]/g, '-');
       
-      // Create company
+      // Create company first
       const { data: companyData, error: companyError } = await supabase
         .from('companies')
         .insert([{
@@ -182,12 +208,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (companyError) {
-        console.error('Company creation error:', companyError);
-        throw new Error('Failed to create company');
+        console.error('❌ Company creation error:', companyError);
+        throw new Error(`Failed to create company: ${companyError.message}`);
       }
 
+      console.log('✅ Company created:', companyData);
+
       // Create profile
-      const { error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .insert([{
           user_id: userId,
@@ -196,23 +224,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           first_name: firstName,
           last_name: lastName,
           role: 'admin'
-        }]);
+        }])
+        .select()
+        .single();
 
       if (profileError) {
-        console.error('Profile creation error:', profileError);
-        throw new Error('Failed to create profile');
+        console.error('❌ Profile creation error:', profileError);
+        throw new Error(`Failed to create profile: ${profileError.message}`);
       }
 
-      // Clear pending signup data
-      localStorage.removeItem('pendingSignup');
+      console.log('✅ Profile created:', profileData);
+
+      // Update state immediately
+      setProfile(profileData);
+      setCompany(companyData);
       
       toast({
         title: "Account created successfully",
         description: "Welcome to your manufacturing dashboard!",
       });
 
+      return { profile: profileData, company: companyData };
+
     } catch (error) {
-      console.error('Error creating company/profile:', error);
+      console.error('❌ Error creating company/profile:', error);
+      toast({
+        title: "Setup Error",
+        description: error instanceof Error ? error.message : "Failed to complete account setup",
+        variant: "destructive"
+      });
       throw error;
     }
   };
@@ -262,7 +302,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
-        console.error('Signup error:', error);
+        console.error('❌ Signup error:', error);
         toast({
           title: "Sign up failed",
           description: error.message,
@@ -271,8 +311,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error };
       }
 
-      if (data.user && !data.user.email_confirmed_at) {
-        // Store signup data for later
+      if (data.user) {
+        // Always store signup data for completion after email confirmation
         localStorage.setItem('pendingSignup', JSON.stringify({
           userId: data.user.id,
           email,
@@ -281,20 +321,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           companyName
         }));
         
-        toast({
-          title: "Please verify your email",
-          description: "We've sent you a confirmation link. Check your email and click the link to complete your registration.",
-        });
+        if (data.user.email_confirmed_at) {
+          // Email already confirmed, create company and profile immediately
+          console.log('📧 Email already confirmed, creating profile immediately');
+          await createCompanyAndProfile(data.user.id, email, companyName, firstName, lastName);
+        } else {
+          // Email needs confirmation
+          toast({
+            title: "Please verify your email",
+            description: "We've sent you a confirmation link. Check your email and click the link to complete your registration.",
+          });
+        }
         
         return { error: null };
       }
 
-      // If email is already confirmed
-      await createCompanyAndProfile(data.user.id, email, companyName, firstName, lastName);
-      return { error: null };
+      return { error: new Error('No user data returned') };
 
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error('❌ Signup error:', error);
       toast({
         title: "Sign up failed",
         description: "An unexpected error occurred. Please try again.",
@@ -312,7 +357,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
-        console.error('Signin error:', error);
+        console.error('❌ Signin error:', error);
         
         let errorMessage = error.message;
         if (error.message.includes('Email not confirmed')) {
@@ -336,7 +381,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { error: null };
     } catch (error) {
-      console.error('Signin error:', error);
+      console.error('❌ Signin error:', error);
       toast({
         title: "Sign in failed",
         description: "An unexpected error occurred. Please try again.",
@@ -358,7 +403,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: "Signed out successfully",
       });
     } catch (error) {
-      console.error('Signout error:', error);
+      console.error('❌ Signout error:', error);
     }
   };
 

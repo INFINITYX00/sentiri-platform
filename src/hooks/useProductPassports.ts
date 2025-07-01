@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { generateProductPassportQRPackage } from '@/utils/qrGenerator'
 import { uploadFile } from '@/utils/fileUpload'
+import { useCompanyData } from '@/hooks/useCompanyData'
 
 export interface ProductPassport {
   id: string
@@ -15,7 +16,7 @@ export interface ProductPassport {
   qr_code: string
   qr_image_url?: string
   image_url?: string
-  specifications: any // Changed from Record<string, any> to any to match Json type
+  specifications: any
   production_date: string
   created_at: string
   updated_at: string
@@ -30,23 +31,51 @@ export function useProductPassports() {
   const [productPassports, setProductPassports] = useState<ProductPassport[]>([])
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
+  const { companyId } = useCompanyData()
 
   const fetchProductPassports = async () => {
+    if (!companyId) {
+      console.log('🔄 useProductPassports: No company ID, skipping fetch')
+      setProductPassports([])
+      return
+    }
+
     setLoading(true)
     try {
+      console.log('🔄 useProductPassports: Fetching product passports for company:', companyId)
+      
+      // First check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        console.log('❌ useProductPassports: No session found')
+        setProductPassports([])
+        setLoading(false)
+        return
+      }
+
       const { data, error } = await supabase
         .from('product_passports')
         .select(`
           *,
-          project:projects(id, name, description)
+          project:projects!inner(id, name, description)
         `)
+        .eq('project.company_id', companyId)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      console.log('Product passports fetched:', data?.length || 0)
+      if (error) {
+        console.error('❌ Error fetching product passports:', error)
+        if (error.message.includes('JWT')) {
+          console.log('🔄 JWT error, trying to refresh session...')
+          await supabase.auth.refreshSession()
+          return
+        }
+        throw error
+      }
+      
+      console.log('✅ Product passports fetched:', data?.length || 0)
       setProductPassports(data || [])
     } catch (error) {
-      console.error('Error fetching product passports:', error)
+      console.error('❌ Error fetching product passports:', error)
       toast({
         title: "Error",
         description: "Failed to fetch product passports",
@@ -66,6 +95,15 @@ export function useProductPassports() {
     specifications: Record<string, any> = {},
     productImageUrl?: string
   ) => {
+    if (!companyId) {
+      toast({
+        title: "Error",
+        description: "Company information not available. Please try logging in again.",
+        variant: "destructive"
+      })
+      return null
+    }
+
     setLoading(true)
     console.log('🔧 useProductPassports: generateProductPassport called')
     console.log('📋 Parameters:', { projectId, productName, productType, quantityProduced, totalCarbonFootprint, productImageUrl })
@@ -73,15 +111,16 @@ export function useProductPassports() {
     try {
       console.log('🎯 Step 1: Fetching complete project data...')
       
-      // Fetch complete project data
+      // Fetch complete project data with company verification
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .select('*')
         .eq('id', projectId)
+        .eq('company_id', companyId)
         .single()
       
       if (projectError || !projectData) {
-        throw new Error(`Failed to fetch project data: ${projectError?.message}`)
+        throw new Error(`Failed to fetch project data: ${projectError?.message || 'Project not found'}`)
       }
       
       // Fetch project materials with actual material details
@@ -89,9 +128,10 @@ export function useProductPassports() {
         .from('projects_materials')
         .select(`
           *,
-          material:materials(*)
+          material:materials!inner(*)
         `)
         .eq('project_id', projectId)
+        .eq('material.company_id', companyId)
       
       if (materialsError) {
         console.warn('Failed to fetch project materials:', materialsError)
@@ -102,6 +142,7 @@ export function useProductPassports() {
         .from('manufacturing_stages')
         .select('*')
         .eq('project_id', projectId)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: true })
       
       if (stagesError) {
@@ -180,6 +221,7 @@ export function useProductPassports() {
       // Prepare enhanced specifications with actual data
       const enhancedSpecifications = {
         ...specifications,
+        company_id: companyId,
         project_description: projectData.description,
         completion_date: new Date().toISOString(),
         total_cost: projectData.total_cost,
@@ -212,26 +254,14 @@ export function useProductPassports() {
         carbon_breakdown: {
           materials_carbon: projectMaterials?.reduce((total, pm) => 
             total + ((pm.material?.carbon_footprint || 0) * pm.quantity_consumed), 0) || 0,
-          manufacturing_carbon: 0, // Could be calculated from energy consumption
+          manufacturing_carbon: 0,
           total_carbon: finalCarbonFootprint
         }
       }
       
       console.log('🎯 Step 4: Creating product passport database record...')
-      console.log('📝 Passport data:', {
-        id: tempId,
-        project_id: projectId,
-        product_name: productName,
-        product_type: productType,
-        quantity_produced: quantityProduced,
-        total_carbon_footprint: finalCarbonFootprint,
-        qr_code: qrData,
-        qr_image_url: qrImageUrl,
-        image_url: productImageUrl,
-        specifications: enhancedSpecifications
-      })
       
-      // Create product passport
+      // Create product passport with company_id from project
       const { data, error } = await supabase
         .from('product_passports')
         .insert([{
@@ -245,19 +275,14 @@ export function useProductPassports() {
           qr_image_url: qrImageUrl,
           image_url: productImageUrl,
           specifications: enhancedSpecifications,
-          production_date: new Date().toISOString()
+          production_date: new Date().toISOString(),
+          company_id: companyId
         }])
         .select()
         .single()
 
       if (error) {
         console.error('❌ Database insert error:', error)
-        console.error('Error details:', { 
-          message: error.message, 
-          code: error.code, 
-          details: error.details,
-          hint: error.hint 
-        })
         throw new Error(`Failed to create product passport: ${error.message}`)
       }
 
@@ -274,7 +299,6 @@ export function useProductPassports() {
       return data
     } catch (error) {
       console.error('💥 CRITICAL ERROR in generateProductPassport:', error)
-      console.error('Error stack trace:', error.stack)
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       console.error('Processed error message:', errorMessage)
@@ -284,7 +308,7 @@ export function useProductPassports() {
         description: `Failed to generate product passport: ${errorMessage}`,
         variant: "destructive"
       })
-      throw error // Re-throw so calling code can handle it
+      throw error
     } finally {
       console.log('🏁 generateProductPassport finally block executed')
       setLoading(false)
@@ -292,8 +316,10 @@ export function useProductPassports() {
   }
 
   useEffect(() => {
-    fetchProductPassports()
-  }, [])
+    if (companyId) {
+      fetchProductPassports()
+    }
+  }, [companyId])
 
   return {
     productPassports,

@@ -32,7 +32,19 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
 
     console.log('🔄 MaterialsProvider: Fetching materials for company:', companyId)
     setLoading(true)
+    
     try {
+      // First check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        console.log('❌ MaterialsProvider: No session found')
+        setMaterials([])
+        setLoading(false)
+        return
+      }
+
+      console.log('🔐 MaterialsProvider: User authenticated, fetching materials')
+      
       const { data, error } = await supabase
         .from('materials')
         .select('*')
@@ -41,6 +53,11 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('❌ Error fetching materials:', error)
+        if (error.message.includes('JWT')) {
+          console.log('🔄 JWT error, trying to refresh session...')
+          await supabase.auth.refreshSession()
+          return
+        }
         throw error
       }
 
@@ -50,8 +67,8 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
       console.error('❌ MaterialsProvider: Error fetching materials:', error)
       setSubscriptionStatus('error')
       toast({
-        title: "Error",
-        description: "Failed to fetch materials",
+        title: "Error loading materials",
+        description: "Failed to fetch materials. Please try refreshing the page.",
         variant: "destructive"
       })
     } finally {
@@ -93,7 +110,7 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
             filter: `company_id=eq.${companyId}`
           },
           (payload) => {
-            console.log('📡 MaterialsProvider: Realtime update received:', payload)
+            console.log('📡 MaterialsProvider: Realtime update received:', payload.eventType, payload.new?.id)
             
             switch (payload.eventType) {
               case 'INSERT':
@@ -134,8 +151,10 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch materials when company changes
   useEffect(() => {
-    fetchMaterials()
-  }, [fetchMaterials])
+    if (companyId) {
+      fetchMaterials()
+    }
+  }, [fetchMaterials, companyId])
 
   // Setup realtime when company is available
   useEffect(() => {

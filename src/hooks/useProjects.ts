@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
@@ -47,10 +48,24 @@ export function useProjects() {
   const { companyId } = useCompanyData()
 
   const fetchProjects = useCallback(async () => {
-    if (!companyId) return
+    if (!companyId) {
+      console.log('🔄 useProjects: No company ID, skipping fetch')
+      setProjects([])
+      setLoading(false)
+      return
+    }
 
     try {
       console.log('🔄 Fetching projects for company:', companyId)
+      
+      // First check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        console.log('❌ useProjects: No session found')
+        setProjects([])
+        setLoading(false)
+        return
+      }
       
       const { data, error } = await supabase
         .from('projects')
@@ -61,6 +76,11 @@ export function useProjects() {
 
       if (error) {
         console.error('❌ Error fetching projects:', error)
+        if (error.message.includes('JWT')) {
+          console.log('🔄 JWT error, trying to refresh session...')
+          await supabase.auth.refreshSession()
+          return
+        }
         toast({
           title: "Error loading projects",
           description: error.message,
@@ -79,6 +99,11 @@ export function useProjects() {
   }, [companyId, toast])
 
   const fetchProjectById = async (projectId: string): Promise<Project | null> => {
+    if (!companyId) {
+      console.log('❌ useProjects: No company ID for fetchProjectById')
+      return null
+    }
+
     try {
       console.log('🔄 Fetching project by ID:', projectId)
       
@@ -86,6 +111,7 @@ export function useProjects() {
         .from('projects')
         .select('*')
         .eq('id', projectId)
+        .eq('company_id', companyId)
         .eq('deleted', false)
         .single()
 
@@ -103,8 +129,10 @@ export function useProjects() {
   }
 
   useEffect(() => {
-    fetchProjects()
-  }, [fetchProjects])
+    if (companyId) {
+      fetchProjects()
+    }
+  }, [fetchProjects, companyId])
 
   const addProject = async (projectData: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => {
     if (!companyId) {
@@ -165,6 +193,7 @@ export function useProjects() {
         .from('projects')
         .update(updates)
         .eq('id', projectId)
+        .eq('company_id', companyId)
         .select()
         .single()
 
@@ -197,6 +226,7 @@ export function useProjects() {
         .from('projects')
         .update({ deleted: true })
         .eq('id', projectId)
+        .eq('company_id', companyId)
 
       if (error) {
         console.error('Error deleting project:', error)
@@ -270,9 +300,10 @@ export function useProjects() {
         .from('projects_materials')
         .select(`
           *,
-          material:materials(id, name, type, unit, quantity, carbon_footprint)
+          material:materials!inner(id, name, type, unit, quantity, carbon_footprint)
         `)
         .eq('project_id', projectId)
+        .eq('material.company_id', companyId)
 
       if (error) {
         console.error('Error fetching project materials:', error)

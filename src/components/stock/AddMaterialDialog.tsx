@@ -29,20 +29,14 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     calculateWeight
   } = useMaterialForm()
 
-  // Convert open prop to boolean explicitly with proper type narrowing
-  const isControlled = open !== undefined
-  let isDialogOpen: boolean
-  
-  if (isControlled) {
-    // Explicit boolean conversion with type guards
-    if (typeof open === 'string') {
-      isDialogOpen = open === 'true'
-    } else {
-      isDialogOpen = Boolean(open)
+  // Determine dialog open state - ensure it's always a boolean
+  const isDialogOpen = React.useMemo(() => {
+    if (open === undefined) {
+      return internalOpen
     }
-  } else {
-    isDialogOpen = internalOpen
-  }
+    // Convert string/boolean to boolean
+    return open === true || open === 'true'
+  }, [open, internalOpen])
   
   const handleOpenChange = (newOpen: boolean) => {
     if (onClose) {
