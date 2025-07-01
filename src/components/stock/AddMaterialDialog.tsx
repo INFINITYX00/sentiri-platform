@@ -9,7 +9,7 @@ import { FormStepRenderer } from './components/FormStepRenderer'
 import { useMaterialForm } from './hooks/useMaterialForm'
 
 interface AddMaterialDialogProps {
-  open?: boolean
+  open?: boolean | string
   onClose?: () => void
   materialToEdit?: any
 }
