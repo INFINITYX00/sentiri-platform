@@ -136,6 +136,6 @@ export function useMaterialsOperations() {
     addMaterial,
     generateQRCodeForMaterial,
     regenerateQRCode,
-    isLoading
+    loading: isLoading
   }
 }

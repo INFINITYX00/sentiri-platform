@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
@@ -37,6 +36,7 @@ export interface ProjectMaterial {
     type: string
     unit: string
     quantity: number
+    carbon_footprint: number
   }
 }
 
@@ -77,6 +77,30 @@ export function useProjects() {
       setLoading(false)
     }
   }, [companyId, toast])
+
+  const fetchProjectById = async (projectId: string): Promise<Project | null> => {
+    try {
+      console.log('🔄 Fetching project by ID:', projectId)
+      
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', projectId)
+        .eq('deleted', false)
+        .single()
+
+      if (error) {
+        console.error('❌ Error fetching project by ID:', error)
+        return null
+      }
+
+      console.log('✅ Project fetched by ID:', data?.name)
+      return data as Project
+    } catch (error) {
+      console.error('❌ Unexpected error fetching project by ID:', error)
+      return null
+    }
+  }
 
   useEffect(() => {
     fetchProjects()
@@ -246,7 +270,7 @@ export function useProjects() {
         .from('projects_materials')
         .select(`
           *,
-          material:materials(id, name, type, unit, quantity)
+          material:materials(id, name, type, unit, quantity, carbon_footprint)
         `)
         .eq('project_id', projectId)
 
@@ -272,6 +296,7 @@ export function useProjects() {
     deleteProject,
     refreshProjects,
     addMaterialToProject,
-    getProjectMaterials
+    getProjectMaterials,
+    fetchProjectById
   }
 }
