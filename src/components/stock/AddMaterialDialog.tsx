@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react'
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useMaterialsOperations } from '@/hooks/useMaterialsOperations'
@@ -33,8 +34,12 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     if (open === undefined) {
       return internalOpen
     }
-    // Convert to boolean properly
-    return Boolean(open) && open !== 'false'
+    // Handle string values explicitly
+    if (typeof open === 'string') {
+      return open === 'true'
+    }
+    // Handle boolean values
+    return Boolean(open)
   }, [open, internalOpen])
   
   const handleOpenChange = (newOpen: boolean) => {
