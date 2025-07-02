@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react'
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useMaterialsOperations } from '@/hooks/useMaterialsOperations'
@@ -30,12 +29,12 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
   } = useMaterialForm()
 
   // Determine dialog open state - ensure it's always a boolean
-  const isDialogOpen = React.useMemo(() => {
+  const isDialogOpen: boolean = React.useMemo(() => {
     if (open === undefined) {
       return internalOpen
     }
-    // Convert string/boolean to boolean
-    return open === true || open === 'true'
+    // Convert to boolean properly
+    return Boolean(open) && open !== 'false'
   }, [open, internalOpen])
   
   const handleOpenChange = (newOpen: boolean) => {

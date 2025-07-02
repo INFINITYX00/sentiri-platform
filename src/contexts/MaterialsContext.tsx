@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -110,23 +109,36 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
             filter: `company_id=eq.${companyId}`
           },
           (payload) => {
-            console.log('📡 MaterialsProvider: Realtime update received:', payload.eventType, payload.new?.id)
+            console.log('📡 MaterialsProvider: Realtime update received:', payload.eventType)
+            
+            // Check if payload.new exists and has an id property
+            const newRecord = payload.new as Material | null
+            const oldRecord = payload.old as Material | null
             
             switch (payload.eventType) {
               case 'INSERT':
-                setMaterials(current => [payload.new as Material, ...current])
+                if (newRecord && newRecord.id) {
+                  console.log('📡 INSERT:', newRecord.id)
+                  setMaterials(current => [newRecord, ...current])
+                }
                 break
               case 'UPDATE':
-                setMaterials(current => 
-                  current.map(material => 
-                    material.id === payload.new.id ? payload.new as Material : material
+                if (newRecord && newRecord.id) {
+                  console.log('📡 UPDATE:', newRecord.id)
+                  setMaterials(current => 
+                    current.map(material => 
+                      material.id === newRecord.id ? newRecord : material
+                    )
                   )
-                )
+                }
                 break
               case 'DELETE':
-                setMaterials(current => 
-                  current.filter(material => material.id !== payload.old.id)
-                )
+                if (oldRecord && oldRecord.id) {
+                  console.log('📡 DELETE:', oldRecord.id)
+                  setMaterials(current => 
+                    current.filter(material => material.id !== oldRecord.id)
+                  )
+                }
                 break
             }
           }
