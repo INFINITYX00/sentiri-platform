@@ -29,9 +29,9 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     calculateWeight
   } = useMaterialForm()
 
-  // Simplified boolean handling - ensure we always get a boolean
+  // Determine if controlled and get dialog state as boolean
   const isControlled = open !== undefined
-  const dialogOpen = isControlled ? Boolean(open) : internalOpen
+  const dialogOpen: boolean = isControlled ? Boolean(open) : internalOpen
   
   const handleOpenChange = (newOpen: boolean) => {
     if (isControlled && onClose) {
