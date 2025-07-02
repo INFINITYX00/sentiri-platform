@@ -34,7 +34,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     if (open === undefined) {
       return internalOpen
     }
-    // Handle boolean values directly
+    // Convert any truthy value to boolean
     return Boolean(open)
   }, [open, internalOpen])
   
