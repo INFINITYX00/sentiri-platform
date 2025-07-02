@@ -9,7 +9,7 @@ import { FormStepRenderer } from './components/FormStepRenderer'
 import { useMaterialForm } from './hooks/useMaterialForm'
 
 interface AddMaterialDialogProps {
-  open?: boolean | string
+  open?: boolean
   onClose?: () => void
   materialToEdit?: any
 }
@@ -34,11 +34,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     if (open === undefined) {
       return internalOpen
     }
-    // Handle string values explicitly
-    if (typeof open === 'string') {
-      return open === 'true'
-    }
-    // Handle boolean values
+    // Handle boolean values directly
     return Boolean(open)
   }, [open, internalOpen])
   
