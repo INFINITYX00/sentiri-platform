@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react'
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useMaterialsOperations } from '@/hooks/useMaterialsOperations'
@@ -28,17 +29,12 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     calculateWeight
   } = useMaterialForm()
 
-  // Determine dialog open state - ensure boolean type
-  const isDialogOpen: boolean = React.useMemo(() => {
-    if (open === undefined) {
-      return internalOpen
-    }
-    // Ensure we always return a boolean
-    return Boolean(open)
-  }, [open, internalOpen])
+  // Simplified dialog state handling
+  const isControlled = open !== undefined
+  const dialogOpen = isControlled ? (open === true) : internalOpen
   
   const handleOpenChange = (newOpen: boolean) => {
-    if (onClose) {
+    if (isControlled && onClose) {
       if (!newOpen) onClose()
     } else {
       setInternalOpen(newOpen)
@@ -77,7 +73,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
 
   return (
     <DialogWrapper 
-      open={isDialogOpen}
+      open={dialogOpen}
       onOpenChange={handleOpenChange} 
       resetForm={resetForm}
     >
