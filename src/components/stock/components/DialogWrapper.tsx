@@ -12,10 +12,13 @@ interface DialogWrapperProps {
 }
 
 export function DialogWrapper({ open, onOpenChange, children, resetForm }: DialogWrapperProps) {
+  // Ensure open is always a boolean
+  const isOpen = Boolean(open)
+  
   if (open !== undefined) {
     // Controlled mode
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {children}
         </DialogContent>
@@ -25,7 +28,7 @@ export function DialogWrapper({ open, onOpenChange, children, resetForm }: Dialo
 
   // Uncontrolled mode with trigger
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button onClick={resetForm}>
           <Plus className="h-4 w-4 mr-2" />
