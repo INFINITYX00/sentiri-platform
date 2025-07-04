@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react'
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useMaterialsOperations } from '@/hooks/useMaterialsOperations'
@@ -28,9 +29,9 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     calculateWeight
   } = useMaterialForm()
 
-  // Fix the boolean type inference issue by explicitly typing and using Boolean()
+  // Fix the boolean type inference issue by being more explicit
   const isControlled = open !== undefined
-  const dialogOpen: boolean = isControlled ? Boolean(open) : internalOpen
+  const dialogOpen: boolean = isControlled ? (open === true) : internalOpen
   
   const handleOpenChange = (newOpen: boolean) => {
     if (isControlled && onClose) {
