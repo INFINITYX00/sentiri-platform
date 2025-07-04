@@ -29,9 +29,9 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     calculateWeight
   } = useMaterialForm()
 
-  // Fix the boolean type inference issue by being more explicit
+  // Simplified boolean logic to fix TypeScript inference
   const isControlled = open !== undefined
-  const dialogOpen: boolean = isControlled ? (open === true) : internalOpen
+  const dialogOpen = isControlled ? (open === true) : internalOpen
   
   const handleOpenChange = (newOpen: boolean) => {
     if (isControlled && onClose) {
