@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { supabase, type Material } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -22,14 +23,15 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
   const isSubscribedRef = useRef(false)
 
   const fetchMaterials = useCallback(async () => {
+    console.log('🔄 MaterialsProvider: Fetching materials, companyId:', companyId)
+    
     if (!companyId) {
-      console.log('🔄 MaterialsProvider: No company ID, skipping material fetch')
+      console.log('🔄 MaterialsProvider: No company ID, setting empty materials array')
       setMaterials([])
       setLoading(false)
       return
     }
 
-    console.log('🔄 MaterialsProvider: Fetching materials for company:', companyId)
     setLoading(true)
     
     try {
@@ -42,7 +44,7 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      console.log('🔐 MaterialsProvider: User authenticated, fetching materials')
+      console.log('🔐 MaterialsProvider: User authenticated, fetching materials for company:', companyId)
       
       const { data, error } = await supabase
         .from('materials')
@@ -78,6 +80,7 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
   const setupRealtimeSubscription = useCallback(() => {
     if (!companyId) {
       console.log('🔄 MaterialsProvider: No company ID, skipping realtime setup')
+      setSubscriptionStatus('disconnected')
       return
     }
 
@@ -163,15 +166,15 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch materials when company changes
   useEffect(() => {
-    if (companyId) {
-      fetchMaterials()
-    }
-  }, [fetchMaterials, companyId])
+    fetchMaterials()
+  }, [fetchMaterials])
 
   // Setup realtime when company is available
   useEffect(() => {
     if (companyId) {
       setupRealtimeSubscription()
+    } else {
+      setSubscriptionStatus('disconnected')
     }
 
     return () => {

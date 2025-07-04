@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to avoid errors when no profile exists
 
       if (profileError) {
         console.error('❌ Profile fetch error:', profileError);
@@ -70,7 +69,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!profileData) {
-        console.log('👤 No profile data returned');
+        console.log('👤 No profile data returned - user needs setup');
+        setProfile(null);
+        setCompany(null);
         return;
       }
 
@@ -82,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('companies')
         .select('*')
         .eq('id', profileData.company_id)
-        .single();
+        .maybeSingle(); // Use maybeSingle here too
 
       if (companyError) {
         console.error('❌ Company fetch error:', companyError);
@@ -91,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!companyData) {
         console.error('❌ No company data found for company_id:', profileData.company_id);
+        setCompany(null);
         return;
       }
 
