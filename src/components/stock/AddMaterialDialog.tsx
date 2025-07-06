@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react'
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useMaterialsOperations } from '@/hooks/useMaterialsOperations'
@@ -28,9 +29,9 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
     calculateWeight
   } = useMaterialForm()
 
-  // Ensure dialogOpen is always boolean
-  const isControlled = typeof open === 'boolean'
-  const dialogOpen = isControlled ? open : internalOpen
+  // Explicit boolean conversion to fix TypeScript error
+  const isControlled = open !== undefined
+  const dialogOpen: boolean = isControlled ? (open === true) : internalOpen
   
   const handleOpenChange = (newOpen: boolean) => {
     if (isControlled && onClose) {
@@ -95,7 +96,7 @@ export function AddMaterialDialog({ open, onClose, materialToEdit }: AddMaterial
         <NavigationButtons
           currentStep={currentStep}
           totalSteps={4}
-          canProceed={canProceed()}
+          canProceed={canProceed() as boolean}
           loading={loading}
           onPrevious={handlePrevious}
           onNext={handleNext}
