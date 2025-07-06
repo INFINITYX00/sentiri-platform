@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
+import { useCompanyData } from '@/hooks/useCompanyData'
 import type { Material } from '@/lib/supabase'
 
 interface DashboardMetrics {
@@ -105,11 +105,21 @@ export function useDynamicDashboardMetrics() {
   })
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
+  const { companyId } = useCompanyData()
 
   const calculateMetrics = async () => {
     try {
       setLoading(true)
       console.log('🔄 Dashboard: Starting metrics calculation')
+
+      // Check if we have a company ID
+      if (!companyId) {
+        console.log('❌ Dashboard: No company ID available, skipping metrics calculation');
+        setLoading(false);
+        return;
+      }
+
+      console.log('🏢 Dashboard: Using company ID:', companyId);
 
       // Fetch all data in parallel - only get non-deleted projects from the start
       const [
@@ -121,16 +131,16 @@ export function useDynamicDashboardMetrics() {
         { data: passports, error: passportsError },
         { data: manufacturingStages, error: stagesError }
       ] = await Promise.all([
-        supabase.from('projects').select('*').eq('deleted', false),
-        supabase.from('materials').select('*'),
+        supabase.from('projects').select('*').eq('deleted', false).eq('company_id', companyId),
+        supabase.from('materials').select('*').eq('company_id', companyId),
         supabase.from('projects_materials').select(`
           *,
-          project:projects!inner(deleted)
-        `).eq('project.deleted', false),
-        supabase.from('energy_records').select('*'),
-        supabase.from('time_entries').select('*').order('created_at', { ascending: false }).limit(15),
-        supabase.from('product_passports').select('*').order('production_date', { ascending: false }).limit(5),
-        supabase.from('manufacturing_stages').select('*, projects(name)').order('updated_at', { ascending: false })
+          project:projects!inner(deleted, company_id)
+        `).eq('project.deleted', false).eq('project.company_id', companyId),
+        supabase.from('energy_records').select('*').eq('company_id', companyId),
+        supabase.from('time_entries').select('*').eq('company_id', companyId).order('created_at', { ascending: false }).limit(15),
+        supabase.from('product_passports').select('*').eq('company_id', companyId).order('production_date', { ascending: false }).limit(5),
+        supabase.from('manufacturing_stages').select('*, projects(name, company_id)').eq('company_id', companyId).order('updated_at', { ascending: false })
       ])
 
       if (projectsError) throw projectsError
@@ -429,7 +439,7 @@ export function useDynamicDashboardMetrics() {
 
   useEffect(() => {
     calculateMetrics()
-  }, [])
+  }, [companyId])
 
   return {
     metrics,

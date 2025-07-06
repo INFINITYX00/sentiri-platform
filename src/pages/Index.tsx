@@ -11,7 +11,7 @@ import { ProjectsManager } from "@/components/projects/ProjectsManager";
 import { DesignBOMManager } from "@/components/design/DesignBOMManager";
 import { ProductionManager } from "@/components/production/ProductionManager";
 import { ProjectWizard } from "@/components/wizard/ProjectWizard";
-import { DemoBanner } from "@/components/DemoBanner";
+// import { DemoBanner } from "@/components/DemoBanner";
 
 const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -87,7 +87,7 @@ const Index = () => {
 
   return (
     <>
-      <DemoBanner />
+      {/* <DemoBanner /> */}
       <SidebarProvider>
         <div className="min-h-screen flex w-full">
           <AppSidebar activeView={activeView} setActiveView={setActiveView} />

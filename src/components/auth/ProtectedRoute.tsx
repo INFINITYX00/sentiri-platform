@@ -1,14 +1,53 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthPage } from './AuthPage';
 import { LoadingFallback } from './LoadingFallback';
+import { useEffect } from 'react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading, profile, company, createProfileNow, signOut } = useAuth();
+  const { user, loading, profile, company, createProfileNow, signOut, isCreatingProfile } = useAuth();
+
+  // Auto-create profile if user exists but no profile
+  useEffect(() => {
+    if (user && !profile && !loading && !isCreatingProfile) {
+      console.log('🔄 Auto-creating profile for user:', user.id);
+      // Add a small delay to ensure any pending operations complete
+      setTimeout(() => {
+        if (!profile && !isCreatingProfile) {
+          createProfileNow();
+        }
+      }, 1000);
+    }
+  }, [user, profile, loading, isCreatingProfile, createProfileNow]);
+
+  // Additional fallback: if user exists but no profile after a longer delay
+  useEffect(() => {
+    if (user && !profile && !loading && !isCreatingProfile) {
+      const fallbackTimeout = setTimeout(() => {
+        if (!profile && !isCreatingProfile) {
+          console.log('🔄 Fallback profile creation for user:', user.id);
+          createProfileNow();
+        }
+      }, 3000); // 3 second fallback
+
+      return () => clearTimeout(fallbackTimeout);
+    }
+  }, [user, profile, loading, isCreatingProfile, createProfileNow]);
+
+  // Emergency timeout: if stuck in loading for too long, force refresh
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        console.warn('⚠️ ProtectedRoute: Loading timeout, forcing page refresh');
+        window.location.reload();
+      }, 15000); // 15 seconds
+
+      return () => clearTimeout(timeout);
+    }
+  }, [loading]);
 
   if (loading) {
     return <LoadingFallback />;
@@ -18,48 +57,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <AuthPage />;
   }
 
-  // If user exists but no profile after a reasonable time, show setup needed message
-  if (user && !profile) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md p-6 bg-white rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Account Setup Required</h2>
-          <p className="text-muted-foreground mb-4">
-            Your account needs to be set up. This usually happens automatically during signup.
-          </p>
-          <div className="space-y-3">
-            <button 
-              onClick={createProfileNow}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Complete Setup Now
-            </button>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="w-full px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-            >
-              Refresh Page
-            </button>
-            <button 
-              onClick={signOut}
-              className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // If user exists but no company, show a setup message
-  if (user && profile && !company) {
+  // If user exists but no profile or company, show loading while auto-creating
+  if (user && (!profile || !company)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-lg font-medium mb-2">Setting up your workspace...</p>
           <p className="text-muted-foreground text-sm">
-            We're preparing your company dashboard. This should only take a moment.
+            This should only take a moment.
           </p>
         </div>
       </div>

@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, RefreshCw, Github } from 'lucide-react';
+import { Loader2, RefreshCw, Github, Eye, EyeOff, Shield, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { validateEmail, validatePassword, validateCompanyName } from '@/utils/validation';
+import { PasswordSecurity, SecurityMonitor } from '@/utils/security';
 
 const LabelInputContainer = ({
   children,
@@ -64,11 +66,68 @@ export function AuthPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [showResendConfirmation, setShowResendConfirmation] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+  const [passwordStrength, setPasswordStrength] = useState<{ score: number; feedback: string[]; isStrong: boolean } | null>(null);
   const { signIn, signUp, resendConfirmation } = useAuth();
+
+  // Validation functions
+  const validateSignInForm = () => {
+    const errors: Record<string, string[]> = {};
+    
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      errors.email = emailValidation.errors;
+    }
+    
+    if (!password) {
+      errors.password = ['Password is required'];
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateSignUpForm = () => {
+    const errors: Record<string, string[]> = {};
+    
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      errors.email = emailValidation.errors;
+    }
+    
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      errors.password = passwordValidation.errors;
+    }
+    
+    const companyValidation = validateCompanyName(companyName);
+    if (!companyValidation.isValid) {
+      errors.companyName = companyValidation.errors;
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Password strength checker
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (value) {
+      const strength = PasswordSecurity.checkStrength(value);
+      setPasswordStrength(strength);
+    } else {
+      setPasswordStrength(null);
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    
+    // Log security event
+    SecurityMonitor.logSuspiciousActivity('login_attempt', undefined, { email });
+    
+    if (!validateSignInForm()) {
       return;
     }
     
@@ -76,8 +135,12 @@ export function AuthPage() {
     
     try {
       const { error } = await signIn(email, password);
-      if (error && error.message.includes('Email not confirmed')) {
-        setShowResendConfirmation(true);
+      if (error) {
+        if (error.message.includes('Email not confirmed')) {
+          setShowResendConfirmation(true);
+        } else if (error.message.includes('Invalid login credentials')) {
+          SecurityMonitor.logSuspiciousActivity('failed_login', undefined, { email });
+        }
       }
     } finally {
       setIsLoading(false);
@@ -86,7 +149,11 @@ export function AuthPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !companyName) {
+    
+    // Log security event
+    SecurityMonitor.logSuspiciousActivity('signup_attempt', undefined, { email, companyName });
+    
+    if (!validateSignUpForm()) {
       return;
     }
     
@@ -100,6 +167,51 @@ export function AuthPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Password strength indicator component
+  const PasswordStrengthIndicator = () => {
+    if (!passwordStrength) return null;
+    
+    const getColor = (score: number) => {
+      if (score <= 2) return 'bg-red-500';
+      if (score <= 3) return 'bg-yellow-500';
+      if (score <= 4) return 'bg-blue-500';
+      return 'bg-green-500';
+    };
+    
+    const getText = (score: number) => {
+      if (score <= 2) return 'Weak';
+      if (score <= 3) return 'Fair';
+      if (score <= 4) return 'Good';
+      return 'Strong';
+    };
+    
+    return (
+      <div className="mt-2 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 bg-gray-200 rounded-full h-2">
+            <div 
+              className={`h-2 rounded-full transition-all ${getColor(passwordStrength.score)}`}
+              style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+            />
+          </div>
+          <span className={`text-xs font-medium ${passwordStrength.score <= 2 ? 'text-red-600' : passwordStrength.score <= 3 ? 'text-yellow-600' : passwordStrength.score <= 4 ? 'text-blue-600' : 'text-green-600'}`}>
+            {getText(passwordStrength.score)}
+          </span>
+        </div>
+        {passwordStrength.feedback.length > 0 && (
+          <div className="text-xs text-gray-600 space-y-1">
+            {passwordStrength.feedback.map((feedback, index) => (
+              <div key={index} className="flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                {feedback}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const handleResendConfirmation = async () => {
@@ -191,20 +303,46 @@ export function AuthPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       disabled={isLoading}
+                      className={validationErrors.email ? 'border-red-500' : ''}
                     />
+                    {validationErrors.email && (
+                      <div className="text-xs text-red-500 mt-1">
+                        {validationErrors.email.map((error, index) => (
+                          <div key={index}>{error}</div>
+                        ))}
+                      </div>
+                    )}
                   </LabelInputContainer>
 
                   <LabelInputContainer className="mb-8">
                     <StyledLabel htmlFor="signin-password">Password</StyledLabel>
-                    <StyledInput
-                      id="signin-password"
-                      type="password"
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
+                    <div className="relative">
+                      <StyledInput
+                        id="signin-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        className={validationErrors.password ? 'border-red-500 pr-10' : 'pr-10'}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        disabled={isLoading}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {validationErrors.password && (
+                      <div className="text-xs text-red-500 mt-1">
+                        {validationErrors.password.map((error, index) => (
+                          <div key={index}>{error}</div>
+                        ))}
+                      </div>
+                    )}
                   </LabelInputContainer>
 
                   <button
@@ -270,7 +408,15 @@ export function AuthPage() {
                       onChange={(e) => setCompanyName(e.target.value)}
                       required
                       disabled={isLoading}
+                      className={validationErrors.companyName ? 'border-red-500' : ''}
                     />
+                    {validationErrors.companyName && (
+                      <div className="text-xs text-red-500 mt-1">
+                        {validationErrors.companyName.map((error, index) => (
+                          <div key={index}>{error}</div>
+                        ))}
+                      </div>
+                    )}
                   </LabelInputContainer>
 
                   <LabelInputContainer className="mb-4">
@@ -283,21 +429,47 @@ export function AuthPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       disabled={isLoading}
+                      className={validationErrors.email ? 'border-red-500' : ''}
                     />
+                    {validationErrors.email && (
+                      <div className="text-xs text-red-500 mt-1">
+                        {validationErrors.email.map((error, index) => (
+                          <div key={index}>{error}</div>
+                        ))}
+                      </div>
+                    )}
                   </LabelInputContainer>
 
-                  <LabelInputContainer className="mb-8">
+                  <LabelInputContainer className="mb-4">
                     <StyledLabel htmlFor="signup-password">Password</StyledLabel>
-                    <StyledInput
-                      id="signup-password"
-                      type="password"
-                      placeholder="Create a strong password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      disabled={isLoading}
-                    />
+                    <div className="relative">
+                      <StyledInput
+                        id="signup-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Create a strong password"
+                        value={password}
+                        onChange={(e) => handlePasswordChange(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        className={validationErrors.password ? 'border-red-500 pr-10' : 'pr-10'}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        disabled={isLoading}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <PasswordStrengthIndicator />
+                    {validationErrors.password && (
+                      <div className="text-xs text-red-500 mt-1">
+                        {validationErrors.password.map((error, index) => (
+                          <div key={index}>{error}</div>
+                        ))}
+                      </div>
+                    )}
                   </LabelInputContainer>
 
                   <button

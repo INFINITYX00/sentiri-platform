@@ -25,6 +25,15 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
   const fetchMaterials = useCallback(async () => {
     console.log('🔄 MaterialsProvider: Fetching materials, companyId:', companyId)
     
+    // Check if we have a valid session first
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      console.log('🔄 MaterialsProvider: No session, skipping materials fetch (likely signing out)')
+      setMaterials([])
+      setLoading(false)
+      return
+    }
+    
     if (!companyId) {
       console.log('🔄 MaterialsProvider: No company ID, setting empty materials array')
       setMaterials([])
@@ -166,16 +175,29 @@ export function MaterialsProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch materials when company changes
   useEffect(() => {
-    fetchMaterials()
+    // Only fetch if we have a session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        fetchMaterials()
+      } else {
+        console.log('🔄 MaterialsProvider: No session in useEffect, skipping fetch')
+        setMaterials([])
+        setLoading(false)
+      }
+    })
   }, [fetchMaterials])
 
   // Setup realtime when company is available
   useEffect(() => {
-    if (companyId) {
-      setupRealtimeSubscription()
-    } else {
-      setSubscriptionStatus('disconnected')
-    }
+    // Only setup realtime if we have a session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && companyId) {
+        setupRealtimeSubscription()
+      } else {
+        console.log('🔄 MaterialsProvider: No session or companyId, skipping realtime setup')
+        setSubscriptionStatus('disconnected')
+      }
+    })
 
     return () => {
       if (channelRef.current) {
