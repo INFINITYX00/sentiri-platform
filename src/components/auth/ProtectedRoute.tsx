@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading, profile, company } = useAuth();
+  const { user, loading, profile, company, createProfileNow, signOut } = useAuth();
 
   if (loading) {
     return <LoadingFallback />;
@@ -27,15 +27,26 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           <p className="text-muted-foreground mb-4">
             Your account needs to be set up. This usually happens automatically during signup.
           </p>
-          <p className="text-sm text-muted-foreground">
-            If this persists, please try signing out and signing in again, or contact support.
-          </p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Refresh Page
-          </button>
+          <div className="space-y-3">
+            <button 
+              onClick={createProfileNow}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Complete Setup Now
+            </button>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="w-full px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+            >
+              Refresh Page
+            </button>
+            <button 
+              onClick={signOut}
+              className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       </div>
     );

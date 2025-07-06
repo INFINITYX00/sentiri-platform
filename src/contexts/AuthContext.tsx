@@ -37,6 +37,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   resendConfirmation: (email: string) => Promise<{ error: any }>;
+  createProfileNow: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -108,6 +109,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshProfile = async () => {
     if (user) {
       await fetchProfile(user.id);
+    }
+  };
+
+  const createProfileNow = async () => {
+    if (!user) {
+      console.log('❌ No user to create profile for');
+      return;
+    }
+
+    try {
+      console.log('🔧 Attempting to create profile for existing user:', user.id);
+      
+      // Check if there's pending signup data
+      const pendingSignup = localStorage.getItem('pendingSignup');
+      let signupData = null;
+      
+      if (pendingSignup) {
+        try {
+          signupData = JSON.parse(pendingSignup);
+          console.log('📦 Found pending signup data:', signupData);
+        } catch (e) {
+          console.log('❌ Invalid pending signup data');
+        }
+      }
+
+      // If no pending data, create with basic info
+      if (!signupData) {
+        signupData = {
+          email: user.email,
+          companyName: `${user.email?.split('@')[0] || 'My'} Company`,
+          firstName: user.user_metadata?.first_name || '',
+          lastName: user.user_metadata?.last_name || ''
+        };
+        console.log('🔧 Using fallback signup data:', signupData);
+      }
+
+      await createCompanyAndProfile(
+        user.id,
+        signupData.email,
+        signupData.companyName,
+        signupData.firstName,
+        signupData.lastName
+      );
+
+      localStorage.removeItem('pendingSignup');
+      
+    } catch (error) {
+      console.error('❌ Error creating profile:', error);
+      toast({
+        title: "Setup Error",
+        description: "Failed to create your profile. Please contact support.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -419,7 +473,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signOut,
     refreshProfile,
-    resendConfirmation
+    resendConfirmation,
+    createProfileNow
   };
 
   return (
