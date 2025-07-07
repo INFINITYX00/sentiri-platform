@@ -380,6 +380,7 @@ export type Database = {
           ai_carbon_confidence: number | null
           ai_carbon_source: string | null
           ai_carbon_updated_at: string | null
+          carbon_factor: number | null
           carbon_footprint: number
           carbon_source: string | null
           company_id: string | null
@@ -411,6 +412,7 @@ export type Database = {
           ai_carbon_confidence?: number | null
           ai_carbon_source?: string | null
           ai_carbon_updated_at?: string | null
+          carbon_factor?: number | null
           carbon_footprint?: number
           carbon_source?: string | null
           company_id?: string | null
@@ -442,6 +444,7 @@ export type Database = {
           ai_carbon_confidence?: number | null
           ai_carbon_source?: string | null
           ai_carbon_updated_at?: string | null
+          carbon_factor?: number | null
           carbon_footprint?: number
           carbon_source?: string | null
           company_id?: string | null
