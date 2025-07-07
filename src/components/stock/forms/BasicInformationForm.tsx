@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { MaterialTypeManager } from "../MaterialTypeManager"
+import { MaterialImageUpload } from "../MaterialImageUpload"
 
 interface BasicInformationFormProps {
   formData: {
@@ -11,6 +12,7 @@ interface BasicInformationFormProps {
     type: string
     specific_material: string
     description: string
+    image_url: string
   }
   onFormDataChange: (updates: Partial<any>) => void
   onTypeSelected: (carbonFactor: number, density: number) => void
@@ -21,6 +23,14 @@ export function BasicInformationForm({
   onFormDataChange,
   onTypeSelected
 }: BasicInformationFormProps) {
+  const handleImageUpload = (url: string) => {
+    onFormDataChange({ image_url: url })
+  }
+
+  const handleImageRemove = () => {
+    onFormDataChange({ image_url: '' })
+  }
+
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-medium text-muted-foreground">Basic Information</h3>
@@ -54,6 +64,12 @@ export function BasicInformationForm({
         onCategoryChange={(category) => onFormDataChange({ type: category })}
         onSpecificTypeChange={(specificType) => onFormDataChange({ specific_material: specificType })}
         onTypeSelected={onTypeSelected}
+      />
+
+      <MaterialImageUpload
+        imageUrl={formData.image_url}
+        onImageUpload={handleImageUpload}
+        onImageRemove={handleImageRemove}
       />
 
       <div>
