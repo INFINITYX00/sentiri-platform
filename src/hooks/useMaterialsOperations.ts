@@ -31,8 +31,14 @@ export function useMaterialsOperations() {
       const materialWithCompany = {
         ...materialData,
         company_id: companyId,
-        qr_code: qrCode
+        qr_code: qrCode,
+        // Ensure timestamp fields are null instead of empty strings
+        ai_carbon_updated_at: materialData.ai_carbon_updated_at || null,
+        created_at: undefined, // Let database handle
+        updated_at: undefined  // Let database handle
       }
+      
+      console.log('🔧 Material data being sent to database:', materialWithCompany)
 
       const { data, error } = await supabase
         .from('materials')
