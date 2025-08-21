@@ -23,33 +23,44 @@ export function useMaterialsOperations() {
     setIsLoading(true)
     try {
       console.log('🔧 Adding material with company_id:', companyId)
-      console.log('🔧 Raw form data:', materialData)
+      console.log('🔧 Raw form data received:', JSON.stringify(materialData, null, 2))
       
       // Generate QR code
       const qrCode = `MAT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       
-      // Clean up all timestamp fields and ensure no empty strings are sent
-      const cleanedData = { ...materialData }
+      // Define allowed fields (whitelist approach) to prevent problematic fields
+      const allowedFields = [
+        'name', 'type', 'specific_material', 'origin', 'quantity', 'unit', 
+        'unit_count', 'carbon_footprint', 'carbon_factor', 'carbon_source',
+        'cost_per_unit', 'description', 'image_url', 'length', 'width', 
+        'thickness', 'dimension_unit', 'dimensions', 'density',
+        'ai_carbon_confidence', 'ai_carbon_source'
+      ]
       
-      // Remove or clean timestamp fields that could cause issues
-      Object.keys(cleanedData).forEach(key => {
-        if (key.includes('_at') && cleanedData[key] === '') {
-          cleanedData[key] = null
+      // Create clean object with only allowed fields
+      const cleanMaterial: any = {}
+      allowedFields.forEach(field => {
+        if (materialData[field] !== undefined && materialData[field] !== '') {
+          cleanMaterial[field] = materialData[field]
         }
       })
       
-      // Add company_id to the material data
-      const materialWithCompany = {
-        ...cleanedData,
-        company_id: companyId,
-        qr_code: qrCode,
-        // Explicitly ensure these are not sent as empty strings
-        created_at: undefined,
-        updated_at: undefined,
-        ai_carbon_updated_at: cleanedData.ai_carbon_updated_at || null
+      // Handle ai_carbon_updated_at specially - only include if it's a valid timestamp
+      if (materialData.ai_carbon_updated_at && 
+          materialData.ai_carbon_updated_at !== '' && 
+          materialData.ai_carbon_updated_at !== '1970-01-01T00:00:00.000Z') {
+        cleanMaterial.ai_carbon_updated_at = materialData.ai_carbon_updated_at
       }
       
-      console.log('🔧 Final material data being sent to database:', materialWithCompany)
+      // Add required fields
+      const materialWithCompany = {
+        ...cleanMaterial,
+        company_id: companyId,
+        qr_code: qrCode
+      }
+      
+      console.log('🔧 Cleaned material data to send:', JSON.stringify(materialWithCompany, null, 2))
+      console.log('🔧 Field count - Original:', Object.keys(materialData).length, 'Cleaned:', Object.keys(materialWithCompany).length)
 
       const { data, error } = await supabase
         .from('materials')
