@@ -21,7 +21,7 @@ export interface MaterialFormData {
   density: number | null
   ai_carbon_confidence: number | null
   ai_carbon_source: string
-  ai_carbon_updated_at: string
+  ai_carbon_updated_at: string | null
 }
 
 export const initialFormData: MaterialFormData = {
@@ -46,5 +46,5 @@ export const initialFormData: MaterialFormData = {
   density: null,
   ai_carbon_confidence: null,
   ai_carbon_source: '',
-  ai_carbon_updated_at: ''
+  ai_carbon_updated_at: null
 }
