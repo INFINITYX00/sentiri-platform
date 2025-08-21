@@ -23,22 +23,33 @@ export function useMaterialsOperations() {
     setIsLoading(true)
     try {
       console.log('🔧 Adding material with company_id:', companyId)
+      console.log('🔧 Raw form data:', materialData)
       
       // Generate QR code
       const qrCode = `MAT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       
+      // Clean up all timestamp fields and ensure no empty strings are sent
+      const cleanedData = { ...materialData }
+      
+      // Remove or clean timestamp fields that could cause issues
+      Object.keys(cleanedData).forEach(key => {
+        if (key.includes('_at') && cleanedData[key] === '') {
+          cleanedData[key] = null
+        }
+      })
+      
       // Add company_id to the material data
       const materialWithCompany = {
-        ...materialData,
+        ...cleanedData,
         company_id: companyId,
         qr_code: qrCode,
-        // Ensure timestamp fields are null instead of empty strings
-        ai_carbon_updated_at: materialData.ai_carbon_updated_at || null,
-        created_at: undefined, // Let database handle
-        updated_at: undefined  // Let database handle
+        // Explicitly ensure these are not sent as empty strings
+        created_at: undefined,
+        updated_at: undefined,
+        ai_carbon_updated_at: cleanedData.ai_carbon_updated_at || null
       }
       
-      console.log('🔧 Material data being sent to database:', materialWithCompany)
+      console.log('🔧 Final material data being sent to database:', materialWithCompany)
 
       const { data, error } = await supabase
         .from('materials')
