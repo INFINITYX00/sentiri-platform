@@ -281,10 +281,10 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
               <div key={stage.id} className="relative">
                 {/* Connection Line */}
                 {index < stages.length - 1 && (
-                  <div className="absolute left-6 top-12 w-0.5 h-16 bg-border"></div>
+                  <div className="absolute left-6 top-12 w-0.5 h-16 bg-border pointer-events-none"></div>
                 )}
                 
-                <div className="flex items-start space-x-4 p-4 bg-muted/20 rounded-lg border">
+                <div className="flex items-start space-x-4 p-4 bg-muted/20 rounded-lg border relative z-10">
                   <div className={`p-3 rounded-full ${getStatusColor(stage.status)} text-white`}>
                     <StageIcon className="h-5 w-5" />
                   </div>

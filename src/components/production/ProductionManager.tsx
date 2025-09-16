@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Play, Settings, CheckCircle, Package, DollarSign, Leaf, ArrowLeft } from "lucide-react"
 import { useProjects } from '@/hooks/useProjects'
 import { useManufacturingStages } from '@/hooks/useManufacturingStages'
+import { useCompanyData } from '@/hooks/useCompanyData'
 import { ManufacturingStages } from '@/components/project/ManufacturingStages'
 
 interface ProductionManagerProps {
@@ -24,6 +25,7 @@ export function ProductionManager({
   const [bomCounts, setBomCounts] = useState<Record<string, number>>({})
   const { projects, updateProject, getProjectMaterials } = useProjects()
   const { createDefaultStages } = useManufacturingStages()
+  const { companyId } = useCompanyData()
 
   // Use provided projectId if available
   const currentProjectId = providedProjectId || selectedProject
@@ -71,19 +73,20 @@ export function ProductionManager({
   ];
 
   const handleStartProduction = useCallback(async (projectId: string) => {
+    console.log('🚀 Starting production for project:', projectId, 'with company:', companyId)
     setSelectedProject(projectId)
     await updateProject(projectId, { 
       status: 'in_progress',
       progress: 0
     })
-    // Create default manufacturing stages for the project
-    await createDefaultStages(projectId)
+    // Create default manufacturing stages for the project with company_id
+    await createDefaultStages(projectId, companyId)
     
     // Notify parent component that production has started
     if (onProductionStart) {
       await onProductionStart()
     }
-  }, [updateProject, createDefaultStages, onProductionStart])
+  }, [updateProject, createDefaultStages, onProductionStart, companyId])
 
   const getStatusColor = useCallback((status: string) => {
     switch (status) {

@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/integrations/supabase/client'
 
 export interface ManufacturingStage {
   id: string
@@ -68,6 +68,8 @@ export function useManufacturingStages() {
 
   const updateStage = useCallback(async (id: string, updates: Partial<ManufacturingStage>, showToast: boolean = false) => {
     try {
+      console.log('🔄 Updating stage:', id, 'with updates:', updates)
+      
       const { data, error } = await supabase
         .from('manufacturing_stages')
         .update({ ...updates, updated_at: new Date().toISOString() })
@@ -75,21 +77,22 @@ export function useManufacturingStages() {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Error updating manufacturing stage:', error)
+        throw error
+      }
 
+      console.log('✅ Stage updated successfully:', data.name, 'status:', data.status)
       setStages(prev => prev.map(stage => stage.id === id ? data : stage))
-      
-      // No toast notifications - using console logging for debugging
-      console.log('Manufacturing stage updated successfully:', data.name)
 
       return data
     } catch (error) {
-      console.error('Error updating manufacturing stage:', error)
+      console.error('❌ Error updating manufacturing stage:', error)
       return null
     }
   }, [])
 
-  const createDefaultStages = useCallback(async (projectId: string) => {
+  const createDefaultStages = useCallback(async (projectId: string, companyId?: string) => {
     try {
       // First check if stages already exist for this project
       const { data: existingStages, error: checkError } = await supabase
@@ -109,6 +112,7 @@ export function useManufacturingStages() {
       const defaultStages = [
         {
           project_id: projectId,
+          company_id: companyId,
           stage_id: 'planning',
           name: 'Planning & Design',
           status: 'pending',
@@ -121,6 +125,7 @@ export function useManufacturingStages() {
         },
         {
           project_id: projectId,
+          company_id: companyId,
           stage_id: 'material_prep',
           name: 'Material Preparation',
           status: 'pending',
@@ -133,6 +138,7 @@ export function useManufacturingStages() {
         },
         {
           project_id: projectId,
+          company_id: companyId,
           stage_id: 'manufacturing',
           name: 'Manufacturing',
           status: 'pending',
@@ -145,6 +151,7 @@ export function useManufacturingStages() {
         },
         {
           project_id: projectId,
+          company_id: companyId,
           stage_id: 'assembly',
           name: 'Assembly',
           status: 'pending',
@@ -157,6 +164,7 @@ export function useManufacturingStages() {
         },
         {
           project_id: projectId,
+          company_id: companyId,
           stage_id: 'quality_control',
           name: 'Quality Control',
           status: 'pending',
@@ -169,6 +177,7 @@ export function useManufacturingStages() {
         },
         {
           project_id: projectId,
+          company_id: companyId,
           stage_id: 'finishing',
           name: 'Finishing',
           status: 'pending',
