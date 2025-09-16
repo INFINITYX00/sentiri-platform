@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -21,15 +21,23 @@ export function ProductionManager({
   onManufacturingComplete 
 }: ProductionManagerProps) {
   const [selectedProject, setSelectedProject] = useState<string | null>(providedProjectId || null)
-  const { projects, updateProject } = useProjects()
+  const [bomCounts, setBomCounts] = useState<Record<string, number>>({})
+  const { projects, updateProject, getProjectMaterials } = useProjects()
   const { createDefaultStages } = useManufacturingStages()
 
   // Use provided projectId if available
   const currentProjectId = providedProjectId || selectedProject
 
+  // Helper function to check if project has BOM items
+  const hasBOMItems = useCallback((project: any) => {
+    const allocatedMaterials = project.allocated_materials?.length || 0
+    const bomCount = bomCounts[project.id] || 0
+    return allocatedMaterials > 0 || bomCount > 0
+  }, [bomCounts])
+
   // Filter projects that are ready for production (have BOMs)
   const readyForProduction = projects.filter(project => 
-    project.status === 'design' && project.allocated_materials.length > 0
+    project.status === 'design' && hasBOMItems(project)
   )
   
   // Projects currently in production
@@ -88,6 +96,26 @@ export function ProductionManager({
 
   const selectedProjectData = currentProjectId ? projects.find(p => p.id === currentProjectId) : null
 
+  // Fetch BOM counts for all projects
+  useEffect(() => {
+    const fetchBOMCounts = async () => {
+      const counts: Record<string, number> = {}
+      
+      for (const project of projects) {
+        if (project.status === 'design') {
+          const materials = await getProjectMaterials(project.id)
+          counts[project.id] = materials.length
+        }
+      }
+      
+      setBomCounts(counts)
+    }
+
+    if (projects.length > 0) {
+      fetchBOMCounts()
+    }
+  }, [projects, getProjectMaterials])
+
   const handleStageUpdate = useCallback(async (stages: any[]) => {
     if (!currentProjectId) return
     
@@ -111,7 +139,7 @@ export function ProductionManager({
     const project = projects.find(p => p.id === providedProjectId)
     
     // If project is ready for production, show start production interface
-    if (project?.status === 'design' && project.allocated_materials.length > 0) {
+    if (project?.status === 'design' && hasBOMItems(project)) {
       return (
         <div className="space-y-6">
           <Card>
@@ -134,7 +162,7 @@ export function ProductionManager({
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Package className="h-4 w-4 text-blue-600" />
-                    <span>{project.allocated_materials.length} materials</span>
+                    <span>{Math.max(project.allocated_materials.length, bomCounts[project.id] || 0)} materials</span>
                   </div>
                 </div>
                 <Button onClick={() => handleStartProduction(providedProjectId)} className="w-full">
@@ -279,10 +307,10 @@ export function ProductionManager({
                                     <Leaf className="h-4 w-4 text-primary" />
                                     <span>{project.total_carbon_footprint.toFixed(1)} kg CO₂</span>
                                   </div>
-                                  <div className="flex items-center gap-2 text-sm">
-                                    <Package className="h-4 w-4 text-blue-600" />
-                                    <span>{project.allocated_materials.length} materials</span>
-                                  </div>
+                                   <div className="flex items-center gap-2 text-sm">
+                                     <Package className="h-4 w-4 text-blue-600" />
+                                     <span>{Math.max(project.allocated_materials.length, bomCounts[project.id] || 0)} materials</span>
+                                   </div>
                                 </div>
                               </div>
                               <Button onClick={() => handleStartProduction(project.id)} className="ml-4">
