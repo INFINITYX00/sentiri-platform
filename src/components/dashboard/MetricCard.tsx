@@ -27,13 +27,13 @@ export function MetricCard({
   const getCardClass = () => {
     switch (status) {
       case "success":
-        return "border-l-4 border-l-success bg-gradient-success/5 hover:bg-gradient-success/10";
+        return "bg-gradient-success/5 hover:bg-gradient-success/10";
       case "warning":
-        return "border-l-4 border-l-warning bg-gradient-to-br from-warning/5 to-warning/10 hover:from-warning/10 hover:to-warning/15";
+        return "bg-gradient-to-br from-warning/5 to-warning/10 hover:from-warning/10 hover:to-warning/15";
       case "info":
-        return "border-l-4 border-l-info bg-gradient-info/5 hover:bg-gradient-info/10";
+        return "bg-gradient-info/5 hover:bg-gradient-info/10";
       default:
-        return "border-l-4 border-l-primary professional-card";
+        return "professional-card";
     }
   };
 
