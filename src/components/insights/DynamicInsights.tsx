@@ -124,11 +124,11 @@ export function DynamicInsights() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Real-Time AI Insights</h2>
-          <p className="text-muted-foreground mt-1">
+    <div className="space-y-8">
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold text-gradient">AI Insights</h1>
+          <p className="text-muted-foreground">
             Dynamic analysis of {materials.length} materials, {projects.length} projects, and {routes.length} routes
           </p>
         </div>
@@ -141,7 +141,7 @@ export function DynamicInsights() {
       {/* Real-time Performance Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {trends.map((trend) => (
-          <Card key={trend.metric} className="bg-white">
+          <Card key={trend.metric} className="professional-card hover-lift">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -167,7 +167,7 @@ export function DynamicInsights() {
       </div>
 
       {/* Claude AI Recommendations */}
-      <Card className="bg-white">
+      <Card className="professional-card">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Lightbulb className="h-5 w-5 text-primary" />
@@ -268,7 +268,7 @@ export function DynamicInsights() {
       {/* Real Performance Tracking */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Achievement Goals */}
-        <Card className="bg-white">
+        <Card className="professional-card">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Target className="h-5 w-5 text-primary" />
@@ -292,7 +292,7 @@ export function DynamicInsights() {
         </Card>
 
         {/* Live Data Overview */}
-        <Card className="bg-white">
+        <Card className="professional-card">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <BarChart3 className="h-5 w-5 text-primary" />
