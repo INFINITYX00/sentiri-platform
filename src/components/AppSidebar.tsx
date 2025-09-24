@@ -8,7 +8,6 @@ import {
 import { Accordion } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { AppSidebarHeader } from "./sidebar/SidebarHeader";
-import { AppSidebarFooter } from "./sidebar/SidebarFooter";
 import { WorkspaceMenuItem } from "./sidebar/WorkspaceMenuItem";
 import { workspaceMenuItems } from "./sidebar/menuData";
 
@@ -49,8 +48,6 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      <AppSidebarFooter />
     </Sidebar>
   );
 }
