@@ -1,13 +1,11 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, RefreshCw, Github, Eye, EyeOff, Shield, AlertTriangle } from 'lucide-react';
+import { Loader2, RefreshCw, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { validateEmail, validatePassword, validateCompanyName } from '@/utils/validation';
 import { PasswordSecurity, SecurityMonitor } from '@/utils/security';
@@ -472,7 +470,6 @@ export function AuthPage() {
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    <PasswordStrengthIndicator />
                     {validationErrors.password && (
                       <div className="text-xs text-red-500 mt-1">
                         {validationErrors.password.map((error, index) => (
@@ -480,6 +477,7 @@ export function AuthPage() {
                         ))}
                       </div>
                     )}
+                    <PasswordStrengthIndicator />
                   </LabelInputContainer>
 
                   <button
