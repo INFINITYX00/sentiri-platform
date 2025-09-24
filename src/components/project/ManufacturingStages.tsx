@@ -137,13 +137,20 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
   }, [updateStage]);
 
   const handleCompleteStage = useCallback(async (stage: ManufacturingStage) => {
-    console.log('✅ Completing stage:', stage.name)
-    // Never show toast for stage operations
-    await updateStage(stage.id, {
-      status: 'completed',
-      progress: 100,
-      completed_date: new Date().toISOString().split('T')[0]
-    }, false);
+    console.log('✅ Completing stage:', stage.name, 'ID:', stage.id, 'Current status:', stage.status)
+    try {
+      const result = await updateStage(stage.id, {
+        status: 'completed',
+        progress: 100,
+        completed_date: new Date().toISOString().split('T')[0]
+      }, false);
+      console.log('✅ Stage completion result:', result)
+      if (!result) {
+        console.error('❌ Failed to complete stage - no result returned')
+      }
+    } catch (error) {
+      console.error('❌ Error completing stage:', error)
+    }
   }, [updateStage]);
 
   const handleProgressUpdate = useCallback(async (stage: ManufacturingStage, progress: number) => {

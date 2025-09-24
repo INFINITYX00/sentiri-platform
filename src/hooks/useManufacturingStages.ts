@@ -78,8 +78,14 @@ export function useManufacturingStages() {
         .single()
 
       if (error) {
-        console.error('❌ Error updating manufacturing stage:', error)
+        console.error('❌ Supabase error updating manufacturing stage:', error)
+        console.error('❌ Error details:', JSON.stringify(error, null, 2))
         throw error
+      }
+
+      if (!data) {
+        console.error('❌ No data returned from stage update')
+        return null
       }
 
       console.log('✅ Stage updated successfully:', data.name, 'status:', data.status)
@@ -88,6 +94,7 @@ export function useManufacturingStages() {
       return data
     } catch (error) {
       console.error('❌ Error updating manufacturing stage:', error)
+      console.error('❌ Full error object:', JSON.stringify(error, null, 2))
       return null
     }
   }, [])
