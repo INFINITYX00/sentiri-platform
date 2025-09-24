@@ -171,7 +171,7 @@ export function DynamicInsights() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Lightbulb className="h-5 w-5 text-primary" />
-            <span>Claude AI Recommendations</span>
+            <span>AI Recommendations</span>
             <Badge variant="outline" className="ml-auto">
               Live Analysis
             </Badge>
