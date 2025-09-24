@@ -37,21 +37,11 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
     workers: [] as string[]
   });
 
-  // Enhanced debounced stage update callback with longer delay to prevent spam
-  const debouncedOnStageUpdate = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout;
-      return (stages: ManufacturingStage[]) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          console.log('🔔 Manufacturing stages updated, notifying parent:', stages.length, 'stages')
-          console.log('🔍 Stage completion status:', stages.map(s => ({ name: s.name, status: s.status, progress: s.progress })))
-          onStageUpdate(stages)
-        }, 1000); // Increased delay to 1 second to prevent rapid updates
-      };
-    })(),
-    [onStageUpdate]
-  );
+  // Call parent update only when needed, not on every stage change
+  const notifyParentUpdate = useCallback((updatedStages: ManufacturingStage[]) => {
+    console.log('🔔 Manufacturing stages updated, notifying parent:', updatedStages.length, 'stages')
+    onStageUpdate(updatedStages)
+  }, [onStageUpdate]);
 
   // Fetch stages only when projectId changes
   useEffect(() => {
@@ -61,12 +51,12 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
     }
   }, [projectId, fetchStages]);
 
-  // Update parent component when stages change (heavily debounced)
+  // Only notify parent on initial load, not on every change to prevent loops
   useEffect(() => {
-    if (stages.length > 0) {
-      debouncedOnStageUpdate(stages);
+    if (stages.length > 0 && projectId) {
+      notifyParentUpdate(stages);
     }
-  }, [stages, debouncedOnStageUpdate]);
+  }, [projectId]); // Only depend on projectId, not stages
 
   const handleCreateDefaultStages = async () => {
     setIsCreatingStages(true);
@@ -145,13 +135,16 @@ export function ManufacturingStages({ projectId, onStageUpdate }: ManufacturingS
         completed_date: new Date().toISOString().split('T')[0]
       }, false);
       console.log('✅ Stage completion result:', result)
-      if (!result) {
+      if (result) {
+        // Notify parent of the update after successful completion
+        notifyParentUpdate(stages.map(s => s.id === stage.id ? result : s));
+      } else {
         console.error('❌ Failed to complete stage - no result returned')
       }
     } catch (error) {
       console.error('❌ Error completing stage:', error)
     }
-  }, [updateStage]);
+  }, [updateStage, stages, notifyParentUpdate]);
 
   const handleProgressUpdate = useCallback(async (stage: ManufacturingStage, progress: number) => {
     const newProgress = Math.min(100, Math.max(0, progress));
