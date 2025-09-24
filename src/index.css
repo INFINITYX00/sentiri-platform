@@ -51,33 +51,71 @@
     --sentiri-light-green: #D1FAE5;
   }
 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 142 76% 46%;
+    --primary-foreground: 222.2 84% 4.9%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 142 76% 36%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 142 76% 46%;
+
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 142 76% 46%;
+    --sidebar-primary-foreground: 222.2 84% 4.9%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 142 76% 46%;
+  }
+
   * {
     @apply border-border;
   }
 
   body {
-    @apply text-foreground font-inter;
+    @apply text-foreground font-inter bg-background;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%);
   }
 
   .app-background {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%);
+    @apply bg-background;
     min-height: 100vh;
   }
 
   .professional-card {
-    @apply bg-white border border-slate-200/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-300;
+    @apply bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition-all duration-300;
     backdrop-filter: blur(10px);
   }
 
   .metric-card {
-    @apply bg-white border border-slate-200/60 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300;
+    @apply bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300;
     backdrop-filter: blur(10px);
   }
 
   .chart-container {
-    @apply bg-white border border-slate-200/60 rounded-xl p-8 shadow-sm hover:shadow-md transition-all duration-300;
+    @apply bg-card border border-border rounded-xl p-8 shadow-sm hover:shadow-md transition-all duration-300;
     backdrop-filter: blur(10px);
   }
 
@@ -98,19 +136,19 @@
   }
 
   .page-title {
-    @apply text-3xl font-bold text-gray-900 mb-6;
+    @apply text-3xl font-bold text-foreground mb-6;
   }
 
   .section-container {
-    @apply bg-white rounded-xl border border-slate-200/60 shadow-sm p-6;
+    @apply bg-card rounded-xl border border-border shadow-sm p-6;
   }
 
   .form-container {
-    @apply bg-white rounded-xl border border-slate-200/60 shadow-sm p-6 space-y-6;
+    @apply bg-card rounded-xl border border-border shadow-sm p-6 space-y-6;
   }
 
   .sidebar-gradient {
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    @apply bg-sidebar;
   }
 }
 

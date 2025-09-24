@@ -8,6 +8,7 @@ import { useState } from "react";
 import { MaterialsProvider } from "@/contexts/MaterialsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import Index from "./pages/Index";
 import MaterialDetail from "./pages/MaterialDetail";
 import ProductPassportDetail from "./pages/ProductPassportDetail";
@@ -25,9 +26,10 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <MaterialsProvider>
+      <ThemeProvider defaultTheme="system" storageKey="sentiri-ui-theme">
+        <TooltipProvider>
+          <AuthProvider>
+            <MaterialsProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -53,6 +55,7 @@ const App = () => {
           </MaterialsProvider>
         </AuthProvider>
       </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };

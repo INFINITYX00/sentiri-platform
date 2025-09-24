@@ -11,6 +11,7 @@ import { AppSidebarHeader } from "./sidebar/SidebarHeader";
 import { AppSidebarFooter } from "./sidebar/SidebarFooter";
 import { WorkspaceMenuItem } from "./sidebar/WorkspaceMenuItem";
 import { workspaceMenuItems } from "./sidebar/menuData";
+import { ThemeToggle } from "./theme/ThemeToggle";
 
 interface AppSidebarProps {
   activeView: string;
@@ -29,10 +30,10 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar className="border-r border-slate-200/20 bg-white w-72">
+    <Sidebar className="border-r border-sidebar-border bg-sidebar w-72">
       <AppSidebarHeader />
 
-      <SidebarContent className="pt-0 px-4 bg-white">
+      <SidebarContent className="pt-0 px-4 bg-sidebar">
         <SidebarGroup>
           <SidebarGroupContent>
             <Accordion type="single" collapsible className="w-full space-y-1">
@@ -46,6 +47,14 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
                 />
               ))}
             </Accordion>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <div className="px-2">
+              <ThemeToggle />
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
