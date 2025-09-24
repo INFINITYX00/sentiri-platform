@@ -123,14 +123,14 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
   ];
 
   return (
-    <div className="min-h-screen app-background">
+    <div className="min-h-screen bg-gradient-subtle">
       <div className="px-8 py-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-8">
           {/* Header Section - Now inside max-width container */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">Projects</h1>
-              <p className="text-muted-foreground mt-1">Manage your furniture manufacturing projects</p>
+          <div className="flex justify-between items-start">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-bold text-gradient">Projects</h1>
+              <p className="text-muted-foreground">Manage your furniture manufacturing projects</p>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
