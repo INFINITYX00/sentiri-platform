@@ -274,17 +274,43 @@ export function DesignBOMManager({ projectId, onBOMComplete }: DesignBOMManagerP
 
   if (loading) {
     return (
-      <div className="text-center py-12">
-        <p>Loading BOM...</p>
+      <div className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="professional-card animate-pulse">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <div className="h-4 bg-muted rounded w-20"></div>
+                    <div className="h-8 bg-muted rounded w-16"></div>
+                  </div>
+                  <div className="h-6 w-6 bg-muted rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card className="professional-card">
+          <CardHeader>
+            <div className="h-6 bg-muted rounded w-32"></div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8 space-y-4">
+              <div className="h-12 w-12 bg-muted rounded mx-auto"></div>
+              <div className="h-4 bg-muted rounded w-48 mx-auto"></div>
+              <div className="h-4 bg-muted rounded w-32 mx-auto"></div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Bill of Materials</h2>
+        <div className="space-y-2">
+          <h2 className="text-3xl font-bold text-gradient">Bill of Materials</h2>
           <p className="text-muted-foreground">Define the materials needed for this project</p>
           {bomCompleted && (
             <div className="flex items-center gap-2 mt-2">
@@ -360,7 +386,7 @@ export function DesignBOMManager({ projectId, onBOMComplete }: DesignBOMManagerP
 
       {/* BOM Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="professional-card hover-lift">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -371,7 +397,7 @@ export function DesignBOMManager({ projectId, onBOMComplete }: DesignBOMManagerP
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="professional-card hover-lift">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -382,7 +408,7 @@ export function DesignBOMManager({ projectId, onBOMComplete }: DesignBOMManagerP
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="professional-card hover-lift">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -396,9 +422,9 @@ export function DesignBOMManager({ projectId, onBOMComplete }: DesignBOMManagerP
       </div>
 
       {/* BOM Items */}
-      <Card>
+      <Card className="professional-card">
         <CardHeader>
-          <CardTitle>Materials List</CardTitle>
+          <CardTitle className="text-gradient">Materials List</CardTitle>
         </CardHeader>
         <CardContent>
           {bomItems.length === 0 ? (

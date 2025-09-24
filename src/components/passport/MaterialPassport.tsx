@@ -69,7 +69,7 @@ export function MaterialPassport() {
           />
 
           {/* Search and Filter */}
-          <Card className="bg-white">
+          <Card className="professional-card">
             <CardContent className="p-4">
               <div className="flex gap-4">
                 <div className="flex-1 relative">
@@ -101,7 +101,7 @@ export function MaterialPassport() {
 
           {/* Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-white">
+            <Card className="professional-card hover-lift">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -112,7 +112,7 @@ export function MaterialPassport() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-white">
+            <Card className="professional-card hover-lift">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -125,7 +125,7 @@ export function MaterialPassport() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-white">
+            <Card className="professional-card hover-lift">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -144,7 +144,27 @@ export function MaterialPassport() {
 
           {/* Product Passports Grid */}
           {loading ? (
-            <div className="text-center py-8">Loading product passports...</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i} className="professional-card animate-pulse">
+                  <CardHeader>
+                    <div className="h-6 bg-muted rounded w-32"></div>
+                    <div className="h-4 bg-muted rounded w-24"></div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="h-20 bg-muted rounded"></div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="h-4 bg-muted rounded"></div>
+                      <div className="h-4 bg-muted rounded"></div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="h-8 bg-muted rounded w-16"></div>
+                      <div className="h-8 bg-muted rounded w-20"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : filteredPassports.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredPassports.map((passport) => (
@@ -156,20 +176,24 @@ export function MaterialPassport() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="text-lg font-medium mb-2">No Product Passports Found</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm || filterType !== 'all' 
-                  ? 'No products match your search criteria' 
-                  : 'Complete a project to generate your first product passport'}
-              </p>
-              {!searchTerm && filterType === 'all' && (
-                <Button onClick={() => window.location.hash = '#bom'}>
-                  Create Your First Project
-                </Button>
-              )}
-            </div>
+            <Card className="professional-card">
+              <CardContent className="text-center py-12 space-y-6">
+                <Package className="h-16 w-16 mx-auto text-muted-foreground animate-fade-in" />
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold text-gradient">No Product Passports Found</h3>
+                  <p className="text-muted-foreground">
+                    {searchTerm || filterType !== 'all' 
+                      ? 'No products match your search criteria' 
+                      : 'Complete a project to generate your first product passport'}
+                  </p>
+                </div>
+                {!searchTerm && filterType === 'all' && (
+                  <Button onClick={() => window.location.hash = '#bom'} className="hover-lift">
+                    Create Your First Project
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>

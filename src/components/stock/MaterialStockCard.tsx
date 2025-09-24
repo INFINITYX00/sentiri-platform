@@ -52,7 +52,7 @@ export function MaterialStockCard({
   }
 
   return (
-    <Card className="sentiri-card hover:border-accent/30 transition-all duration-200 group">
+    <Card className="professional-card hover-lift hover:border-accent/30 transition-all duration-200 group">
       <div className="relative">
         {material.image_url ? (
           <img 

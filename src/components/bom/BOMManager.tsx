@@ -18,18 +18,18 @@ export function BOMManager() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Bill of Materials</h1>
-          <p className="text-muted-foreground mt-1">Create and manage Bills of Materials for your projects</p>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold text-gradient">Bill of Materials</h1>
+          <p className="text-muted-foreground">Create and manage Bills of Materials for your projects</p>
         </div>
       </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {bomStats.map((stat) => (
-          <Card key={stat.label} className="sentiri-card">
+          <Card key={stat.label} className="professional-card hover-lift">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -44,20 +44,22 @@ export function BOMManager() {
       </div>
 
       {!selectedProjectId ? (
-        <Card className="sentiri-card">
-          <CardContent className="p-6 text-center">
-            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Project Selected</h3>
-            <p className="text-muted-foreground mb-4">
-              Please go to the Design & BOM section to select a project and create a BOM
-            </p>
-            <Button onClick={() => window.location.hash = 'design-bom'}>
+        <Card className="professional-card">
+          <CardContent className="p-6 text-center space-y-6">
+            <Package className="h-16 w-16 text-muted-foreground mx-auto animate-fade-in" />
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold text-gradient">No Project Selected</h3>
+              <p className="text-muted-foreground">
+                Please go to the Design & BOM section to select a project and create a BOM
+              </p>
+            </div>
+            <Button onClick={() => window.location.hash = 'design-bom'} className="hover-lift">
               Go to Design & BOM
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <Card className="sentiri-card">
+        <Card className="professional-card">
           <CardContent className="p-6">
             <div className="flex gap-2 mb-6 flex-wrap">
               <Button

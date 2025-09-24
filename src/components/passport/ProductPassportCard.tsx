@@ -28,11 +28,11 @@ export function ProductPassportCard({
   }
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="professional-card hover-lift animate-fade-in">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">{productPassport.product_name}</CardTitle>
-          <Badge variant="secondary">{productPassport.product_type}</Badge>
+          <CardTitle className="text-lg text-gradient">{productPassport.product_name}</CardTitle>
+          <Badge variant="secondary" className="status-info">{productPassport.product_type}</Badge>
         </div>
         {productPassport.project?.name && (
           <p className="text-sm text-muted-foreground">

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StockGrid } from "./StockGrid";
 import { AddMaterialDialog } from "./AddMaterialDialog";
@@ -32,8 +33,9 @@ export function StockManagement() {
           </div>
 
           {/* Filter Section - Above the cards */}
-          <div className="bg-white rounded-lg border shadow-sm p-4">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <Card className="professional-card">
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               {/* Search Input */}
               <div className="flex-1 min-w-0">
                 <div className="relative">
@@ -68,7 +70,8 @@ export function StockManagement() {
                 </Select>
               </div>
             </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Stock Grid */}
           <StockGrid 
