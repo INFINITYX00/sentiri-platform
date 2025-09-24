@@ -130,7 +130,7 @@ export function ProjectsManager({ onProjectSelect }: ProjectsManagerProps) {
           <div className="flex justify-between items-start">
             <div className="space-y-2">
               <h1 className="text-4xl font-bold text-gradient">Projects</h1>
-              <p className="text-muted-foreground">Manage your furniture manufacturing projects</p>
+              <p className="text-muted-foreground">Manage your manufacturing projects</p>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
