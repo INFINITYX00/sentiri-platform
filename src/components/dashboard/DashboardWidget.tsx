@@ -11,12 +11,12 @@ interface DashboardWidgetProps {
 
 export function DashboardWidget({ title, icon, children, className = "" }: DashboardWidgetProps) {
   return (
-    <Card className={`bg-white ${className}`}>
+    <Card className={`professional-card hover-lift animate-fade-in ${className}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-base font-semibold">{title}</CardTitle>
-        {icon && <div className="text-muted-foreground">{icon}</div>}
+        <CardTitle className="text-base font-semibold text-gradient">{title}</CardTitle>
+        {icon && <div className="text-muted-foreground opacity-80 hover:opacity-100 transition-opacity">{icon}</div>}
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-2">
         {children}
       </CardContent>
     </Card>
