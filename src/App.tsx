@@ -13,6 +13,8 @@ import MaterialDetail from "./pages/MaterialDetail";
 import ProductPassportDetail from "./pages/ProductPassportDetail";
 import NotFound from "./pages/NotFound";
 import { AuthPage } from "./components/auth/AuthPage";
+import { PasswordResetPage } from "./components/auth/PasswordResetPage";
+import { PasswordResetConfirmPage } from "./components/auth/PasswordResetConfirmPage";
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient({
@@ -34,6 +36,8 @@ const App = () => {
             <BrowserRouter>
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/auth/reset-password" element={<PasswordResetPage />} />
+                <Route path="/auth/reset-password/confirm" element={<PasswordResetConfirmPage />} />
                 <Route path="/" element={
                   <ProtectedRoute>
                     <Index />

@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,28 +63,14 @@ export function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [showResendConfirmation, setShowResendConfirmation] = useState(false);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
-  const [showPasswordResetConfirm, setShowPasswordResetConfirm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
   const [passwordStrength, setPasswordStrength] = useState<{ score: number; feedback: string[]; isStrong: boolean } | null>(null);
-  const { signIn, signUp, resendConfirmation, requestPasswordReset, updatePassword } = useAuth();
-
-  // Check for password reset in URL
-  useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('reset') === 'true') {
-      setShowPasswordResetConfirm(true);
-    }
-  });
+  const { signIn, signUp, resendConfirmation } = useAuth();
 
   // Validation functions
   const validateSignInForm = () => {
@@ -124,47 +111,9 @@ export function AuthPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const validatePasswordResetForm = () => {
-    const errors: Record<string, string[]> = {};
-    
-    const emailValidation = validateEmail(email);
-    if (!emailValidation.isValid) {
-      errors.email = emailValidation.errors;
-    }
-    
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const validatePasswordResetConfirm = () => {
-    const errors: Record<string, string[]> = {};
-    
-    const passwordValidation = validatePassword(newPassword);
-    if (!passwordValidation.isValid) {
-      errors.newPassword = passwordValidation.errors;
-    }
-    
-    if (newPassword !== confirmPassword) {
-      errors.confirmPassword = ['Passwords do not match'];
-    }
-    
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
   // Password strength checker
   const handlePasswordChange = (value: string) => {
     setPassword(value);
-    if (value) {
-      const strength = PasswordSecurity.checkStrength(value);
-      setPasswordStrength(strength);
-    } else {
-      setPasswordStrength(null);
-    }
-  };
-
-  const handleNewPasswordChange = (value: string) => {
-    setNewPassword(value);
     if (value) {
       const strength = PasswordSecurity.checkStrength(value);
       setPasswordStrength(strength);
@@ -272,51 +221,6 @@ export function AuthPage() {
     setIsLoading(true);
     try {
       await resendConfirmation(email);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('🔄 Password reset form submitted with email:', email);
-    
-    if (!validatePasswordResetForm()) {
-      console.log('❌ Password reset form validation failed');
-      return;
-    }
-    
-    console.log('✅ Password reset form validation passed');
-    setIsLoading(true);
-    try {
-      console.log('📧 Calling requestPasswordReset...');
-      const result = await requestPasswordReset(email);
-      console.log('📧 Password reset result:', result);
-      if (!result.error) {
-        setShowPasswordReset(false);
-      }
-    } catch (error) {
-      console.error('❌ Password reset error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePasswordResetConfirm = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validatePasswordResetConfirm()) {
-      return;
-    }
-    
-    setIsLoading(true);
-    try {
-      const { error } = await updatePassword(newPassword);
-      if (!error) {
-        setShowPasswordResetConfirm(false);
-        // Clear URL parameters
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
     } finally {
       setIsLoading(false);
     }
@@ -459,17 +363,12 @@ export function AuthPage() {
                   </button>
 
                   <div className="text-center mt-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        console.log('🔄 Forgot password link clicked');
-                        setShowPasswordReset(true);
-                      }}
+                    <Link 
+                      to="/auth/reset-password"
                       className="text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-800 dark:hover:text-neutral-100 transition-colors"
-                      disabled={isLoading}
                     >
                       Forgot your password?
-                    </button>
+                    </Link>
                   </div>
                 </form>
               </div>
@@ -607,185 +506,6 @@ export function AuthPage() {
             </TabsContent>
           </Tabs>
         </div>
-
-        {/* Password Reset Request Form */}
-        {showPasswordReset && (
-          <div className="shadow-input mx-auto w-full max-w-md rounded-2xl bg-white p-8 dark:bg-black mt-6">
-            <div className="space-y-4">
-              <div className="text-center">
-                <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-200">
-                  Reset Password
-                </h2>
-                <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
-                  Enter your email address and we'll send you a link to reset your password.
-                </p>
-              </div>
-
-              <form onSubmit={handlePasswordReset}>
-                <LabelInputContainer className="mb-4">
-                  <StyledLabel htmlFor="reset-email">Email Address</StyledLabel>
-                  <StyledInput
-                    id="reset-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={isLoading}
-                    className={validationErrors.email ? 'border-red-500' : ''}
-                  />
-                  {validationErrors.email && (
-                    <div className="text-xs text-red-500 mt-1">
-                      {validationErrors.email.map((error, index) => (
-                        <div key={index}>{error}</div>
-                      ))}
-                    </div>
-                  )}
-                </LabelInputContainer>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      console.log('🔄 Cancel password reset clicked');
-                      setShowPasswordReset(false);
-                    }}
-                    className="flex-1 h-10 rounded-md border border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800 transition-colors"
-                    disabled={isLoading}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    onClick={() => console.log('🔄 Send Reset Link button clicked')}
-                    className="group/btn relative flex-1 h-10 rounded-md bg-gradient-to-br from-black to-neutral-600 font-medium text-white shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:bg-zinc-800 dark:from-zinc-900 dark:to-zinc-900 dark:shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset] disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                        Sending...
-                      </>
-                    ) : (
-                      'Send Reset Link'
-                    )}
-                    <BottomGradient />
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Password Reset Confirmation Form */}
-        {showPasswordResetConfirm && (
-          <div className="shadow-input mx-auto w-full max-w-md rounded-2xl bg-white p-8 dark:bg-black mt-6">
-            <div className="space-y-4">
-              <div className="text-center">
-                <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-200">
-                  Set New Password
-                </h2>
-                <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
-                  Enter your new password below.
-                </p>
-              </div>
-
-              <form onSubmit={handlePasswordResetConfirm}>
-                <LabelInputContainer className="mb-4">
-                  <StyledLabel htmlFor="new-password">New Password</StyledLabel>
-                  <div className="relative">
-                    <StyledInput
-                      id="new-password"
-                      type={showNewPassword ? "text" : "password"}
-                      placeholder="Enter new password"
-                      value={newPassword}
-                      onChange={(e) => handleNewPasswordChange(e.target.value)}
-                      required
-                      disabled={isLoading}
-                      className={validationErrors.newPassword ? 'border-red-500 pr-10' : 'pr-10'}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      disabled={isLoading}
-                    >
-                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {validationErrors.newPassword && (
-                    <div className="text-xs text-red-500 mt-1">
-                      {validationErrors.newPassword.map((error, index) => (
-                        <div key={index}>{error}</div>
-                      ))}
-                    </div>
-                  )}
-                  <PasswordStrengthIndicator />
-                </LabelInputContainer>
-
-                <LabelInputContainer className="mb-6">
-                  <StyledLabel htmlFor="confirm-password">Confirm Password</StyledLabel>
-                  <div className="relative">
-                    <StyledInput
-                      id="confirm-password"
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Confirm new password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
-                      className={validationErrors.confirmPassword ? 'border-red-500 pr-10' : 'pr-10'}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      disabled={isLoading}
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {validationErrors.confirmPassword && (
-                    <div className="text-xs text-red-500 mt-1">
-                      {validationErrors.confirmPassword.map((error, index) => (
-                        <div key={index}>{error}</div>
-                      ))}
-                    </div>
-                  )}
-                </LabelInputContainer>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPasswordResetConfirm(false);
-                      window.history.replaceState({}, document.title, window.location.pathname);
-                    }}
-                    className="flex-1 h-10 rounded-md border border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800 transition-colors"
-                    disabled={isLoading}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="group/btn relative flex-1 h-10 rounded-md bg-gradient-to-br from-black to-neutral-600 font-medium text-white shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:bg-zinc-800 dark:from-zinc-900 dark:to-zinc-900 dark:shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset] disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                        Updating...
-                      </>
-                    ) : (
-                      'Update Password'
-                    )}
-                    <BottomGradient />
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
