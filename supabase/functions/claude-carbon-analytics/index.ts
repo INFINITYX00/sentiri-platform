@@ -150,7 +150,7 @@ Suggest route optimizations and sourcing strategies. Return JSON:
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-sonnet-20240229',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 2000,
         messages: [
           {
@@ -162,7 +162,9 @@ Suggest route optimizations and sourcing strategies. Return JSON:
     });
 
     if (!claudeResponse.ok) {
-      throw new Error(`Claude API error: ${claudeResponse.status}`);
+      const errorText = await claudeResponse.text();
+      console.error('Claude API error:', claudeResponse.status, errorText);
+      throw new Error(`Claude API error: ${claudeResponse.status} - ${errorText}`);
     }
 
     const claudeData = await claudeResponse.json();
@@ -202,7 +204,7 @@ Suggest route optimizations and sourcing strategies. Return JSON:
     console.error('Error in claude-carbon-analytics function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
         success: false 
       }),
       {

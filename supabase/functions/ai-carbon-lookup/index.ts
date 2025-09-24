@@ -11,8 +11,12 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let weight: number | string | undefined = undefined;
+  let totalWeight: number | string = 1;
+
   try {
-    const { materialType, specificMaterial, origin, dimensions, quantity, unit, unitCount, weight } = await req.json()
+    const { materialType, specificMaterial, origin, dimensions, quantity, unit, unitCount, weight: requestWeight } = await req.json()
+    weight = requestWeight;
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
     if (!anthropicApiKey) {
@@ -25,7 +29,7 @@ serve(async (req) => {
     // Calculate total quantity details for context
     const totalQuantity = quantity || 1
     const totalUnits = unitCount || 1
-    const totalWeight = weight || 'unknown'
+    totalWeight = weight || 1
     
     const quantityContext = `
 Total Quantity: ${totalQuantity} ${unit || 'units'}
@@ -123,12 +127,12 @@ Respond with only valid JSON, no additional text.`
     
     // Calculate fallback total carbon
     const fallbackCarbonFactor = 2.0
-    const estimatedWeight = weight || 1
-    const fallbackTotal = fallbackCarbonFactor * estimatedWeight
+    const estimatedWeight = weight || totalWeight || 1
+    const fallbackTotal = fallbackCarbonFactor * (typeof estimatedWeight === 'number' ? estimatedWeight : 1)
     
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Failed to get carbon data',
+        error: error instanceof Error ? error.message : 'Failed to get carbon data',
         carbonFactor: fallbackCarbonFactor,
         totalCarbonFootprint: fallbackTotal,
         density: 500,
