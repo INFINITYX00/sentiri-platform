@@ -46,15 +46,15 @@ export function MaterialPassport() {
   const uniqueTypes = [...new Set(productPassports.map(p => p.product_type))];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-subtle">
       {/* Main Content Area */}
       <div className="px-8 py-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-8">
           {/* Header Section - Now inside container */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">Product Passports</h1>
-              <p className="text-muted-foreground mt-1">Track finished products and their material journey</p>
+          <div className="flex items-start justify-between">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-bold text-gradient">Product Passports</h1>
+              <p className="text-muted-foreground">Track finished products and their material journey</p>
             </div>
             <Button onClick={() => setShowScanner(!showScanner)}>
               <QrCode className="h-4 w-4 mr-2" />

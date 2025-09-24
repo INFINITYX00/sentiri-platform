@@ -615,11 +615,11 @@ export function ProjectWizard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-subtle">
       <div className="px-8 py-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Project Wizard</h1>
+        <div className="max-w-7xl mx-auto space-y-8">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold text-gradient">Project Wizard</h1>
             <p className="text-muted-foreground">Complete workflow from concept to product passport</p>
             {selectedProject && (
               <div className="mt-2 flex items-center gap-4">
