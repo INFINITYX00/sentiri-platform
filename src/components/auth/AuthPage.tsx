@@ -279,15 +279,24 @@ export function AuthPage() {
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔄 Password reset form submitted with email:', email);
     
     if (!validatePasswordResetForm()) {
+      console.log('❌ Password reset form validation failed');
       return;
     }
     
+    console.log('✅ Password reset form validation passed');
     setIsLoading(true);
     try {
-      await requestPasswordReset(email);
-      setShowPasswordReset(false);
+      console.log('📧 Calling requestPasswordReset...');
+      const result = await requestPasswordReset(email);
+      console.log('📧 Password reset result:', result);
+      if (!result.error) {
+        setShowPasswordReset(false);
+      }
+    } catch (error) {
+      console.error('❌ Password reset error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -452,7 +461,10 @@ export function AuthPage() {
                   <div className="text-center mt-4">
                     <button
                       type="button"
-                      onClick={() => setShowPasswordReset(true)}
+                      onClick={() => {
+                        console.log('🔄 Forgot password link clicked');
+                        setShowPasswordReset(true);
+                      }}
                       className="text-sm text-neutral-600 dark:text-neutral-300 hover:text-neutral-800 dark:hover:text-neutral-100 transition-colors"
                       disabled={isLoading}
                     >
@@ -634,7 +646,10 @@ export function AuthPage() {
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => setShowPasswordReset(false)}
+                    onClick={() => {
+                      console.log('🔄 Cancel password reset clicked');
+                      setShowPasswordReset(false);
+                    }}
                     className="flex-1 h-10 rounded-md border border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800 transition-colors"
                     disabled={isLoading}
                   >
@@ -643,6 +658,7 @@ export function AuthPage() {
                   <button
                     type="submit"
                     disabled={isLoading}
+                    onClick={() => console.log('🔄 Send Reset Link button clicked')}
                     className="group/btn relative flex-1 h-10 rounded-md bg-gradient-to-br from-black to-neutral-600 font-medium text-white shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:bg-zinc-800 dark:from-zinc-900 dark:to-zinc-900 dark:shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset] disabled:opacity-50"
                   >
                     {isLoading ? (

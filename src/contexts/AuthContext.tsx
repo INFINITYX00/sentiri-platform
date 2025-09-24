@@ -683,13 +683,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const requestPasswordReset = async (email: string) => {
+    console.log('🔄 Starting password reset request for:', email);
     try {
+      console.log('📧 Calling supabase.auth.resetPasswordForEmail...');
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/?reset=true`
       });
 
+      console.log('📧 Supabase resetPasswordForEmail response:', { error });
+
       if (error) {
-        console.error('Password reset request error:', error);
+        console.error('❌ Password reset request error:', error);
         toast({
           title: "Failed to send reset email",
           description: error.message,
@@ -698,6 +702,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error };
       }
 
+      console.log('✅ Password reset email sent successfully');
       toast({
         title: "Password reset email sent",
         description: "Please check your email for a password reset link.",
@@ -705,7 +710,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { error: null };
     } catch (error) {
-      console.error('Password reset request error:', error);
+      console.error('❌ Password reset request error:', error);
+      toast({
+        title: "Failed to send reset email",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
       return { error };
     }
   };
