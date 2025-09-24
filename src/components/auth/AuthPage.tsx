@@ -231,7 +231,7 @@ export function AuthPage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <img 
-              src="/lovable-uploads/805bbb0c-f2f3-4bc3-9cbf-9db7ba08736a.png" 
+              src="/auth-logo.png" 
               alt="Sentiri"
               className="h-24"
             />
