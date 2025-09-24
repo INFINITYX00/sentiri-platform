@@ -95,7 +95,7 @@
   }
 
   body {
-    @apply text-foreground font-inter bg-background;
+    @apply bg-background text-foreground font-inter;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 

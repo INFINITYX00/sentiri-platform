@@ -5,16 +5,28 @@ import { useTheme } from "./ThemeProvider";
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
   return (
     <Button
       variant="ghost"
       size="sm"
-      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+      onClick={toggleTheme}
       className="w-full justify-start"
     >
-      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-      <span className="ml-2">Toggle theme</span>
+      {theme === "dark" ? (
+        <>
+          <Sun className="h-4 w-4" />
+          <span className="ml-2">Light mode</span>
+        </>
+      ) : (
+        <>
+          <Moon className="h-4 w-4" />
+          <span className="ml-2">Dark mode</span>
+        </>
+      )}
     </Button>
   );
 }
