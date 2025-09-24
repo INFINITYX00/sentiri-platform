@@ -99,24 +99,6 @@ export function DashboardOverview() {
             </div>
           </div>
 
-          {/* Subscription Status Alert - Enhanced */}
-          {subscription.trialExpired && (
-            <Card className="border-warning/30 bg-gradient-to-r from-warning/10 to-warning/5 animate-slide-up">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="font-semibold text-warning-foreground">Trial Expired</p>
-                    <p className="text-sm text-warning-foreground/80">
-                      Upgrade to continue using all features
-                    </p>
-                  </div>
-                  <Button size="lg" variant="gradient" className="hover-scale">
-                    Upgrade Now
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Key Metrics Cards - Enhanced with MetricCard */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
