@@ -107,7 +107,6 @@ export function DashboardOverview() {
               value={metrics.totalProjects}
               subtitle={`${metrics.activeProjects} in progress, ${metrics.completedProjects} completed`}
               icon={<Factory className="h-5 w-5" />}
-              status="info"
               trend="up"
               trendValue="+12%"
             />
@@ -117,7 +116,6 @@ export function DashboardOverview() {
               value={`${metrics.totalCarbonSaved.toFixed(1)} kg`}
               subtitle="CO₂ tracked across all projects"
               icon={<Leaf className="h-5 w-5" />}
-              status="success"
               trend="down"
               trendValue="-8.5%"
             />
@@ -127,7 +125,6 @@ export function DashboardOverview() {
               value={metrics.activeStages}
               subtitle={`${metrics.workersActive} workers active`}
               icon={<Activity className="h-5 w-5" />}
-              status="warning"
               trend="up"
               trendValue="+5%"
             />
@@ -137,7 +134,6 @@ export function DashboardOverview() {
               value={`${metrics.productionEfficiency.toFixed(0)}%`}
               subtitle="Production efficiency"
               icon={<TrendingUp className="h-5 w-5" />}
-              status="success"
               trend="up"
               trendValue="+3.2%"
             />
