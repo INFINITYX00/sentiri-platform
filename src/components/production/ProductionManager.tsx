@@ -66,7 +66,7 @@ export function ProductionManager({
     },
     { 
       label: "Total Value", 
-      value: `$${projects.reduce((sum, p) => sum + p.total_cost, 0).toFixed(0)}`, 
+      value: `£${projects.reduce((sum, p) => sum + p.total_cost, 0).toFixed(0)}`, 
       icon: DollarSign, 
       color: "text-purple-400" 
     }
@@ -157,7 +157,7 @@ export function ProductionManager({
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2 text-sm">
                     <DollarSign className="h-4 w-4 text-green-600" />
-                    <span>${project.total_cost.toFixed(0)}</span>
+                    <span>£{project.total_cost.toFixed(0)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Leaf className="h-4 w-4 text-primary" />
@@ -304,7 +304,7 @@ export function ProductionManager({
                                   </Badge>
                                   <div className="flex items-center gap-2 text-sm">
                                     <DollarSign className="h-4 w-4 text-green-600" />
-                                    <span>${project.total_cost.toFixed(0)}</span>
+                                    <span>£{project.total_cost.toFixed(0)}</span>
                                   </div>
                                   <div className="flex items-center gap-2 text-sm">
                                     <Leaf className="h-4 w-4 text-primary" />

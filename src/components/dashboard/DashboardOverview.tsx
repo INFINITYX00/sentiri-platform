@@ -187,7 +187,7 @@ export function DashboardOverview() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Investment</p>
-                    <p className="text-xl font-bold">${metrics.totalCost.toFixed(0)}</p>
+                    <p className="text-xl font-bold">£{metrics.totalCost.toFixed(0)}</p>
                   </div>
                   <DollarSign className="h-5 w-5 text-green-400" />
                 </div>

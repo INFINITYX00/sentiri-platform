@@ -228,7 +228,7 @@ export function StepByStepBOM({ projectId, onBOMComplete }: StepByStepBOMProps) 
                   <h4 className="font-medium">{item.material_name}</h4>
                   <div className="flex gap-4 text-sm text-muted-foreground">
                     <span>Carbon: {(item.quantity * item.carbon_per_unit).toFixed(2)} kg CO₂</span>
-                    <span>Cost: ${(item.quantity * item.cost_per_unit).toFixed(2)}</span>
+                    <span>Cost: £{(item.quantity * item.cost_per_unit).toFixed(2)}</span>
                   </div>
                 </div>
                 
@@ -271,7 +271,7 @@ export function StepByStepBOM({ projectId, onBOMComplete }: StepByStepBOMProps) 
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Calculator className="h-4 w-4" />
-                  <span className="font-medium">Total Cost: ${totalCost.toFixed(2)}</span>
+                  <span className="font-medium">Total Cost: £{totalCost.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Leaf className="h-4 w-4" />

@@ -249,7 +249,7 @@ export function BOMUploader() {
               Total Items: {bomItems.length}
             </div>
             <div className="text-lg font-semibold text-primary">
-              Total Cost: ${calculateTotal().toFixed(2)}
+              Total Cost: £{calculateTotal().toFixed(2)}
             </div>
           </div>
           

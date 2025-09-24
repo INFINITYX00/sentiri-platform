@@ -51,7 +51,7 @@ export function ActiveProjectsWidget({ projects }: ActiveProjectsWidgetProps) {
                 <Progress value={project.progress} className="h-2" />
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{project.progress}% complete</span>
-                  <span>${project.total_cost.toFixed(0)}</span>
+                  <span>£{project.total_cost.toFixed(0)}</span>
                 </div>
               </div>
             ))}
