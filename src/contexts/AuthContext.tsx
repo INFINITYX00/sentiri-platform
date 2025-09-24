@@ -38,6 +38,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   resendConfirmation: (email: string) => Promise<{ error: any }>;
+  requestPasswordReset: (email: string) => Promise<{ error: any }>;
+  updatePassword: (newPassword: string) => Promise<{ error: any }>;
   createProfileNow: () => Promise<void>;
   createCompanyAndProfile: (userId: string, email: string, companyName: string, firstName?: string, lastName?: string) => Promise<{ profile: Profile; company: Company }>;
 }
@@ -680,6 +682,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const requestPasswordReset = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/?reset=true`
+      });
+
+      if (error) {
+        console.error('Password reset request error:', error);
+        toast({
+          title: "Failed to send reset email",
+          description: error.message,
+          variant: "destructive"
+        });
+        return { error };
+      }
+
+      toast({
+        title: "Password reset email sent",
+        description: "Please check your email for a password reset link.",
+      });
+
+      return { error: null };
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      return { error };
+    }
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        console.error('Password update error:', error);
+        toast({
+          title: "Failed to update password",
+          description: error.message,
+          variant: "destructive"
+        });
+        return { error };
+      }
+
+      toast({
+        title: "Password updated successfully",
+        description: "Your password has been changed.",
+      });
+
+      return { error: null };
+    } catch (error) {
+      console.error('Password update error:', error);
+      return { error };
+    }
+  };
+
   const signUp = async (email: string, password: string, companyName: string, firstName?: string, lastName?: string) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
@@ -831,6 +889,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     refreshProfile,
     resendConfirmation,
+    requestPasswordReset,
+    updatePassword,
     createProfileNow,
     createCompanyAndProfile
   };

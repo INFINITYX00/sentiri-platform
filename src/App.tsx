@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import MaterialDetail from "./pages/MaterialDetail";
 import ProductPassportDetail from "./pages/ProductPassportDetail";
 import NotFound from "./pages/NotFound";
+import { AuthPage } from "./components/auth/AuthPage";
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient({
@@ -32,6 +33,7 @@ const App = () => {
             <Sonner />
             <BrowserRouter>
               <Routes>
+                <Route path="/auth" element={<AuthPage />} />
                 <Route path="/" element={
                   <ProtectedRoute>
                     <Index />
